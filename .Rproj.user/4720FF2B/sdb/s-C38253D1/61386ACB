@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "^.*\\.Rproj$\n^\\.Rproj\\.user$\n^.Rprofile$\n^.Rhistory$\n^NEWS\\.md$\n^cran-comments\\.md$\n^README\\.Rmd$\n^README\\.md$\n^revdep$\n^README-.*\\.png$\n^\\.travis\\.yml$\n^appveyor\\.yml$\n^dataGen_testResult$\n",
+    "created" : 1474819273326.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2425513088",
+    "id" : "61386ACB",
+    "lastKnownWriteTime" : 1474819283,
+    "last_content_update" : 1474819283923,
+    "path" : "H:/Dropbox/data/programming/R/pkgs/PACE_in_R/rfda/.Rbuildignore",
+    "project_path" : ".Rbuildignore",
+    "properties" : {
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "text"
+}
