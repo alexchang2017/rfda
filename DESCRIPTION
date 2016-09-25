@@ -1,9 +1,36 @@
 Package: rfda
 Type: Package
-Title: What the Package Does (Title Case)
+Title: rfpa - To provide some tools used infunctional data analysis.
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
-LazyData: TRUE
+Date: 2017-01-01
+Authors@R: c(person("ChingChuan", "Chen", , "zw12356@gmail.com", c("aut", "cre")))
+Author: ChingChuan Chen <zw12356@gmail.com>
+Maintainer: ChingChuan Chen <zw12356@gmail.com>
+URL: https://github.com/Chingchuan-chen/rfda
+BugReports: https://github.com/Chingchuan-chen/rfda/issues
+Description: to be done.
+Depends:
+    R (>= 3.2.0)
+Imports:
+    stats,
+    utils,
+    Rcpp (>= 0.12.0),
+    assertthat,
+    pipeR (>= 0.6),
+    data.table (>= 1.9.6),
+    RcppParallel (>= 4.3.14)
+LinkingTo: Rcpp,
+    RcppArmadillo,
+    RcppParallel
+Suggests:
+    lattice,
+    ggplot2 (>= 2.0.0),
+    testthat
+LazyData: yes
+License: MIT + file LICENSE
+SystemRequirements: GNU make, C++11
+Collate:
+    'RcppExports.R'
+    'rfda.R'
+    'trapz.R'
+RoxygenNote: 5.0.1.9000
