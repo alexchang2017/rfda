@@ -7,3 +7,4 @@ src/*.o-*
 inst/doc
 *.Rds
 vignettes/*.R
+.Rproj.user
