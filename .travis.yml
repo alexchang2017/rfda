@@ -32,10 +32,8 @@ r_binary_packages:
   - devtools
   - Rcpp
   - assertthat
-  - pipeR
   - data.table
   - RcppArmadillo
-  - RcppParallel
   - testthat
 
 after_failure:
