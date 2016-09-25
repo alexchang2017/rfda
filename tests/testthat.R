@@ -1,5 +1,5 @@
 require(testthat)
 require(reshape2)
-library("rpace")
+library("rfda")
 
-test_check('rpace')
+test_check('rfda')
