@@ -34,6 +34,7 @@ r_binary_packages:
   - assertthat
   - data.table
   - RcppArmadillo
+  - RcppParallel
   - testthat
 
 after_failure:
