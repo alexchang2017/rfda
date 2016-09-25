@@ -7,7 +7,7 @@ test_that("factorial_f", {
   expect_equal(rfda:::factorial_f(2L), factorial(2))
   expect_equal(rfda:::factorial_f(3L), factorial(3))
   expect_equal(rfda:::factorial_f(5L), factorial(5))
-  expect_true(is.nan(rfd:::factorial_f(-1)))
+  expect_true(is.nan(rfda:::factorial_f(-1)))
   expect_error(rfda:::factorial_f(0.5))
   expect_error(rfda:::factorial_f(2.5))
 })
