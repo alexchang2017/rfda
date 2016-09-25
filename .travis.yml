@@ -30,8 +30,12 @@ before_install:
 
 r_binary_packages:
   - devtools
-  - plyr
-  - magrittr
+  - Rcpp
+  - assertthat
+  - pipeR
+  - data.table
+  - RcppArmadillo
+  - RcppParallel
   - testthat
 
 after_failure:
