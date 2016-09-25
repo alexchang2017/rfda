@@ -29,7 +29,7 @@ knitr::opts_chunk$set(
 
 # rfda
 
-To provide some tools used infunctional data analysis.
+To provide some tools used in functional data analysis.
 
 ## Installation
 
