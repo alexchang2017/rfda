@@ -26,7 +26,11 @@ compiler:
 before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then curl -O http://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2 ; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then sudo tar fvxz gfortran-4.8.2-darwin13.tar.bz2 -C / ; fi
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then Rscript -e 'install.packages(c("devtools"));library(devtools);devtools::install_github("jimhester/covr")' ; fi
+  # - if [ "$TRAVIS_OS_NAME" == "linux" ]; then Rscript -e 'install.packages(c("devtools"));library(devtools);devtools::install_github("jimhester/covr")' ; fi
+
+r_github_packages:
+  - renkun-ken/pipeR
+  - jimhester/covr
 
 r_binary_packages:
   - devtools
