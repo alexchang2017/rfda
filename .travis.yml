@@ -36,6 +36,7 @@ r_binary_packages:
   - devtools
   - Rcpp
   - assertthat
+  - reshape2
   - data.table
   - RcppArmadillo
   - RcppParallel
