@@ -1,5 +1,5 @@
 language: R
-r: devel
+r: release
 
 r_build_args: --no-build-vignettes --no-manual --no-resave-data
 r_check_args: --no-build-vignettes --no-manual
@@ -30,6 +30,7 @@ before_install:
 
 r_github_packages:
   - renkun-ken/pipeR
+  - kevinushey/rex
   - jimhester/covr
 
 r_binary_packages:
