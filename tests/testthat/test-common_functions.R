@@ -15,11 +15,16 @@ test_that("factorial_f", {
 context("2. unique_rows")
 M <- matrix(c(1,1,2,2,3,3,1,1,1,1,4,5), 6, 2)
 resM <- matrix(c(1,2,3,3,1,1,4,5), 4, 2)
+M2 <- matrix(sample(1:10, 120, TRUE), 20, 6)
+resM2 <- unique(M2)
+resM2 <- resM2[do.call(order, lapply(1:ncol(resM2), function(i) resM2[, i])), ]
 test_that("unique_rows", {
   expect_equal(unique_rows(M), resM)
+  expect_equal(unique_rows(resM), resM)
   expect_error(unique_rows(rbind(M, c(1, NA))))
   expect_error(unique_rows(rbind(M, c(1, NaN))))
   expect_error(unique_rows(rbind(M, c(1, Inf))))
+  expect_equal(unique_rows(M2), resM2)
 })
 
 context("3. trapz")
