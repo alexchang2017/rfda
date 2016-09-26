@@ -22,6 +22,7 @@ test_that("unique_rows", {
   expect_equal(unique_rows(M), resM)
   expect_equal(unique_rows(resM), resM)
   expect_equal(unique_rows(M2), resM2)
+  expect_equal(unique_rows(matrix(M[1,], 1)), matrix(M[1,], 1))
   expect_error(unique_rows(rbind(M, c(1, NA))))
   expect_error(unique_rows(rbind(M, c(1, NaN))))
   expect_error(unique_rows(rbind(M, c(1, Inf))))
