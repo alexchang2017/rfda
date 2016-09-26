@@ -21,10 +21,10 @@ resM2 <- resM2[do.call(order, lapply(1:ncol(resM2), function(i) resM2[, i])), ]
 test_that("unique_rows", {
   expect_equal(unique_rows(M), resM)
   expect_equal(unique_rows(resM), resM)
+  expect_equal(unique_rows(M2), resM2)
   expect_error(unique_rows(rbind(M, c(1, NA))))
   expect_error(unique_rows(rbind(M, c(1, NaN))))
   expect_error(unique_rows(rbind(M, c(1, Inf))))
-  expect_equal(unique_rows(M2), resM2)
 })
 
 context("3. trapz")

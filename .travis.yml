@@ -23,6 +23,12 @@ compiler:
   - gcc
   - clang
 
+addons:
+ apt:
+   packages:
+   - gcc-4.8
+   - g++-4.8
+
 before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then curl -O http://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2 ; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then sudo tar fvxz gfortran-4.8.2-darwin13.tar.bz2 -C / ; fi
