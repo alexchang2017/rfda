@@ -32,6 +32,10 @@ License: MIT + file LICENSE
 SystemRequirements: GNU make, C++11
 Collate:
     'RcppExports.R'
+    'data-sparseExData.R'
+    'data-irregularExData.R'
+    'data-regularExData.R'
     'rfda.R'
     'trapz.R'
+    'FPCA.R'
 RoxygenNote: 5.0.1.9000

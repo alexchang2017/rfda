@@ -10,4 +10,4 @@
 ^README-.*\.png$
 ^\.travis\.yml$
 ^appveyor\.yml$
-^dataGen_testResult$
+^testData$
