@@ -2,6 +2,11 @@
 #include <cmath>
 #include <sstream>
 
+void RMessage(const std::string& msg){
+  Rcpp::Function RMessage("message");
+  RMessage(msg);
+}
+
 template <typename T>
 std::string to_string(T const& value) {
   std::stringstream sstr;
@@ -12,11 +17,11 @@ std::string to_string(T const& value) {
 // the function to check the input data type
 void chk_mat(const mat& x, const std::string& varName, const std::string& type){
   if (!is_finite(x))
-    Rcpp::stop(varName + " must be a number.\n");
+    Rcpp::stop(varName + " must be numerical.\n");
 
   if (type == "integer") {
     if (all(all(abs(x - floor(x)) < 1e-6)))
-      Rcpp::stop(varName + " must be a nonnegative number.\n");
+      Rcpp::stop(varName + " must be integer.\n");
   }
 }
 
@@ -35,4 +40,24 @@ double factorial_f(double k){
   } else {
     return datum::nan;
   }
+}
+
+arma::vec kernelDensity(const arma::vec& xin, const std::string& kernel){
+  vec kx(xin.n_elem);
+  if (kernel == "epan")
+  {
+    kx = (1 - square(xin)) * 0.75;
+    kx.elem(find(abs(xin) >= 1)).zeros();
+  } else if (kernel == "gaussvar")
+  {
+    kx = exp(-0.5*square(xin)) / sqrt(2 * datum::pi) % (1.25 - 0.25 * square(xin));
+  } else if (kernel == "quar")
+  {
+    kx = square(1 - square(xin)) * (15.0 / 16.0);
+    kx.elem(find(abs(xin) >= 1)).zeros();
+  }  else if (kernel == "gauss")
+  {
+    kx = exp(-0.5*square(xin)) / sqrt(2 * datum::pi);
+  }
+  return kx;
 }

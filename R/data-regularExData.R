@@ -19,6 +19,6 @@
 #'   \url{https://github.com/ChingChuan-Chen/rfda/blob/master/testData/exDataGeneration.m}.
 #'
 #' @docType data
-#' @name exampleData_regular
-#' @usage exampleData_regular
+#' @name regularExData
+#' @usage regularExData
 NULL

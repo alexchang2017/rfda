@@ -156,6 +156,54 @@ interp2 <- function(x, y, v, xi, yi, method) {
     .Call('rfda_interp2', PACKAGE = 'rfda', x, y, v, xi, yi, method)
 }
 
+#' One-dimensional kernel local polynominal smoother
+#'
+#' Perform one-dimensional kernel local polynominal smoother for data \code{(x,y)} with weight \code{w} on \code{xout}.
+#'
+#' @param bandwidth A single numerical value. The kernel smoothing parameter.
+#' @param x A vector, the variable of of x-axis.
+#' @param y A vector, the variable of of y-axis. \code{y[i]} is corresponding value of \code{x[i]}.
+#' @param w A vector, the weight of data. \code{w[i]} is corresponding value of \code{x[i]}.
+#' @param xout A vector, vector of output time points. It should be a sorted vecotr.
+#' @param kernel A string. It could be 'gauss', 'gaussvar', 'epan' or 'quar'.
+#' @param drv An integer, the order of derivative.
+#' @param degree An integer, the degree of polynomial.
+#' @return A estimated value on \code{xout} by one-dimensional kernel local polynominal smoother.
+#' @examples
+#' x <- runif(100, 0, 10)
+#' y <- rnorm(100)
+#' xout <- sort(runif(200, 0, 10))
+#' est <- locPoly1d(1.2, x, y, rep(1, 100), xout, 'gauss', 0, 1)
+#' require(ggplot2)
+#' ggplot(data.frame(x,y), aes(x,y)) + geom_point() +
+#'   geom_line(aes(xout, est), data = data.frame(xout, est))
+#' @export
+locPoly1d <- function(bandwidth, x, y, w, xout, kernel, drv, degree) {
+    .Call('rfda_locPoly1d', PACKAGE = 'rfda', bandwidth, x, y, w, xout, kernel, drv, degree)
+}
+
+#' Find the optimal bandwidth for one-dimensional kernel local polynominal smoother
+#'
+#' Find the optimal bandwidth used in \code{\link{locPoly1d}}.
+#'
+#' @param bwCand A numerical vector for the candidates of bandwidth
+#' @param x A vector, the variable of of x-axis.
+#' @param y A vector, the variable of of y-axis. \code{y[i]} is corresponding value of \code{x[i]}.
+#' @param w A vector, the weight of data. \code{w[i]} is corresponding value of \code{x[i]}.
+#' @param kernel A string. It could be 'gauss', 'gaussvar', 'epan' or 'quar'.
+#' @param drv An integer, the order of derivative.
+#' @param degree An integer, the degree of polynomial.
+#' @return A optimal bandwidth selected by minimizing gcv scores.
+#' @examples
+#' data("regularExData", package = 'rfda')
+#' regBwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
+#' w <- rep(1, nrow(regularExData))
+#' bw_opt <- gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
+#' @export
+gcv_locPoly1d <- function(bwCand, x, y, w, kernel, drv, degree) {
+    .Call('rfda_gcv_locPoly1d', PACKAGE = 'rfda', bwCand, x, y, w, kernel, drv, degree)
+}
+
 trapz_cpp <- function(x, y) {
     .Call('rfda_trapz_cpp', PACKAGE = 'rfda', x, y)
 }

@@ -1,7 +1,5 @@
 #include "interp.h"
 
-Rcpp::Function RMessage("message");
-
 arma::mat take_elem_from_umat(const arma::vec& x, const arma::umat& idx){
   mat out = zeros<mat>(size(idx));
   for (uword i = 0; i < idx.n_cols; ++i)

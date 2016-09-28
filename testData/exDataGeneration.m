@@ -29,18 +29,18 @@ switch example_case
     % regular and regular with missing cases
     mtp = 20;
     if example_case == 1
-      example_case_name = 'regular';
-    else
       example_case_name = 'irregular';
+    else
+      example_case_name = 'regular';
     end
 end
 
 % Case iii) regular data with missing values (regular = 1)
-if example_case == 2
+if example_case == 1
   % generate the number of missing data for each subject
   ni_missing = zeros(1,ncohort);
   for i = 1:ncohort
-    ni_missing(i) = poissrnd(randsample(floor(mtp/2), 1), 1, 1);
+    ni_missing(i) = poissrnd(randsample(floor(mtp/3), 1), 1, 1);
     if ni_missing(i) >= mtp
       ni_missing(i) = mtp-1;
     end
@@ -58,15 +58,15 @@ for i = 1:ncohort
       %   Case i) Sparse and irregular case (regular = 0)
       t{i} = lint* rand(1,ntp);
     case 1
-      %   Case ii) complete balance case (regular = 2)
-      t{i} = linspace(0, lint, mtp);
-    case 2
-      %   Case iii) regular data with missing values (regular = 1)
+      %   Case ii) regular data with missing values (regular = 1)
       t{i} = linspace(0,lint,mtp);
       if ni_missing(i) > 0
         id_missing = randsample(mtp, ni_missing(i));
         t{i}(id_missing) = [];
       end
+    case 2
+      %   Case iii) complete balance case (regular = 2)
+      t{i} = linspace(0, lint, mtp);
   end
 
   % generate 2 Principal components, 1st PC score: N(0,9), 2nd PC score: N(0,4)

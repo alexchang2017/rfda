@@ -60,6 +60,41 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// locPoly1d
+arma::vec locPoly1d(const double& bandwidth, const arma::vec& x, const arma::vec& y, const arma::vec& w, const arma::vec& xout, const std::string& kernel, const double& drv, const double& degree);
+RcppExport SEXP rfda_locPoly1d(SEXP bandwidthSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP xoutSEXP, SEXP kernelSEXP, SEXP drvSEXP, SEXP degreeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const double& >::type bandwidth(bandwidthSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type xout(xoutSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< const double& >::type drv(drvSEXP);
+    Rcpp::traits::input_parameter< const double& >::type degree(degreeSEXP);
+    __result = Rcpp::wrap(locPoly1d(bandwidth, x, y, w, xout, kernel, drv, degree));
+    return __result;
+END_RCPP
+}
+// gcv_locPoly1d
+double gcv_locPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y, const arma::vec& w, const std::string& kernel, const double& drv, const double& degree);
+RcppExport SEXP rfda_gcv_locPoly1d(SEXP bwCandSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP kernelSEXP, SEXP drvSEXP, SEXP degreeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::vec >::type bwCand(bwCandSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< const double& >::type drv(drvSEXP);
+    Rcpp::traits::input_parameter< const double& >::type degree(degreeSEXP);
+    __result = Rcpp::wrap(gcv_locPoly1d(bwCand, x, y, w, kernel, drv, degree));
+    return __result;
+END_RCPP
+}
 // trapz_cpp
 arma::mat trapz_cpp(const arma::vec& x, const arma::mat& y);
 RcppExport SEXP rfda_trapz_cpp(SEXP xSEXP, SEXP ySEXP) {

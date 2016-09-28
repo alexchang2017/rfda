@@ -20,7 +20,7 @@
 #'   \url{https://github.com/ChingChuan-Chen/rfda/blob/master/testData/exDataGeneration.m}.
 #'
 #' @docType data
-#' @name exampleData_regular_with_missing
-#' @usage exampleData_regular_with_missing
+#' @name irregularExData
+#' @usage irregularExData
 NULL
 

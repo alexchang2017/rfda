@@ -20,7 +20,7 @@
 #'   \url{https://github.com/ChingChuan-Chen/rfda/blob/master/testData/exDataGeneration.m}.
 #'
 #' @docType data
-#' @name exampleData_sparse
-#' @usage exampleData_sparse
+#' @name sparseExData
+#' @usage sparseExData
 NULL
 
