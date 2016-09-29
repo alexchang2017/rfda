@@ -54,37 +54,149 @@ checkSparsity <- function(data, id.var, timeVarName){
 #'
 #' @importFrom plyr is.formula
 #' @importFrom RcppParallel setThreadOptions
-#' @importFrom stringr str_detect
 #' @importFrom data.table data.table melt.data.table
-#' @importFrom stats quantile
+#' @importFrom stats median
 #' @export
 FPCA <- function(formula, id.var, data, FPCA_opts = get_FPCA_opts()){
   # formula = as.formula("y ~ t")
+  # formula = as.formula("y + y2 ~ t")
   # id.var = "sampleID"
+  # data("irregularExData", package = "rfda")
   # data = irregularExData %>>% data.table %>>% `[`( , y2 := y*2 + rnorm(nrow(.)))
   assert_that(is.formula(formula), is.character(id.var),
               length(id.var) == 1, is.data.frame(data))
 
-  chkFmLHS <- as.character(formula[[2]]) %>>% str_detect("[+a-zA-z_]") %>>% all
-  chkFmRHS <- as.character(formula[[3]]) %>>% str_detect("[+a-zA-z_]") %>>% length %>>% `==`(1)
+  # check the formula
+  chkFmLHS <- as.character(formula[[2]]) %>>% (grepl("[+a-zA-z_]", .)) %>>% all
+  chkFmRHS <- as.character(formula[[3]]) %>>% (grepl("[+a-zA-z_]", .)) %>>% length %>>% `==`(1)
   chkFormla <- chkFmLHS || chkFmRHS
   message("Checking the formula...")
   assert_that(chkFormla, msg = "Check failed")
 
+  # close the parallelism if it doesn't need
   if (!FPCA_opts$parallel)
     RcppParallel::setThreadOptions(1)
 
+  # find the names of variables and name of variable indicating time points
   varName <- setdiff(all.vars(formula), as.character(formula[[3]]))
   timeVarName <- as.character(formula[[3]])
+
+  # get the sparsity of data
   sparsity <- checkSparsity(data, id.var, timeVarName)
 
+  # melt table to get a data.table to get a simple data.table and remove the NA, NaN and Inf.
+  # additionally, give names for id.var and timeVarName
   dataDT <- melt.data.table(data.table(data), id.vars = c(id.var, timeVarName),
-                            measure.vars = varName, variable.factor = FALSE)
-  if (length(unique(dataDT$variable)) > 1){
+                            measure.vars = varName, variable.factor = FALSE) %>>%
+    `[`(!is.na(value) & is.finite(value)) %>>%
+    setnames(c(id.var, timeVarName) , c("subId", "timePnt"))
+
+  # find the number of observations for each observed function
+  subIdInsuffSize <- dataDT[, .(numObv = .N) ,by = c("subId", "variable")][numObv <= 1] %>>%
+    `$`(subId) %>>% unique
+  # remove the
+  dataDT <- dataDT[!subId %in% subIdInsuffSize]
+
+  # binning data
+  if (FPCA_opts$numBins == -1 || FPCA_opts$numBins >= 10)
+  {
+    if (FPCA_opts$numBins == -1){
+      numObv <- nrow(dataDT[variable == dataDT$variable[1]])
+      numObvEach <- dataDT[variable == dataDT$variable[1] , .(numObv = .N), by = "timePnt"] %>>%
+        `$`(numObv)
+      criterionNum <- ifelse(sparsity == 0, stats::median(numObvEach), max(numObvEach))
+      if (criterionNum > 400) {
+        FPCA_opts$numBin <- 400
+      } else if (numObv > 5000 && criterionNum > 20) {
+        FPCA_opts$numBin <- min(criterionNum, ceiling(max(20, (5000-numObv)*19/2250+400)))
+      }
+    }
+
+    if (FPCA_opts$numBins > 0) {
+      # dataDT <- binData(dataDT, sparsity, FPCA_opts$numBins)
+      if (sparsity == 0)
+        sparsity <- 1
+    }
+  } else if (FPCA_opts$numBins < 10 && FPCA_opts$numBins != 0)
+  {
+    warning('The number of bins must be at least 10! No binning will be performed!')
+  }
+
+  # get weight
+  if (FPCA_opts$weighted)
+  {
+    byVars <- switch(as.character(sparsity), "0" = c("variable", "subId"),
+                     "1" = c("variable", "timePnt"), "2" = c("variable", "timePnt"))
+    dataDT <- merge(dataDT, dataDT[ , .(weight = 1/.N), by = byVars], by = byVars)
+  } else
+  {
+    dataDT[ , weight := 1]
+  }
+
+  # Initializing allTimePnts is based on the unique time points of the pooled data + the unique
+  # time points of "newdata", the output time grid.
+  allTimePnts <- sort(unique(c(dataDT$timePnt, FPCA_opts$newdata)))
+  # Initializing sampledTimePnts is based on the number of grid to be chosen in the range of
+  # all time span.
+  sampledTimePnts <- seq(min(allTimePnts), max(allTimePnts), length.out = FPCA_opts$numGrid)
+
+  # get mean functions of variables
+  dataList <- split(dataDT, dataDT$variable)
+
+  validMFList <- length(FPCA_opts$meanFuncList) == length(dataList) &&
+    all(sapply(FPCA_opts$meanFuncList, length) == length(sampledTimePnts)) &&
+    all(sapply(FPCA_opts$meanFuncList, function(mf) all(!is.na(mf)) && all(!is.infinite(mf))))
+  if (validMFList) {
+    MFList <- FPCA_opts$meanFuncList
+    MDFList <- lapply(FPCA_opts$meanFuncList, function(mf){
+      as.vector(interp1(sampledTimePnts, as.matrix(mf), allTimePnts, 'spline'))
+    })
+    bwOptLocPoly1d <- NA
+  } else {
+    MFRes <- lapply(dataList, function(dat){
+      bwCand <- bwCandChooser(dat, "subId", "timePnt", sparsity, FPCA_opts$kernel, 1)
+      bwOptLocPoly1d <- gcv_locPoly1d(bwCand, dat$timePnt, dat$value,
+                                      dat$weight, FPCA_opts$kernel, 0, 1)
+      bwOptLocPoly1d <- adjGcvBw1d(bwOptLocPoly1d, sparsity, FPCA_opts$kernel, 0)
+      if (FPCA_opts$bwMean == -1)
+        bwOptLocPoly1d <- sqrt(find_max_diff_f(dat[["timePnt"]], 2) * bwOptLocPoly1d)
+      return(list(locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
+                sampledTimePnts, FPCA_opts$kernel, 0, 1) %>>% as.vector,
+                locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
+                          allTimePnts, FPCA_opts$kernel, 0, 1) %>>% as.vector))
+    })
+    MFList <- lapply(MFRes, `[[`, 1)
+    MDFList <- lapply(MFRes, `[[`, 2)
+    rm(MFRes)
+  }
+
+  if (sapply(MFList, function(mf) all(is.na(mf))) %>>% any)
+    stop(paste0("The bandwidth of mean function is not appropriately!\n",
+                "If it is chosen automatically"))
+
+
+
+
+
+  if (FPCA_opts$normMethod == "variance"){
+    # get rawCov
+
+    # get smoothed covariance
+
+    # normalization
+
+  } else if (FPCA_opts$normMethod == "IQR") {
+    # get IQR
+
+    # normalization
 
   }
-  #  data[ , .N, by = timeVarName]
 
+  # find cross-covariance
+
+  # decide the number of FPC
+
+  # calculation of FPC scores
 
 
 
