@@ -52,11 +52,11 @@ test_that("trapz", {
 })
 
 context("4. binning data")
-data2bin <- data.table::data.table(subId = rep(1:5, each = 5), timePnt = rep(1:5, 5),
-                                   variable = "y", value = 1:25)
+data2bin <- data.table(subId = rep(1:5, each = 5), timePnt = rep(1:5, 5),
+                       variable = "y", value = 1:25)
 binnedValue <- do.call(c, lapply(1:5, function(x) (x-1)*5 + seq(1.5, 4.5, 1.5)))
-resDataDT <- data.table::data.table(subId = rep(1:5, each = 3), variable = "y",
-                                    value = binnedValue, timePnt = rep(c(5/3, 3, 13/3), 5))
+resDataDT <- data.table(subId = rep(1:5, each = 3), variable = "y",
+                        value = binnedValue, timePnt = rep(c(5/3, 3, 13/3), 5))
 test_that("binning data", {
   expect_equal(rfda:::binData(data2bin, 3), resDataDT)
   expect_error(rfda:::binData(data2bin, 0))

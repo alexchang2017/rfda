@@ -77,7 +77,7 @@ FPCA <- function(formula, id.var, data, options = list()){
 
   # set the number of thread be used
   if (FPCA_opts$ncpus != 0)
-    RcppParallel::setThreadOptions(FPCA_opts$ncpus)
+    setThreadOptions(FPCA_opts$ncpus)
 
   # find the names of variables and name of variable indicating time points
   varName <- setdiff(all.vars(formula), as.character(formula[[3]]))
