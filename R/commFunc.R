@@ -35,13 +35,13 @@ trapz <- function(x, y = NULL){
 #' @importFrom data.table setnames
 #' @importFrom utils head
 binData <- function(data, numBins){
-  if (numBins <= 0 || abs(numBins - floor(numBins)) > 0 || is.na(numBins) || is.infinite(numBins))
-    stop("numBins is not positive integer.")
+  assert_that(!is.na(numBins), is.finite(numBins), numBins > 0, numBins - floor(numBins) < 1e-6)
+
   boundaries <- seq(min(data$timePnt), max(data$timePnt), length.out = numBins + 1)
   newTimePnts <- head(boundaries, numBins) + diff(boundaries) / 2
   newDataDT <- data %>>% `[`( , idx_agg := findInterval(timePnt, boundaries, rightmost.closed = TRUE),
-                              by = "subId,variable") %>>%
-    `[`( , .(new_value = mean(value), new_timePnt = newTimePnts[idx_agg]), by = "subId,variable,idx_agg") %>>%
+                              by = .(subId,variable)) %>>%
+    `[`( , .(new_value = mean(value), new_timePnt = newTimePnts[idx_agg]), by = .(subId,variable,idx_agg)) %>>%
     setnames(c("new_value", "new_timePnt"), c("value", "timePnt")) %>>% `[`( , idx_agg := NULL)
   return(newDataDT)
 }
@@ -49,6 +49,8 @@ binData <- function(data, numBins){
 # sub-function for bwCandChooser
 #' @importFrom utils head tail
 find_max_diff_f <- function(t, lag_n){
+  assert_that(!is.na(lag_n), is.finite(lag_n), lag_n > 0, lag_n - floor(lag_n) < 1e-6)
+
   sort_t <- sort(t)
   n <- length(t)
   if (n < lag_n)
@@ -76,6 +78,11 @@ find_max_diff_f <- function(t, lag_n){
 bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
   r <- diff(range(data[[timeVarName]]))
 
+  assert_that(is.data.frame(data), is.character(id.var), is.character(timeVarName),
+              !is.na(sparsity), is.finite(sparsity), sparsity %in% c(0,1,2),
+              kernel %in% c('gauss','epan','gaussvar','quar'),
+              !is.na(degree), is.finite(degree), degree > 0, degree - floor(degree) < 1e-6)
+
   if (sparsity == 0){
     dstar <- find_max_diff_f(data[[timeVarName]], degree + 2)
     if (dstar > r / 4){
@@ -87,8 +94,6 @@ bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
     minBW <- 2.0 * find_max_diff_f(data[[timeVarName]], degree + 1)
   } else if (sparsity == 2){
     minBW <- 1.5 * find_max_diff_f(data[[timeVarName]], degree + 1)
-  } else {
-    stop("sparsity must be 0, 1 or 2.\n");
   }
 
   if (is.na(minBW) && kernel == "gauss"){

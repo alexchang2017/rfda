@@ -84,11 +84,13 @@ FPCA <- function(formula, id.var, data, options = list()){
   timeVarName <- as.character(formula[[3]])
 
   # get the full options of FPCA and check
-  optNamesUsed <- names(options) %in% names(FPCA_opts)
-  FPCA_opts <- modifyList(get_FPCA_opts(length(varName)), options[optNamesUsed]) %>>%
+  default_FPCA_opts <- get_FPCA_opts(length(varName))
+  optNamesUsed <- names(options) %in% default_FPCA_opts
+  FPCA_opts <- modifyList(default_FPCA_opts, options[optNamesUsed]) %>>%
     chk_FPCA_opts(nrow(data))
-  paste(names(options)[!optNamesUsed], collapse = ", ") %>>%
-    sprintf(fmt = "Ignoring the non-found options %s.") %>>% message
+  if (any(!optNamesUsed))
+    paste(names(options)[!optNamesUsed], collapse = ", ") %>>%
+      sprintf(fmt = "Ignoring the non-found options %s.") %>>% message
 
   # get the sparsity of data
   sparsity <- checkSparsity(data, id.var, timeVarName)
@@ -182,10 +184,6 @@ FPCA <- function(formula, id.var, data, options = list()){
     stop(paste0("The bandwidth of mean function is not appropriately!\n",
                 "If it is chosen automatically"))
 
-
-
-
-
   if (FPCA_opts$normMethod == "variance"){
     # get rawCov
 
@@ -205,8 +203,6 @@ FPCA <- function(formula, id.var, data, options = list()){
   # decide the number of FPC
 
   # calculation of FPC scores
-
-
 
   return(1)
 }
