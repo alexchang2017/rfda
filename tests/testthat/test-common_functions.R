@@ -50,3 +50,19 @@ test_that("trapz", {
   expect_error(trapz(c(NaN, xi), c(0, x)))
   expect_error(trapz(c(Inf, xi), c(0, x)))
 })
+
+context("4. binning data")
+data2bin <- data.table::data.table(subId = rep(1:5, each = 5), timePnt = rep(1:5, 5),
+                                   variable = "y", value = 1:25)
+binnedValue <- do.call(c, lapply(1:5, function(x) (x-1)*5 + seq(1.5, 4.5, 1.5)))
+resDataDT <- data.table::data.table(subId = rep(1:5, each = 3), variable = "y",
+                                    value = binnedValue, timePnt = rep(c(5/3, 3, 13/3), 5))
+test_that("binning data", {
+  expect_equal(rfda:::binData(data2bin, 3), resDataDT)
+  expect_error(rfda:::binData(data2bin, 0))
+  expect_error(rfda:::binData(data2bin, -1))
+  expect_error(rfda:::binData(data2bin, NA))
+  expect_error(rfda:::binData(data2bin, NaN))
+  expect_error(rfda:::binData(data2bin, Inf))
+})
+

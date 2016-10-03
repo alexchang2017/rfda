@@ -12,14 +12,14 @@ Description: to be done.
 Depends:
     R (>= 3.2.0)
 Imports:
+    assertthat,
     stats,
     utils,
-    Rcpp (>= 0.12.0),
-    assertthat,
-    pipeR (>= 0.6),
-    data.table (>= 1.9.6),
     plyr (>= 1.8.1),
-    RcppParallel
+    Rcpp (>= 0.12.0),
+    RcppParallel,
+    pipeR (>= 0.6),
+    data.table (>= 1.9.6)
 LinkingTo: Rcpp,
     RcppArmadillo,
     RcppParallel
@@ -36,8 +36,7 @@ Collate:
     'data-irregularExData.R'
     'data-regularExData.R'
     'rfda.R'
-    'trapz.R'
-    'bwCandChooser.R'
+    'commFunc.R'
     'adjGcvBw.R'
     'get_FPCA_opts.R'
     'FPCA.R'

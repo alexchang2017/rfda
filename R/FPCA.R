@@ -54,15 +54,16 @@ checkSparsity <- function(data, id.var, timeVarName){
 #'
 #' @importFrom plyr is.formula
 #' @importFrom RcppParallel setThreadOptions
-#' @importFrom data.table data.table melt.data.table
+#' @importFrom data.table data.table melt.data.table setnames
 #' @importFrom stats median
 #' @export
-FPCA <- function(formula, id.var, data, FPCA_opts = get_FPCA_opts()){
+FPCA <- function(formula, id.var, data, options = list()){
   # formula = as.formula("y ~ t")
   # formula = as.formula("y + y2 ~ t")
   # id.var = "sampleID"
   # data("irregularExData", package = "rfda")
-  # data = irregularExData %>>% data.table %>>% `[`( , y2 := y*2 + rnorm(nrow(.)))
+  # data <- irregularExData %>>% data.table %>>% `[`( , y2 := y*2 + rnorm(nrow(.)))
+  # options <- list()
   assert_that(is.formula(formula), is.character(id.var),
               length(id.var) == 1, is.data.frame(data))
 
@@ -73,9 +74,9 @@ FPCA <- function(formula, id.var, data, FPCA_opts = get_FPCA_opts()){
   message("Checking the formula...")
   assert_that(chkFormla, msg = "Check failed")
 
-  # close the parallelism if it doesn't need
-  if (!FPCA_opts$parallel)
-    RcppParallel::setThreadOptions(1)
+  # set the number of thread be used
+  if (FPCA_opts$ncpus != 0)
+    RcppParallel::setThreadOptions(FPCA_opts$ncpus)
 
   # find the names of variables and name of variable indicating time points
   varName <- setdiff(all.vars(formula), as.character(formula[[3]]))
@@ -83,6 +84,13 @@ FPCA <- function(formula, id.var, data, FPCA_opts = get_FPCA_opts()){
 
   # get the sparsity of data
   sparsity <- checkSparsity(data, id.var, timeVarName)
+
+  # get the full options of FPCA and check
+  optNamesUsed <- names(options) %in% names(FPCA_opts)
+  FPCA_opts <- modifyList(get_FPCA_opts(varName), options[optNamesUsed]) %>>%
+    chk_FPCA_opts(sparsity, nrow(data))
+  paste(names(options)[!optNamesUsed], collapse = ", ") %>>%
+    sprintf(fmt = "Ignoring the non-found options %s.") %>>% message
 
   # melt table to get a data.table to get a simple data.table and remove the NA, NaN and Inf.
   # additionally, give names for id.var and timeVarName
@@ -113,9 +121,8 @@ FPCA <- function(formula, id.var, data, FPCA_opts = get_FPCA_opts()){
     }
 
     if (FPCA_opts$numBins > 0) {
-      # dataDT <- binData(dataDT, sparsity, FPCA_opts$numBins)
-      if (sparsity == 0)
-        sparsity <- 1
+      dataDT <- binData(dataDT, FPCA_opts$numBins)
+      sparsity <- checkSparsity(dataDT[variable == dataDT$variable[1]], "subId", "timePnt")
     }
   } else if (FPCA_opts$numBins < 10 && FPCA_opts$numBins != 0)
   {
@@ -143,12 +150,12 @@ FPCA <- function(formula, id.var, data, FPCA_opts = get_FPCA_opts()){
   # get mean functions of variables
   dataList <- split(dataDT, dataDT$variable)
 
-  validMFList <- length(FPCA_opts$meanFuncList) == length(dataList) &&
-    all(sapply(FPCA_opts$meanFuncList, length) == length(sampledTimePnts)) &&
-    all(sapply(FPCA_opts$meanFuncList, function(mf) all(!is.na(mf)) && all(!is.infinite(mf))))
+  validMFList <- length(FPCA_opts$userMeanFuncList) == length(dataList) &&
+    all(sapply(FPCA_opts$userMeanFuncList, length) == length(sampledTimePnts)) &&
+    all(sapply(FPCA_opts$userMeanFuncList, function(mf) all(!is.na(mf)) && all(!is.infinite(mf))))
   if (validMFList) {
-    MFList <- FPCA_opts$meanFuncList
-    MDFList <- lapply(FPCA_opts$meanFuncList, function(mf){
+    MFList <- FPCA_opts$userMeanFuncList
+    MDFList <- lapply(FPCA_opts$userMeanFuncList, function(mf){
       as.vector(interp1(sampledTimePnts, as.matrix(mf), allTimePnts, 'spline'))
     })
     bwOptLocPoly1d <- NA

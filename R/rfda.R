@@ -36,7 +36,9 @@
 #'   \item Gottlieb, A. and Muller, H.G. (2012). A Stickiness Coefficient for Longitudinal Data, Computational Stat. and Data Analysis, i56, 4000-4010.
 #'   \item Verzelen, N., Tao, W. and Muller, H.G. (2012). Inferring Stochastic Dynamics from Functional Data. Biometrika, 99, 533-550.
 #'   \item Chiou, J.M. and Li, P.L. (2007). Functional clustering and identifying substructures of longitudinal data[J]. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 69, 679-699.
-#'   }
+#'   \item Chiou, J.M., Chen, Y.T. and Yang, Y.F. (2014), Multivariate Functional Principal Component Analysis: A Normalization Approach. Statistica Sinica, 24, 1571-1596.
+#'   \item Chiou, J.M., Yang, Y.F and Chen, Y.T.. (2016), Multivariate functional linear regression and prediction. Journal of Multivariate Analysis, 146, 301-312
+#' }
 #'
 #' @docType package
 #' @name rfda
@@ -44,10 +46,10 @@
 #' @import assertthat
 #' @importFrom Rcpp cppFunction sourceCpp
 #' @importFrom pipeR %>>%
+#' @importFrom data.table :=
 #' @importFrom utils globalVariables
-#' @importFrom parallel detectCores
 #' @importFrom RcppParallel RcppParallelLibs
-utils::globalVariables(c(".", "%>>%"))
+utils::globalVariables(c(".", "%>>%", ":="))
 
 # Copyright (c) 2015, Hans-Georg Mueller and Jane-Ling Wang
 # All rights reserved.

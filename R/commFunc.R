@@ -1,4 +1,51 @@
+#' trapz: trapezoidal rule to approximate the integral values
+#'
+#' Returns approximation of integral.
+#'
+#' @param x A vector with n elements, \code{x[i]} is a support, \code{i = 1, ..., n}.
+#' If y is NULL, support is taken as \code{seq(1, length(x), by = 1)}.
+#' @param y \code{y[i, j]} is jth values on corresponding value of \code{x[i], i = 1, ..., n}.
+#' If y is vector, the length of y must be equal to the lenght of x.
+#' If y is matrix, the number of rows must be equal to the lenght of x.
+#' @return A value, the approximation of integral.
+#' @section Reference:
+#' Kai Habel, trapz, Octave.
+#' @examples
+#' # case 1
+#' x <- c(1, 4, 9, 16, 25)
+#' trapz(x) # 42
+#'
+#' # case 2
+#' x <- matrix(c(1,4,9,16,25,1,8,27,64,125), 5)
+#' trapz(x) # 42 162
+#' @rdname trapz
+#' @export
+trapz <- function(x, y = NULL){
+  if (is.null(y))
+  {
+    y <- x
+    if (is.vector(x))
+      x <- 1:length(x)
+    else
+      x <- 1:nrow(x)
+  }
+  return(trapz_cpp(x, as.matrix(y)))
+}
 
+#' @importFrom data.table setnames
+binData <- function(data, numBins){
+  if (numBins <= 0 || abs(numBins - floor(numBins)) > 0 || is.na(numBins) || is.infinite(numBins))
+    stop("numBins is not positive integer.")
+  boundaries <- seq(min(data$timePnt), max(data$timePnt), length.out = numBins + 1)
+  newTimePnts <- head(boundaries, numBins) + diff(boundaries) / 2
+  newDataDT <- data %>>% `[`( , idx_agg := findInterval(timePnt, boundaries, rightmost.closed = TRUE),
+                              by = "subId,variable") %>>%
+    `[`( , .(new_value = mean(value), new_timePnt = newTimePnts[idx_agg]), by = "subId,variable,idx_agg") %>>%
+    setnames(c("new_value", "new_timePnt"), c("value", "timePnt")) %>>% `[`( , idx_agg := NULL)
+  return(newDataDT)
+}
+
+# sub-function for bwCandChooser
 find_max_diff_f <- function(t, lag_n){
   sort_t <- sort(t)
   n <- length(t)
@@ -22,6 +69,7 @@ find_max_diff_f <- function(t, lag_n){
 #' @examples
 #' data("regularExData", package = 'rfda')
 #' bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
+#' @rdname bwCandChooser
 #' @export
 bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
   r <- diff(range(data[[timeVarName]]))
@@ -51,5 +99,3 @@ bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
   q <- (r / minBW / 4)^(1/9)
   return(q^(0:9) * minBW)
 }
-
-

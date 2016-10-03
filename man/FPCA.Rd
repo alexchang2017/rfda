@@ -4,7 +4,7 @@
 \alias{FPCA}
 \title{Calculating the functional principal components}
 \usage{
-FPCA(formula, id.var, data, FPCA_opts = get_FPCA_opts())
+FPCA(formula, id.var, data, options = list())
 }
 \arguments{
 \item{formula}{An object of class "formula", a description of FPCA model.
