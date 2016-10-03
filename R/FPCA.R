@@ -74,10 +74,6 @@ FPCA <- function(formula, id.var, data, options = list()){
   message("Checking the formula...")
   assert_that(chkFormla, msg = "Check failed")
 
-  # set the number of thread be used
-  if (FPCA_opts$ncpus != 0)
-    setThreadOptions(FPCA_opts$ncpus)
-
   # find the names of variables and name of variable indicating time points
   varName <- setdiff(all.vars(formula), as.character(formula[[3]]))
   timeVarName <- as.character(formula[[3]])
@@ -90,6 +86,10 @@ FPCA <- function(formula, id.var, data, options = list()){
   if (any(!optNamesUsed))
     paste(names(options)[!optNamesUsed], collapse = ", ") %>>%
       sprintf(fmt = "Ignoring the non-found options %s.") %>>% message
+
+  # set the number of thread be used
+  if (FPCA_opts$ncpus != 0)
+    setThreadOptions(FPCA_opts$ncpus)
 
   # get the sparsity of data
   sparsity <- checkSparsity(data, id.var, timeVarName)
@@ -168,19 +168,19 @@ FPCA <- function(formula, id.var, data, options = list()){
     # use gcv to get mean functions
     MFRes <- lapply(dataList, function(dat){
       # get the candidates of bandwidths
-      bwCand <- bwCandChooser(dat, "subId", "timePnt", sparsity, FPCA_opts$kernel, 1)
+      bwCand <- bwCandChooser(dat, "subId", "timePnt", sparsity, FPCA_opts$bwKernel, 1)
       # get the optimal bandwidth with gcv
-      bwOptLocPoly1d <- gcv_locPoly1d(bwCand, dat$timePnt, dat$value, dat$weight, FPCA_opts$kernel, 0, 1)
+      bwOptLocPoly1d <- gcv_locPoly1d(bwCand, dat$timePnt, dat$value, dat$weight, FPCA_opts$bwKernel, 0, 1)
       # adjust the bandwidth
-      bwOptLocPoly1d <- adjGcvBw1d(bwOptLocPoly1d, sparsity, FPCA_opts$kernel, 0)
+      bwOptLocPoly1d <- adjGcvBw1d(bwOptLocPoly1d, sparsity, FPCA_opts$bwKernel, 0)
 
       # Geometric mean of the minimum bandwidth and the GCV bandwidth
       if (FPCA_opts$bwMean == -1)
         bwOptLocPoly1d <- sqrt(find_max_diff_f(dat[["timePnt"]], 2) * bwOptLocPoly1d)
       return(list(locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
-                            sampledTimePnts, FPCA_opts$kernel, 0, 1) %>>% as.vector,
+                            sampledTimePnts, FPCA_opts$bwKernel, 0, 1) %>>% as.vector,
                   locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
-                            allTimePnts, FPCA_opts$kernel, 0, 1) %>>% as.vector))
+                            allTimePnts, FPCA_opts$bwKernel, 0, 1) %>>% as.vector))
     })
     # get mean functions
     MFList <- lapply(MFRes, `[[`, 1)
@@ -194,14 +194,14 @@ FPCA <- function(formula, id.var, data, options = list()){
     stop(paste0("The bandwidth of mean function is not appropriately!\n",
                 "If it is chosen automatically"))
 
-  if (FPCA_opts$normMethod == "variance"){
+  if (FPCA_opts$methodNorm == "variance"){
     # get rawCov
 
     # get smoothed covariance
 
     # normalization
 
-  } else if (FPCA_opts$normMethod == "IQR") {
+  } else if (FPCA_opts$methodNorm == "IQR") {
     # get IQR
 
     # normalization

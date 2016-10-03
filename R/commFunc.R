@@ -39,10 +39,9 @@ binData <- function(data, numBins){
 
   boundaries <- seq(min(data$timePnt), max(data$timePnt), length.out = numBins + 1)
   newTimePnts <- head(boundaries, numBins) + diff(boundaries) / 2
-  newDataDT <- data %>>% `[`( , idx_agg := findInterval(timePnt, boundaries, rightmost.closed = TRUE),
-                              by = .(subId,variable)) %>>%
-    `[`( , .(new_value = mean(value), new_timePnt = newTimePnts[idx_agg]), by = .(subId,variable,idx_agg)) %>>%
-    setnames(c("new_value", "new_timePnt"), c("value", "timePnt")) %>>% `[`( , idx_agg := NULL)
+  newDataDT <- data %>>% `[`( , idx_agg := findInterval(timePnt, boundaries, TRUE), by = .(subId,variable)) %>>%
+    `[`( , .(value = mean(value), timePnt = newTimePnts[idx_agg]), by = .(subId,variable,idx_agg)) %>>%
+    `[`( , idx_agg := NULL)
   return(newDataDT)
 }
 
@@ -76,13 +75,12 @@ find_max_diff_f <- function(t, lag_n){
 #' @rdname bwCandChooser
 #' @export
 bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
-  r <- diff(range(data[[timeVarName]]))
-
   assert_that(is.data.frame(data), is.character(id.var), is.character(timeVarName),
-              !is.na(sparsity), is.finite(sparsity), sparsity %in% c(0,1,2),
+              !is.na(sparsity), is.finite(sparsity), sparsity %in% c(0, 1, 2),
               kernel %in% c('gauss','epan','gaussvar','quar'),
               !is.na(degree), is.finite(degree), degree > 0, degree - floor(degree) < 1e-6)
 
+  r <- diff(range(data[[timeVarName]]))
   if (sparsity == 0){
     dstar <- find_max_diff_f(data[[timeVarName]], degree + 2)
     if (dstar > r / 4){
