@@ -65,8 +65,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   # data("irregularExData", package = "rfda")
   # data <- irregularExData %>>% data.table %>>% `[`( , y2 := y*2 + rnorm(nrow(.)))
   # options <- list()
-  assert_that(is.formula(formula), is.character(id.var),
-              length(id.var) == 1, is.data.frame(data))
+  assert_that(is.formula(formula), is.character(id.var), length(id.var) == 1, is.data.frame(data))
 
   # check the formula
   chkFmLHS <- as.character(formula[[2]]) %>>% (grepl("[+a-zA-z_]", .)) %>>% all
@@ -103,7 +102,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     setnames(c(id.var, timeVarName) , c("subId", "timePnt"))
 
   # find the number of observations for each observed function
-  subIdInsuffSize <- dataDT[, .(numObv = .N) ,by = c("subId", "variable")][numObv <= 1] %>>%
+  subIdInsuffSize <- dataDT[, .(numObv = .N) ,by = .(subId, variable)][numObv <= 1] %>>%
     `$`(subId) %>>% unique
   # remove the
   dataDT <- dataDT[!subId %in% subIdInsuffSize]
@@ -111,29 +110,28 @@ FPCA <- function(formula, id.var, data, options = list()){
   # binning data
   if (FPCA_opts$numBins == -1 || FPCA_opts$numBins >= 10)
   {
+    # find the number of bins
     if (FPCA_opts$numBins == -1){
       numObv <- nrow(dataDT[variable == dataDT$variable[1]])
-      numObvEach <- dataDT[variable == dataDT$variable[1] , .(numObv = .N), by = "timePnt"] %>>%
-        `$`(numObv)
-      criterionNum <- ifelse(sparsity == 0, stats::median(numObvEach), max(numObvEach))
-      if (criterionNum > 400) {
+      numObvEach <- dataDT[variable == dataDT$variable[1] , .(numObv = .N), by = timePnt] %>>% `$`(numObv)
+      # find the number to decide whether to implement data binning
+      decNum <- ifelse(sparsity == 0, stats::median(numObvEach), max(numObvEach))
+      if (decNum > 400) {
         FPCA_opts$numBin <- 400
-      } else if (numObv > 5000 && criterionNum > 20) {
-        FPCA_opts$numBin <- min(criterionNum, ceiling(max(20, (5000-numObv)*19/2250+400)))
+      } else if (numObv > 5000 && decNum > 20) {
+        FPCA_opts$numBin <- min(decNum, ceiling(max(20, (5000-numObv)*19/2250+400)))
       }
     }
 
+    # binning data and re-find the sparsity
     if (FPCA_opts$numBins > 0) {
       dataDT <- binData(dataDT, FPCA_opts$numBins)
       sparsity <- checkSparsity(dataDT[variable == dataDT$variable[1]], "subId", "timePnt")
     }
-  } else if (FPCA_opts$numBins < 10 && FPCA_opts$numBins != 0)
-  {
-    warning('The number of bins must be at least 10! No binning will be performed!')
   }
 
   # get weight
-  if (FPCA_opts$weighted)
+  if (FPCA_opts$weight)
   {
     byVars <- switch(as.character(sparsity), "0" = c("variable", "subId"),
                      "1" = c("variable", "timePnt"), "2" = c("variable", "timePnt"))
@@ -153,30 +151,42 @@ FPCA <- function(formula, id.var, data, options = list()){
   # get mean functions of variables
   dataList <- split(dataDT, dataDT$variable)
 
+  # validate the list of user-specified mean functions
   validMFList <- length(FPCA_opts$userMeanFuncList) == length(dataList) &&
     all(sapply(FPCA_opts$userMeanFuncList, length) == length(sampledTimePnts)) &&
     all(sapply(FPCA_opts$userMeanFuncList, function(mf) all(!is.na(mf)) && all(!is.infinite(mf))))
+  # get smoothing mean functions
   if (validMFList) {
+    # use user-specified mean functions
     MFList <- FPCA_opts$userMeanFuncList
+    # get dense mean functions
     MDFList <- lapply(FPCA_opts$userMeanFuncList, function(mf){
       as.vector(interp1(sampledTimePnts, as.matrix(mf), allTimePnts, 'spline'))
     })
     bwOptLocPoly1d <- NA
   } else {
+    # use gcv to get mean functions
     MFRes <- lapply(dataList, function(dat){
+      # get the candidates of bandwidths
       bwCand <- bwCandChooser(dat, "subId", "timePnt", sparsity, FPCA_opts$kernel, 1)
-      bwOptLocPoly1d <- gcv_locPoly1d(bwCand, dat$timePnt, dat$value,
-                                      dat$weight, FPCA_opts$kernel, 0, 1)
+      # get the optimal bandwidth with gcv
+      bwOptLocPoly1d <- gcv_locPoly1d(bwCand, dat$timePnt, dat$value, dat$weight, FPCA_opts$kernel, 0, 1)
+      # adjust the bandwidth
       bwOptLocPoly1d <- adjGcvBw1d(bwOptLocPoly1d, sparsity, FPCA_opts$kernel, 0)
+
+      # Geometric mean of the minimum bandwidth and the GCV bandwidth
       if (FPCA_opts$bwMean == -1)
         bwOptLocPoly1d <- sqrt(find_max_diff_f(dat[["timePnt"]], 2) * bwOptLocPoly1d)
       return(list(locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
-                sampledTimePnts, FPCA_opts$kernel, 0, 1) %>>% as.vector,
-                locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
-                          allTimePnts, FPCA_opts$kernel, 0, 1) %>>% as.vector))
+                            sampledTimePnts, FPCA_opts$kernel, 0, 1) %>>% as.vector,
+                  locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
+                            allTimePnts, FPCA_opts$kernel, 0, 1) %>>% as.vector))
     })
+    # get mean functions
     MFList <- lapply(MFRes, `[[`, 1)
+    # get dense mean functions
     MDFList <- lapply(MFRes, `[[`, 2)
+    # remove the results
     rm(MFRes)
   }
 
