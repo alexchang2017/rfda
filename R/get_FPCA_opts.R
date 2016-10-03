@@ -126,16 +126,15 @@
 #'   The user-defined smoothed covariance function.
 #' }
 #'
-#' @param ... Any options can be defined, using \code{name = value}. It can accept uncompleted names.
-#'   Please see "Details" for more details.
+#' @param numFunc The number of functional data to fit.
 #' @return An list of options to fit FPCA model used in \code{\link{FPCA}}.
 #' @export
-get_FPCA_opts <- function(varName){
+get_FPCA_opts <- function(numFunc){
   return(list(
     bwMean = -1, bwCov = c(-2, -2), bwNumGrid = 30, bwKernel = 'gauss', numBins = 0,
     errTerm = TRUE, numGrid = 51, weight = FALSE, numFPC = 'FVE', FVE_threshold = 0.85,
     maxNumFPC = 20, methodFPCS = 'CE', shrink = FALSE, varErr = 'cv', outPercent = 0,
-    methodNorm = ifelse(length(varName) == 1, 'no', 'quantile'), ncpus = 0,
+    methodNorm = ifelse(numFunc == 1, 'no', 'quantile'), ncpus = 0,
     userMeanFuncList = NULL, userCovFuncList = NULL
   ))
 }

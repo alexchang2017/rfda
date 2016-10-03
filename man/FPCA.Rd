@@ -15,7 +15,7 @@ Notice that the names of variables must be a-z, A-Z or _.}
 
 \item{data}{An data.frame or data.table containing the variables in model.}
 
-\item{FPCA_opts}{An list containing the options to fit FPCA model.}
+\item{options}{An list containing the options to fit FPCA model.}
 }
 \value{
 An list containing mean, covariance, eigen functions,

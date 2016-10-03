@@ -36,7 +36,7 @@ checkSparsity <- function(data, id.var, timeVarName){
 #' Notice that the names of variables must be a-z, A-Z or _.
 #' @param id.var An character to indicate the subject id of data.
 #' @param data An data.frame or data.table containing the variables in model.
-#' @param FPCA_opts An list containing the options to fit FPCA model.
+#' @param options An list containing the options to fit FPCA model.
 #' @return An list containing mean, covariance, eigen functions,
 #'   functional principal components scores, etc. Please see "Details" for more details.
 #' @seealso \code{\link{get_FPCA_opts}} for input options.
@@ -87,7 +87,7 @@ FPCA <- function(formula, id.var, data, options = list()){
 
   # get the full options of FPCA and check
   optNamesUsed <- names(options) %in% names(FPCA_opts)
-  FPCA_opts <- modifyList(get_FPCA_opts(varName), options[optNamesUsed]) %>>%
+  FPCA_opts <- modifyList(get_FPCA_opts(length(varName)), options[optNamesUsed]) %>>%
     chk_FPCA_opts(sparsity, nrow(data))
   paste(names(options)[!optNamesUsed], collapse = ", ") %>>%
     sprintf(fmt = "Ignoring the non-found options %s.") %>>% message

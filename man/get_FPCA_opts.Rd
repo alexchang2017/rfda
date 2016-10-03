@@ -4,11 +4,10 @@
 \alias{get_FPCA_opts}
 \title{FPCA options settings}
 \usage{
-get_FPCA_opts(varName)
+get_FPCA_opts(numFunc)
 }
 \arguments{
-\item{...}{Any options can be defined, using \code{name = value}. It can accept uncompleted names.
-Please see "Details" for more details.}
+\item{numFunc}{The number of functional data to fit.}
 }
 \value{
 An list of options to fit FPCA model used in \code{\link{FPCA}}.
