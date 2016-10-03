@@ -56,6 +56,7 @@ checkSparsity <- function(data, id.var, timeVarName){
 #' @importFrom RcppParallel setThreadOptions
 #' @importFrom data.table data.table melt.data.table setnames
 #' @importFrom stats median
+#' @importFrom utils modifyList
 #' @export
 FPCA <- function(formula, id.var, data, options = list()){
   # formula = as.formula("y ~ t")
@@ -82,15 +83,15 @@ FPCA <- function(formula, id.var, data, options = list()){
   varName <- setdiff(all.vars(formula), as.character(formula[[3]]))
   timeVarName <- as.character(formula[[3]])
 
-  # get the sparsity of data
-  sparsity <- checkSparsity(data, id.var, timeVarName)
-
   # get the full options of FPCA and check
   optNamesUsed <- names(options) %in% names(FPCA_opts)
   FPCA_opts <- modifyList(get_FPCA_opts(length(varName)), options[optNamesUsed]) %>>%
-    chk_FPCA_opts(sparsity, nrow(data))
+    chk_FPCA_opts(nrow(data))
   paste(names(options)[!optNamesUsed], collapse = ", ") %>>%
     sprintf(fmt = "Ignoring the non-found options %s.") %>>% message
+
+  # get the sparsity of data
+  sparsity <- checkSparsity(data, id.var, timeVarName)
 
   # melt table to get a data.table to get a simple data.table and remove the NA, NaN and Inf.
   # additionally, give names for id.var and timeVarName

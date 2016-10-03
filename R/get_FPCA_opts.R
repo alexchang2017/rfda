@@ -139,13 +139,12 @@ get_FPCA_opts <- function(numFunc){
   ))
 }
 
-chk_FPCA_opts <- function(optns, sparsity, dataSize){
+chk_FPCA_opts <- function(optns, dataSize){
   # check input
   assert_that(length(dataSize) == 1, is.numeric(dataSize), is.finite(dataSize), dataSize > 0)
-  assert_that(length(regular) == 1, regular %in% c(0, 1, 2))
-  assert_that(length(optns$bwMean) == 1, is.numeric(optns$bwMean), is.finite(optns$bwMean))
 
   # check bwMean
+  assert_that(length(optns$bwMean) == 1, is.numeric(optns$bwMean), is.finite(optns$bwMean))
   if (optns$bwMean <= 0)
     assert_that(optns$bwMean %in% c(-1, -2))
   else

@@ -33,6 +33,7 @@ trapz <- function(x, y = NULL){
 }
 
 #' @importFrom data.table setnames
+#' @importFrom utils head
 binData <- function(data, numBins){
   if (numBins <= 0 || abs(numBins - floor(numBins)) > 0 || is.na(numBins) || is.infinite(numBins))
     stop("numBins is not positive integer.")
@@ -46,6 +47,7 @@ binData <- function(data, numBins){
 }
 
 # sub-function for bwCandChooser
+#' @importFrom utils head tail
 find_max_diff_f <- function(t, lag_n){
   sort_t <- sort(t)
   n <- length(t)
