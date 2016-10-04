@@ -1,6 +1,6 @@
 context("test - locPoly1d")
 
-context("test - bwCandChooser")
+context("1. test - bwCandChooser")
 data("regularExData", package = 'rfda')
 data("irregularExData", package = 'rfda')
 data("sparseExData", package = 'rfda')
@@ -16,7 +16,7 @@ test_that("lwls - kernel", {
                  1.511881, 1.939743, 2.488689), tolerance = 1e-6)
 })
 
-context("test - locPoly1d with same weights")
+context("2. test - locPoly1d with same weights")
 bw <- 0.25
 x <- seq(0, 1, 0.1)
 y <- x ** 2 *2 + 3 * x
@@ -36,7 +36,7 @@ test_that("locPoly1d - with same weights", {
                  3.140981, 3.725682, 4.345469, 5.006464), tolerance = 1e-6)
 })
 
-context("test - locPoly1d validate inputs")
+context("3. test - locPoly1d validate inputs")
 test_that("test - locPoly1d validate inputs", {
   expect_true(is.na(locPoly1d(0.01, x, y, w, x, "epan", 0, 1)))
   expect_error(locPoly1d(bw, x, y, w, x, "guass", 0, 1), 'Unsupported kernel')
@@ -70,7 +70,7 @@ test_that("test - locPoly1d validate inputs", {
   expect_error(locPoly1d(bw, x, y, w, x, "gauss", 2, 1))
 })
 
-context("test - locPoly1d with different weights")
+context("4. test - locPoly1d with different weights")
 w <- c(rep(1, 9), 0, 0.5)
 test_that("locPoly1d - with different weights", {
   expect_equal(as.vector(locPoly1d(bw, x, y, w, x, "epan", 0, 1)),
@@ -87,8 +87,7 @@ test_that("locPoly1d - with different weights", {
                  3.122181, 3.716123, 4.355114, 5.038236), tolerance = 1e-6)
 })
 
-context("test - gcv_locPoly1d")
-
+context("5. test - gcv_locPoly1d")
 regBwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
 irrBwCand <- bwCandChooser(irregularExData, "sampleID", "t", 1, "gauss", 1)
 spsBwCand <- bwCandChooser(sparseExData, "sampleID", "t", 0, "gauss", 1)
@@ -126,7 +125,7 @@ test_that("gcv_locPoly1d", {
                              spsWeight, "quar", 0, 1), 1.178395, tolerance = 1e-6)
 })
 
-context("test - locPoly1d validate inputs")
+context("6. test - locPoly1d validate inputs")
 test_that("test - locPoly1d validate inputs", {
   expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
                                regWeight, "guass", 0, 1), 'Unsupported kernel')
@@ -181,7 +180,7 @@ test_that("test - locPoly1d validate inputs", {
                              regWeight, "gauss", 2, 1))
 })
 
-context("test - adjGcvBw1d")
+context("7. test - adjGcvBw1d")
 
 reg_bw_gauss <- gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
                               regWeight, "gauss", 0, 1)

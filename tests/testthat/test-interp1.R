@@ -1,6 +1,6 @@
 context("1D interpolation")
 
-context("test case 1")
+context("1. test interp1 - case 1")
 x = c(0.8, 0.3, 0.1, 0.6)
 y = x ** 2
 ys = y[order(x)]
@@ -15,14 +15,14 @@ test_that("interp1 - find the 1D interpolation - case 1", {
                c(0.3, 0.55, 0.8), tolerance = 1e-6)
 })
 
-context("test unsorted data")
+context("2. test interp1 - unsorted data")
 test_that("interp1 - test unsorted condition", {
   expect_equal(interp1(x, as.matrix(y), xi, 'linear'), interp1(xs, as.matrix(ys), xi, 'linear'))
   expect_equal(interp1(x, as.matrix(y), xi, 'spline'), interp1(xs, as.matrix(ys), xi, 'spline'))
   expect_message(as.vector(interp1(x, as.matrix(y), xi, 'linear')), "x will be sorted.")
 })
 
-context("test duplicated data")
+context("3. test interp1 - duplicated data")
 test_that("interp1 - test duplicated data", {
   expect_equal(interp1(c(0.1, xs), as.matrix(c(0.05, ys)), xi, 'spline'),
                interp1(xs, as.matrix(c(0.03, ys[2:4])), xi, 'spline'))
@@ -31,7 +31,7 @@ test_that("interp1 - test duplicated data", {
 })
 
 
-context("test spline_f")
+context("4. test spline_f")
 test_that("interp1 - spline_f - case 1", {
   expect_equal(spline_f(xs, t(as.matrix(ys)), xi),
                spline_f(xs, as.matrix(ys), xi), tolerance = 1e-6)
@@ -48,7 +48,7 @@ test_that("interp1 - spline_f - case 1", {
   expect_message(as.vector(spline_f(x, as.matrix(y), xi)), "x will be sorted.")
 })
 
-context("test input validation")
+context("5. test interp1 - input validation")
 test_that("interp1 - test input error - case 1", {
   expect_error(interp1(c(0, xs), as.matrix(c(NA, ys)), xi, 'spline'))
   expect_error(interp1(c(0, xs), as.matrix(c(NaN, ys)), xi, 'spline'))
@@ -77,7 +77,7 @@ test_that("interp1 - test input error - case 1", {
   expect_error(spline_f(c(0, xs), as.matrix(ys), xi))
 })
 
-context("test case 2")
+context("6. test interp1 - case 2")
 x = c(0.8, 0.3, 0.1, 0.6, 0.9, 0.5, 0.2, 0.0, 0.7, 1.0, 0.4)
 y = x**2
 ys = y[order(x)]
@@ -98,7 +98,7 @@ x = seq(0, 2*pi, pi/4)
 y = sin(x)
 xi = seq(0, 2*pi, pi/16)
 
-context("test case 3")
+context("7. test interp1 - case 3")
 test_that("interp1 - find the 1D interpolation - case 3", {
   expect_equal(as.vector(interp1(x, as.matrix(y), xi, 'linear')), approx(x, y, xi)$y)
 })
