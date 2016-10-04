@@ -71,8 +71,8 @@ FPCA <- function(formula, id.var, data, options = list()){
   chkFmLHS <- as.character(formula[[2]]) %>>% (grepl("[+a-zA-z_]", .)) %>>% all
   chkFmRHS <- as.character(formula[[3]]) %>>% (grepl("[+a-zA-z_]", .)) %>>% length %>>% `==`(1)
   chkFormla <- chkFmLHS || chkFmRHS
-  message("Checking the formula...")
-  assert_that(chkFormla, msg = "Check failed")
+  message("Checking the formula...", appendLF = FALSE)
+  message(ifelse(chkFormla, " Pass...", " Failed... Stop Now!"))
 
   # find the names of variables and name of variable indicating time points
   varName <- setdiff(all.vars(formula), as.character(formula[[3]]))
@@ -83,9 +83,9 @@ FPCA <- function(formula, id.var, data, options = list()){
   optNamesUsed <- names(options) %in% default_FPCA_opts
   FPCA_opts <- modifyList(default_FPCA_opts, options[optNamesUsed]) %>>%
     chk_FPCA_opts(nrow(data))
-  if (any(!optNamesUsed))
-    paste(names(options)[!optNamesUsed], collapse = ", ") %>>%
-      sprintf(fmt = "Ignoring the non-found options %s.") %>>% message
+  message(ifelse(all(optNamesUsed), "All options are checked...",
+                 paste(names(options)[!optNamesUsed], collapse = ", ") %>>%
+                   sprintf(fmt = "Ignoring the non-found options %s.")))
 
   # set the number of thread be used
   if (FPCA_opts$ncpus != 0)
