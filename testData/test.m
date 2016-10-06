@@ -52,7 +52,7 @@ yi = linspace(0.1, 0.8, 8);
 V_3_l = interp2(x,y,v,xi,yi', 'linear');
 V_3_s = interp2(x,y,v,xi,yi', 'spline');
 
-save('testResult/interp2_res.mat', 'V_1_l', 'V_1_s', 'V_2_l', 'V_2_s', 'V_3_l', 'V_3_s')
+save('testMat/interp2_res.mat', 'V_1_l', 'V_1_s', 'V_2_l', 'V_2_s', 'V_3_l', 'V_3_s')
 
 % locPoly1d
 % - same weight
@@ -132,6 +132,9 @@ sprintf('%.6f', adj_bopt)
 adj_bopt = adjustBW1('epan', gcv_lwls(yy, tt, 'epan', 1, 1, 0, regular, 'off'), 1, 0, regular, 'off');
 sprintf('%.6f', adj_bopt)
 
+
+getRaw
+
 %% sparse
 load('exData\sparseExData.mat')
 regular = 0;
@@ -158,3 +161,29 @@ adj_bopt = adjustBW1('gauss', gcv_lwls(yy, tt, 'gauss', 1, 1, 0, regular, 'off')
 sprintf('%.6f', adj_bopt)
 adj_bopt = adjustBW1('epan', gcv_lwls(yy, tt, 'epan', 1, 1, 0, regular, 'off'), 1, 0, regular, 'off');
 sprintf('%.6f', adj_bopt)
+
+%% test results for rawCov_res
+for example_case = 0:2
+  switch example_case
+    case 0
+      load('exData/sparseExData.mat')
+      exampleName = 'sparse.mat';
+    case 1
+      load('exData/irregularExData.mat')
+      exampleName = 'irregular.mat';
+    case 2
+      load('exData/regularExData.mat')
+      exampleName = 'regular.mat';
+  end
+
+  tt = cell2mat(t);
+  yy = cell2mat(y);
+  w = ones(1, length(yy));
+  bopt = gcv_lwls(yy, tt, 'gauss', 1, 1, 0, example_case, 'on');
+  bopt = sqrt(minb(tt,2)*adjustBW1('gauss',bopt, 1, 0, example_case,'on'));
+  [~, muDense] = lwls(bopt, 'gauss', 1, 1, 0, tt, yy', w, sort(unique(tt)), 0);
+  rawCov1 = getRawCov(y, t, sort(unique(tt)), muDense, example_case, 0);
+  rawCov2 = getRawCov(y, t, sort(unique(tt)), muDense, example_case, 1);
+  save(['testMat/rawCov_res_', exampleName], 'rawCov1', 'rawCov2') 
+end
+

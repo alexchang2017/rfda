@@ -54,7 +54,7 @@ checkSparsity <- function(data, id.var, timeVarName){
 #'
 #' @importFrom plyr is.formula
 #' @importFrom RcppParallel setThreadOptions
-#' @importFrom data.table data.table melt.data.table setnames
+#' @importFrom data.table data.table melt.data.table setnames rbindlist
 #' @importFrom stats median
 #' @importFrom utils modifyList
 #' @export
@@ -64,6 +64,8 @@ FPCA <- function(formula, id.var, data, options = list()){
   # id.var = "sampleID"
   # data("irregularExData", package = "rfda")
   # data <- irregularExData %>>% data.table %>>% `[`( , y2 := y*2 + rnorm(nrow(.)))
+  # data("sparseExData", package = "rfda")
+  # data <- sparseExData %>>% data.table %>>% `[`( , y2 := y*2 + rnorm(nrow(.)))
   # options <- list()
   assert_that(is.formula(formula), is.character(id.var), length(id.var) == 1, is.data.frame(data))
 
@@ -92,6 +94,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     setThreadOptions(FPCA_opts$ncpus)
 
   # get the sparsity of data
+  message("Checking and transforming data...")
   sparsity <- checkSparsity(data, id.var, timeVarName)
 
   # melt table to get a data.table to get a simple data.table and remove the NA, NaN and Inf.
@@ -125,6 +128,7 @@ FPCA <- function(formula, id.var, data, options = list()){
 
     # binning data and re-find the sparsity
     if (FPCA_opts$numBins > 0) {
+      message("Start to implement data binning...")
       dataDT <- binData(dataDT, FPCA_opts$numBins)
       sparsity <- checkSparsity(dataDT[variable == dataDT$variable[1]], "subId", "timePnt")
     }
@@ -152,19 +156,20 @@ FPCA <- function(formula, id.var, data, options = list()){
   dataList <- split(dataDT, dataDT$variable)
 
   # validate the list of user-specified mean functions
-  validMFList <- length(FPCA_opts$userMeanFuncList) == length(dataList) &&
-    all(sapply(FPCA_opts$userMeanFuncList, length) == length(sampledTimePnts)) &&
-    all(sapply(FPCA_opts$userMeanFuncList, function(mf) all(!is.na(mf)) && all(!is.infinite(mf))))
+  validMFList <- !is.null(FPCA_opts$userMeanFuncList) && is.data.table(FPCA_opts$userMeanFuncList) &&
+    all(c("timePnt", "value", "variable") %in% names(FPCA_opts$userMeanFuncList)) &&
+    all(!unlist(FPCA_opts$userMeanFuncList[ , lapply(.SD, function(x) any(is.na(x) || is.infinite(x)))]))
   # get smoothing mean functions
   if (validMFList) {
-    # use user-specified mean functions
-    MFList <- FPCA_opts$userMeanFuncList
-    # get dense mean functions
-    MDFList <- lapply(FPCA_opts$userMeanFuncList, function(mf){
-      as.vector(interp1(sampledTimePnts, as.matrix(mf), allTimePnts, 'spline'))
+    message("Use the user-specified mean functions...")
+    MFRes <- lapply(list(sampledTimePnts, allTimePnts), function(v){
+      FPCA_opts$userMeanFuncList %>>%
+        `[`( , .(timePnt = v, value = as.vector(interp1(timePnt, as.matrix(value), v, 'spline'))),
+             by = .(variable))
     })
     bwOptLocPoly1d <- NA
   } else {
+    message("Get the smoothed mean functions...")
     # use gcv to get mean functions
     MFRes <- lapply(dataList, function(dat){
       # get the candidates of bandwidths
@@ -177,24 +182,34 @@ FPCA <- function(formula, id.var, data, options = list()){
       # Geometric mean of the minimum bandwidth and the GCV bandwidth
       if (FPCA_opts$bwMean == -1)
         bwOptLocPoly1d <- sqrt(find_max_diff_f(dat[["timePnt"]], 2) * bwOptLocPoly1d)
-      return(list(locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
-                            sampledTimePnts, FPCA_opts$bwKernel, 0, 1) %>>% as.vector,
-                  locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
-                            allTimePnts, FPCA_opts$bwKernel, 0, 1) %>>% as.vector))
-    })
-    # get mean functions
-    MFList <- lapply(MFRes, `[[`, 1)
-    # get dense mean functions
-    MDFList <- lapply(MFRes, `[[`, 2)
-    # remove the results
-    rm(MFRes)
+
+      meanFunc <- locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
+                            sampledTimePnts, FPCA_opts$bwKernel, 0, 1) %>>% as.vector
+      meanFuncDense <- locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
+                            allTimePnts, FPCA_opts$bwKernel, 0, 1) %>>% as.vector
+      return(list(data.table(timePnt = sampledTimePnts, value = meanFunc, variable = unique(dat$variable)),
+                  data.table(timePnt = allTimePnts, value = meanFuncDense, variable = unique(dat$variable))))
+    }) # %>>% {list(rbindlist(lapply(., `[[`, 1)), rbindlist(lapply(., `[[`, 2)))}
+    # %>>% (lapply(1:length(.), function(i) rbindlist(lapply(., `[[`, i))))
   }
 
-  if (sapply(MFList, function(mf) all(is.na(mf))) %>>% any)
-    stop(paste0("The bandwidth of mean function is not appropriately!\n",
-                "If it is chosen automatically"))
+  # if (sapply(MFRes, function(dt) all(is.na(dt$value))) %>>% any)
+  #   stop(paste0("The bandwidth of mean function is not appropriately!\n",
+  #               "If it is chosen automatically"))
+
+  # rawCov <- getRawCov(allTimePnts, dataDT, MFRes[[2]], sparsity)
+  # if (FPCA_opts$weight){
+  #   if (sparsity == 0){
+  #     rawCov <- rawCov[ , weight := NULL] %>>% merge(dataDT[, .(weight = weight[which.max(subId)]),
+  #                              by = .(variable,timePnt)], by.x = c("variable", "t1"),
+  #                       by.y = c("variable", "timePnt"))
+  #   } else {
+  #     rawCov[ , weight := 1/cnt]
+  #   }
+  # }
 
   if (FPCA_opts$methodNorm == "variance"){
+    message("Start to normalize data with smoothed variances...")
     # get rawCov
 
     # get smoothed covariance
@@ -202,10 +217,13 @@ FPCA <- function(formula, id.var, data, options = list()){
     # normalization
 
   } else if (FPCA_opts$methodNorm == "IQR") {
+    message("Start to normalize data with smoothed IQRs...")
     # get IQR
 
     # normalization
 
+  } else {
+    message("Not perform the normalization...")
   }
 
   # find cross-covariance

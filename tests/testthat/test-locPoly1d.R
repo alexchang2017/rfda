@@ -204,3 +204,10 @@ test_that("adjGcvBw1d", {
   expect_equal(adjGcvBw1d(sps_bw_epan, 0, "epan", 0), 1.010316, tolerance = 1e-6)
 })
 
+
+locPoly1d(adjGcvBw1d(reg_bw_gauss, 2, "gauss", 0), regularExData$t, regularExData$y, regWeight,
+          unique(regularExData$t), "gauss", 0, 1)
+
+locPoly1d(adjGcvBw1d(irr_bw_gauss, 2, "gauss", 0), irregularExData$t, irregularExData$y, irrWeight,
+          sort(unique(irregularExData$t)), "gauss", 0, 1)
+

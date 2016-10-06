@@ -38,6 +38,7 @@ Collate:
     'rfda.R'
     'commFunc.R'
     'adjGcvBw.R'
+    'getRawCov.R'
     'get_FPCA_opts.R'
     'FPCA.R'
-RoxygenNote: 5.0.1.9000
+RoxygenNote: 5.0.1
