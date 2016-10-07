@@ -54,7 +54,7 @@ checkSparsity <- function(data, id.var, timeVarName){
 #'
 #' @importFrom plyr is.formula
 #' @importFrom RcppParallel setThreadOptions
-#' @importFrom data.table data.table melt.data.table setnames rbindlist
+#' @importFrom data.table data.table melt.data.table setnames is.data.table rbindlist
 #' @importFrom stats median
 #' @importFrom utils modifyList
 #' @export
@@ -189,24 +189,23 @@ FPCA <- function(formula, id.var, data, options = list()){
                             allTimePnts, FPCA_opts$bwKernel, 0, 1) %>>% as.vector
       return(list(data.table(timePnt = sampledTimePnts, value = meanFunc, variable = unique(dat$variable)),
                   data.table(timePnt = allTimePnts, value = meanFuncDense, variable = unique(dat$variable))))
-    }) # %>>% {list(rbindlist(lapply(., `[[`, 1)), rbindlist(lapply(., `[[`, 2)))}
-    # %>>% (lapply(1:length(.), function(i) rbindlist(lapply(., `[[`, i))))
+    }) %>>% rbindTransList
   }
 
-  # if (sapply(MFRes, function(dt) all(is.na(dt$value))) %>>% any)
-  #   stop(paste0("The bandwidth of mean function is not appropriately!\n",
-  #               "If it is chosen automatically"))
+  if (sapply(MFRes, function(dt) all(is.na(dt$value))) %>>% any)
+    stop(paste0("The bandwidth of mean function is not appropriately!\n",
+                "If it is chosen automatically"))
 
-  # rawCov <- getRawCov(allTimePnts, dataDT, MFRes[[2]], sparsity)
-  # if (FPCA_opts$weight){
-  #   if (sparsity == 0){
-  #     rawCov <- rawCov[ , weight := NULL] %>>% merge(dataDT[, .(weight = weight[which.max(subId)]),
-  #                              by = .(variable,timePnt)], by.x = c("variable", "t1"),
-  #                       by.y = c("variable", "timePnt"))
-  #   } else {
-  #     rawCov[ , weight := 1/cnt]
-  #   }
-  # }
+  rawCov <- getRawCov(dataDT, MFRes[[2]])
+  if (FPCA_opts$weight){
+    if (sparsity == 0){
+      rawCov <- rawCov[ , weight := NULL] %>>% merge(dataDT[, .(weight = weight[which.max(subId)]),
+                               by = .(variable,timePnt)], by.x = c("variable", "t1"),
+                        by.y = c("variable", "timePnt"))
+    } else {
+      rawCov[ , weight := 1/cnt]
+    }
+  }
 
   if (FPCA_opts$methodNorm == "variance"){
     message("Start to normalize data with smoothed variances...")

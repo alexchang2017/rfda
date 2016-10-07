@@ -49,7 +49,7 @@
 #' @importFrom data.table :=
 #' @importFrom utils globalVariables
 #' @importFrom RcppParallel RcppParallelLibs
-utils::globalVariables(c(".", "%>>%", ":="))
+utils::globalVariables(c(".", "%>>%", ":=", ".N", ".SD"))
 
 # Copyright (c) 2015, Hans-Georg Mueller and Jane-Ling Wang
 # All rights reserved.
