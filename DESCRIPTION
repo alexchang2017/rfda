@@ -4,7 +4,7 @@ Title: rfpa - To provide some tools used in functional data analysis
 Version: 0.1.0
 Date: 2017-01-01
 Authors@R: c(person("ChingChuan", "Chen", , "zw12356@gmail.com", c("aut", "cre")))
-Author: ChingChuan Chen
+Author: ChingChuan Chen [aut, cre]
 Maintainer: ChingChuan Chen <zw12356@gmail.com>
 URL: https://github.com/Chingchuan-chen/rfda
 BugReports: https://github.com/Chingchuan-chen/rfda/issues
@@ -39,7 +39,6 @@ Collate:
     'commFunc.R'
     'rbindTransList.R'
     'adjGcvBw.R'
-    'getRawCov.R'
     'get_FPCA_opts.R'
     'FPCA.R'
 RoxygenNote: 5.0.1

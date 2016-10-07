@@ -27,6 +27,28 @@ checkSparsity <- function(data, id.var, timeVarName){
   return(ifelse(propNonSparse == 1, 2, ifelse(propNonSparse > 0.75, 1, 0)))
 }
 
+#' @importFrom data.table setorder rbindlist
+getRawCrCov <- function(dataDT, MdfDT, cross = FALSE){
+  # calculation of demeaned data
+  demeanDataDT <- merge(dataDT, MdfDT, by = c("timePnt", "variable"), suffixes = c(".ori", ".mean")) %>>%
+    `[`( , value := (value.ori - value.mean)) %>>% `[`( , .(timePnt, variable, subId, value))
+
+  # geneerate the all combinations of t1,t2 and varaibles
+  baseDT <- demeanDataDT[ , .(t1 = rep(timePnt, length(timePnt)), t2 = rep(timePnt, each=length(timePnt)),
+                              value.var1 = rep(value, length(timePnt))), by = .(variable, subId)]
+
+  # whether to calculate cross-part
+  filter_f <- ifelse(cross, `>=`, `==`)
+  # calculation of raw cross-covariance
+  rawCrCovDT <- split(demeanDataDT, demeanDataDT$variable) %>>%
+    lapply(function(dt) merge(baseDT[filter_f(variable, dt$variable[1])], dt, suffixes = c("1", "2"),
+                              by.x = c("subId", "t2"), by.y = c("subId", "timePnt"))) %>>%
+    rbindlist %>>% setnames("value", "value.var2") %>>%
+    `[`( , .(sse = sum(value.var1 * value.var2), cnt = .N), by = .(variable1, variable2, t1, t2)) %>>%
+    setorder(variable1, variable2, t1, t2) %>>% `[`( , weight := 1)
+  return(rawCrCovDT)
+}
+
 #' Calculating the functional principal components
 #'
 #' Return mean, covariance, eigen functions and fpc scores.
@@ -61,11 +83,12 @@ checkSparsity <- function(data, id.var, timeVarName){
 FPCA <- function(formula, id.var, data, options = list()){
   # formula = as.formula("y ~ t")
   # formula = as.formula("y + y2 ~ t")
+  # formula = as.formula("y + y2 + y3 ~ t")
   # id.var = "sampleID"
   # data("irregularExData", package = "rfda")
-  # data <- irregularExData %>>% data.table %>>% `[`( , y2 := y*2 + rnorm(nrow(.)))
+  # data <- irregularExData %>>% data.table %>>% `[`( , `:=`(y2 = y*0.5 + rnorm(nrow(.)), y3 = y*rnorm(nrow(.))))
   # data("sparseExData", package = "rfda")
-  # data <- sparseExData %>>% data.table %>>% `[`( , y2 := y*2 + rnorm(nrow(.)))
+  # data <- sparseExData %>>% data.table %>>% `[`( , `:=`(y2 = y*0.5 + rnorm(nrow(.)), y3 = y*rnorm(nrow(.))))
   # options <- list()
   assert_that(is.formula(formula), is.character(id.var), length(id.var) == 1, is.data.frame(data))
 
@@ -100,8 +123,8 @@ FPCA <- function(formula, id.var, data, options = list()){
   # melt table to get a data.table to get a simple data.table and remove the NA, NaN and Inf.
   # additionally, give names for id.var and timeVarName
   dataDT <- melt.data.table(data.table(data), id.vars = c(id.var, timeVarName),
-                            measure.vars = varName, variable.factor = FALSE) %>>%
-    `[`(!is.na(value) & is.finite(value)) %>>%
+                            measure.vars = varName, variable.factor = TRUE) %>>%
+    `[`( , variable := as.integer(variable)) %>>% `[`(!is.na(value) & is.finite(value)) %>>%
     setnames(c(id.var, timeVarName) , c("subId", "timePnt"))
 
   # find the number of observations for each observed function
@@ -115,8 +138,8 @@ FPCA <- function(formula, id.var, data, options = list()){
   {
     # find the number of bins
     if (FPCA_opts$numBins == -1){
-      numObv <- nrow(dataDT[variable == dataDT$variable[1]])
-      numObvEach <- dataDT[variable == dataDT$variable[1] , .(numObv = .N), by = timePnt] %>>% `$`(numObv)
+      numObv <- nrow(dataDT[variable == 1])
+      numObvEach <- dataDT[variable == 1 , .(numObv = .N), by = timePnt] %>>% `$`(numObv)
       # find the number to decide whether to implement data binning
       decNum <- ifelse(sparsity == 0, stats::median(numObvEach), max(numObvEach))
       if (decNum > 400) {
@@ -130,7 +153,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     if (FPCA_opts$numBins > 0) {
       message("Start to implement data binning...")
       dataDT <- binData(dataDT, FPCA_opts$numBins)
-      sparsity <- checkSparsity(dataDT[variable == dataDT$variable[1]], "subId", "timePnt")
+      sparsity <- checkSparsity(dataDT[variable == 1], "subId", "timePnt")
     }
   }
 
@@ -196,21 +219,19 @@ FPCA <- function(formula, id.var, data, options = list()){
     stop(paste0("The bandwidth of mean function is not appropriately!\n",
                 "If it is chosen automatically"))
 
-  rawCov <- getRawCov(dataDT, MFRes[[2]])
-  if (FPCA_opts$weight){
-    if (sparsity == 0){
-      rawCov <- rawCov[ , weight := NULL] %>>% merge(dataDT[, .(weight = weight[which.max(subId)]),
-                               by = .(variable,timePnt)], by.x = c("variable", "t1"),
-                        by.y = c("variable", "timePnt"))
-    } else {
-      rawCov[ , weight := 1/cnt]
-    }
-  }
-
   if (FPCA_opts$methodNorm == "variance"){
     message("Start to normalize data with smoothed variances...")
     # get rawCov
-
+    rawCov <- getRawCrCov(dataDT, MFRes[[2]], cross = FALSE)
+    if (FPCA_opts$weight){
+      if (sparsity == 0){
+        rawCov <- rawCrCov[ , weight := NULL] %>>%
+          merge(dataDT[, .(weight = weight[which.max(subId)]), by = .(variable,timePnt)],
+                by.x = c("variable1", "t1"), by.y = c("variable", "timePnt"))
+      } else {
+        rawCov[ , weight := 1/cnt]
+      }
+    }
     # get smoothed covariance
 
     # normalization
