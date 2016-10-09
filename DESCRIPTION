@@ -37,6 +37,7 @@ Collate:
     'data-regularExData.R'
     'rfda.R'
     'commFunc.R'
+    'interp.R'
     'rbindTransList.R'
     'adjGcvBw.R'
     'get_FPCA_opts.R'

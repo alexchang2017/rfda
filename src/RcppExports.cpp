@@ -17,22 +17,34 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
-// spline_f
-arma::mat spline_f(const arma::vec& x, const arma::mat& y, const arma::vec& xi);
-RcppExport SEXP rfda_spline_f(SEXP xSEXP, SEXP ySEXP, SEXP xiSEXP) {
+// quantileCpp
+arma::vec quantileCpp(const arma::vec& x, const arma::vec& probs);
+RcppExport SEXP rfda_quantileCpp(SEXP xSEXP, SEXP probsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type probs(probsSEXP);
+    __result = Rcpp::wrap(quantileCpp(x, probs));
+    return __result;
+END_RCPP
+}
+// spline_cpp
+arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi);
+RcppExport SEXP rfda_spline_cpp(SEXP xSEXP, SEXP ySEXP, SEXP xiSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
     Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type y(ySEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type xi(xiSEXP);
-    __result = Rcpp::wrap(spline_f(x, y, xi));
+    __result = Rcpp::wrap(spline_cpp(x, y, xi));
     return __result;
 END_RCPP
 }
-// interp1
-arma::mat interp1(const arma::vec& x, const arma::mat& y, const arma::vec& xi, const std::string& method);
-RcppExport SEXP rfda_interp1(SEXP xSEXP, SEXP ySEXP, SEXP xiSEXP, SEXP methodSEXP) {
+// interp1_cpp
+arma::mat interp1_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi, const std::string& method);
+RcppExport SEXP rfda_interp1_cpp(SEXP xSEXP, SEXP ySEXP, SEXP xiSEXP, SEXP methodSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -40,7 +52,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type y(ySEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type xi(xiSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type method(methodSEXP);
-    __result = Rcpp::wrap(interp1(x, y, xi, method));
+    __result = Rcpp::wrap(interp1_cpp(x, y, xi, method));
     return __result;
 END_RCPP
 }
@@ -61,7 +73,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // locPoly1d
-arma::vec locPoly1d(const double& bandwidth, const arma::vec& x, const arma::vec& y, const arma::vec& w, const arma::vec& xout, const std::string& kernel, const double& drv, const double& degree);
+Rcpp::NumericVector locPoly1d(const double& bandwidth, const arma::vec& x, const arma::vec& y, const arma::vec& w, const arma::vec& xout, const std::string& kernel, const double& drv, const double& degree);
 RcppExport SEXP rfda_locPoly1d(SEXP bandwidthSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP xoutSEXP, SEXP kernelSEXP, SEXP drvSEXP, SEXP degreeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
@@ -78,9 +90,9 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
-// gcv_locPoly1d
-double gcv_locPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y, const arma::vec& w, const std::string& kernel, const double& drv, const double& degree);
-RcppExport SEXP rfda_gcv_locPoly1d(SEXP bwCandSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP kernelSEXP, SEXP drvSEXP, SEXP degreeSEXP) {
+// gcvLocPoly1d
+double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y, const arma::vec& w, const std::string& kernel, const double& drv, const double& degree);
+RcppExport SEXP rfda_gcvLocPoly1d(SEXP bwCandSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP kernelSEXP, SEXP drvSEXP, SEXP degreeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -91,7 +103,26 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const std::string& >::type kernel(kernelSEXP);
     Rcpp::traits::input_parameter< const double& >::type drv(drvSEXP);
     Rcpp::traits::input_parameter< const double& >::type degree(degreeSEXP);
-    __result = Rcpp::wrap(gcv_locPoly1d(bwCand, x, y, w, kernel, drv, degree));
+    __result = Rcpp::wrap(gcvLocPoly1d(bwCand, x, y, w, kernel, drv, degree));
+    return __result;
+END_RCPP
+}
+// locQuantPoly1d
+arma::mat locQuantPoly1d(const double& bandwidth, const arma::vec& probs, const arma::vec& x, const arma::vec& y, const arma::vec& w, const arma::vec& xout, const std::string& kernel, const double& drv, const double& degree);
+RcppExport SEXP rfda_locQuantPoly1d(SEXP bandwidthSEXP, SEXP probsSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP xoutSEXP, SEXP kernelSEXP, SEXP drvSEXP, SEXP degreeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const double& >::type bandwidth(bandwidthSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type probs(probsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type xout(xoutSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< const double& >::type drv(drvSEXP);
+    Rcpp::traits::input_parameter< const double& >::type degree(degreeSEXP);
+    __result = Rcpp::wrap(locQuantPoly1d(bandwidth, probs, x, y, w, xout, kernel, drv, degree));
     return __result;
 END_RCPP
 }

@@ -14,5 +14,6 @@ void chk_mat(const mat& x, const std::string& varName, const std::string& type);
 arma::mat unique_rows(arma::mat x);
 double factorial_f(double k);
 arma::vec kernelDensity(const arma::vec& xin, const std::string& kernel);
+arma::vec quantileCpp(const arma::vec& x, const arma::vec& probs);
 
 #endif

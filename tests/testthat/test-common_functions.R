@@ -66,3 +66,14 @@ test_that("binning data", {
   expect_error(rfda:::binData(data2bin, Inf))
 })
 
+context("5. quantile")
+x <- c(1, 4, 3, 7, 9 ,11, 15, 8, 2, 4, 8, 6)
+x2 <- rnorm(100)
+x3 <- sample(1:100, 100, TRUE)
+p <- seq(0.05, 0.95, by = 0.05)
+test_that("binning data", {
+  expect_equal(quantile(x, p, type = 7), as.vector(rfda:::quantileCpp(x, p)), check.attributes = FALSE)
+  expect_equal(quantile(x2, p, type = 7), as.vector(rfda:::quantileCpp(x2, p)), check.attributes = FALSE)
+  expect_equal(quantile(x3, p, type = 7), as.vector(rfda:::quantileCpp(x3, p)), check.attributes = FALSE)
+})
+

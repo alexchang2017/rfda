@@ -29,7 +29,7 @@ trapz <- function(x, y = NULL){
     else
       x <- 1:nrow(x)
   }
-  return(trapz_cpp(x, as.matrix(y)))
+  return(as.vector(trapz_cpp(x, as.matrix(y))))
 }
 
 #' @importFrom data.table setnames

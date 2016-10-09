@@ -42,22 +42,40 @@ double factorial_f(double k){
   }
 }
 
-arma::vec kernelDensity(const arma::vec& xin, const std::string& kernel){
-  vec kx(xin.n_elem);
+arma::vec kernelDensity(const arma::vec& x, const std::string& kernel){
+  vec kx(x.n_elem);
   if (kernel == "epan")
   {
-    kx = (1 - square(xin)) * 0.75;
-    kx.elem(find(abs(xin) >= 1)).zeros();
+    kx = (1 - square(x)) * 0.75;
+    kx.elem(find(abs(x) >= 1)).zeros();
   } else if (kernel == "gaussvar")
   {
-    kx = exp(-0.5*square(xin)) / sqrt(2 * datum::pi) % (1.25 - 0.25 * square(xin));
+    kx = exp(-0.5*square(x)) / sqrt(2 * datum::pi) % (1.25 - 0.25 * square(x));
   } else if (kernel == "quar")
   {
-    kx = square(1 - square(xin)) * (15.0 / 16.0);
-    kx.elem(find(abs(xin) >= 1)).zeros();
+    kx = square(1 - square(x)) * (15.0 / 16.0);
+    kx.elem(find(abs(x) >= 1)).zeros();
   }  else if (kernel == "gauss")
   {
-    kx = exp(-0.5*square(xin)) / sqrt(2 * datum::pi);
+    kx = exp(-0.5*square(x)) / sqrt(2 * datum::pi);
   }
   return kx;
 }
+
+// [[Rcpp::export]]
+arma::vec quantileCpp(const arma::vec& x, const arma::vec& probs){
+  chk_mat(x, "x", "double");
+  chk_mat(probs, "probs", "double");
+  if (any(probs < 0) || any(probs > 1))
+    Rcpp::stop("There is values in probs outside [0, 1].");
+
+  vec x_sort = sort(x);
+  vec index = (x.n_elem - 1) * probs;
+  uvec lo = conv_to<uvec>::from(floor(index)), hi = conv_to<uvec>::from(ceil(index));
+  vec h = (index - conv_to<vec>::from(lo));
+  vec qs = (1 - h) % x_sort.elem(lo) + h % x_sort.elem(hi);
+  return qs;
+}
+
+
+

@@ -22,16 +22,16 @@ x <- seq(0, 1, 0.1)
 y <- x ** 2 *2 + 3 * x
 w <- rep(1, 11)
 test_that("locPoly1d - with same weights", {
-  expect_equal(as.vector(locPoly1d(bw, x, y, w, x, "epan", 0, 1)),
+  expect_equal(locPoly1d(bw, x, y, w, x, "epan", 0, 1),
                c(-0.004684, 0.337088, 0.706824, 1.106824, 1.546824, 2.026824, 2.546824,
                  3.106824, 3.706824, 4.337088, 4.995316), tolerance = 1e-6)
-  expect_equal(as.vector(locPoly1d(bw, x, y, w, x, "quar", 0, 1)),
+  expect_equal(locPoly1d(bw, x, y, w, x, "quar", 0, 1),
                c(-0.002781, 0.334288, 0.698334, 1.098334, 1.538334, 2.018334, 2.538334,
                  3.098334, 3.698334, 4.334288, 4.997219), tolerance = 1e-6)
-  expect_equal(as.vector(locPoly1d(bw, x, y, w, x, "gauss", 0, 1)),
+  expect_equal(locPoly1d(bw, x, y, w, x, "gauss", 0, 1),
                c(-0.059163, 0.325037, 0.731015, 1.161760, 1.619430, 2.105204, 2.619430,
                  3.161760, 3.731015, 4.325037, 4.940837), tolerance = 1e-6)
-  expect_equal(as.vector(locPoly1d(bw, x, y, w, x, "gaussvar", 0, 1)),
+  expect_equal(locPoly1d(bw, x, y, w, x, "gaussvar", 0, 1),
                c(0.006464, 0.345469, 0.725682, 1.140981, 1.590669, 2.074075, 2.590669,
                  3.140981, 3.725682, 4.345469, 5.006464), tolerance = 1e-6)
 })
@@ -73,21 +73,21 @@ test_that("test - locPoly1d validate inputs", {
 context("4. test - locPoly1d with different weights")
 w <- c(rep(1, 9), 0, 0.5)
 test_that("locPoly1d - with different weights", {
-  expect_equal(as.vector(locPoly1d(bw, x, y, w, x, "epan", 0, 1)),
+  expect_equal(locPoly1d(bw, x, y, w, x, "epan", 0, 1),
                c(-0.004684, 0.337088, 0.706824, 1.106824, 1.546824, 2.026824, 2.546824,
                  3.097088, 3.701979, 4.342951, 5.000000), tolerance = 1e-6)
-  expect_equal(as.vector(locPoly1d(bw, x, y, w, x, "quar", 0, 1)),
+  expect_equal(locPoly1d(bw, x, y, w, x, "quar", 0, 1),
                c(-0.002781, 0.334288, 0.698334, 1.098334, 1.538334, 2.018334, 2.538334,
                  3.094288, 3.691107, 4.341831, 5.000000), tolerance = 1e-6)
-  expect_equal(as.vector(locPoly1d(bw, x, y, w, x, "gauss", 0, 1)),
+  expect_equal(locPoly1d(bw, x, y, w, x, "gauss", 0, 1),
                c(-0.057596, 0.326707, 0.731523, 1.158736, 1.609788, 2.086293, 2.590595,
                  3.125604, 3.693361, 4.292672, 4.917981), tolerance = 1e-6)
-  expect_equal(as.vector(locPoly1d(bw, x, y, w, x, "gaussvar", 0, 1)),
+  expect_equal(locPoly1d(bw, x, y, w, x, "gaussvar", 0, 1),
                c(-0.002448, 0.341471, 0.725772, 1.142526, 1.588922, 2.064847, 2.573735,
                  3.122181, 3.716123, 4.355114, 5.038236), tolerance = 1e-6)
 })
 
-context("5. test - gcv_locPoly1d")
+context("5. test - gcvLocPoly1d")
 regBwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
 irrBwCand <- bwCandChooser(irregularExData, "sampleID", "t", 1, "gauss", 1)
 spsBwCand <- bwCandChooser(sparseExData, "sampleID", "t", 0, "gauss", 1)
@@ -96,103 +96,103 @@ regWeight <- rep(1, nrow(regularExData))
 irrWeight <- rep(1, nrow(irregularExData))
 spsWeight <- rep(1, nrow(sparseExData))
 
-test_that("gcv_locPoly1d", {
-  expect_equal(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+test_that("gcvLocPoly1d", {
+  expect_equal(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "gauss", 0, 1), 0.789474, tolerance = 1e-6)
-  expect_equal(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_equal(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "gaussvar", 0, 1), 0.789474, tolerance = 1e-6)
-  expect_equal(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_equal(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "epan", 0, 1), 1.019959, tolerance = 1e-6)
-  expect_equal(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_equal(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "quar", 0, 1), 1.019959, tolerance = 1e-6)
 
-  expect_equal(gcv_locPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
+  expect_equal(gcvLocPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
                              irrWeight, "gauss", 0, 1), 1.052632, tolerance = 1e-6)
-  expect_equal(gcv_locPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
+  expect_equal(gcvLocPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
                              irrWeight, "gaussvar", 0, 1), 1.052632, tolerance = 1e-6)
-  expect_equal(gcv_locPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
+  expect_equal(gcvLocPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
                              irrWeight, "epan", 0, 1), 1.052632, tolerance = 1e-6)
-  expect_equal(gcv_locPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
+  expect_equal(gcvLocPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
                              irrWeight, "quar", 0, 1), 1.052632, tolerance = 1e-6)
 
-  expect_equal(gcv_locPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
+  expect_equal(gcvLocPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
                              spsWeight, "gauss", 0, 1), 0.434895, tolerance = 1e-6)
-  expect_equal(gcv_locPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
+  expect_equal(gcvLocPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
                              spsWeight, "gaussvar", 0, 1), 0.557970, tolerance = 1e-6)
-  expect_equal(gcv_locPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
+  expect_equal(gcvLocPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
                              spsWeight, "epan", 0, 1), 0.918469, tolerance = 1e-6)
-  expect_equal(gcv_locPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
+  expect_equal(gcvLocPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
                              spsWeight, "quar", 0, 1), 1.178395, tolerance = 1e-6)
 })
 
 context("6. test - locPoly1d validate inputs")
 test_that("test - locPoly1d validate inputs", {
-  expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                                regWeight, "guass", 0, 1), 'Unsupported kernel')
-  expect_error(gcv_locPoly1d(-0.2, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(-0.2, regularExData$t, regularExData$y,
                              regWeight, "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(NA, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(NA, regularExData$t, regularExData$y,
                              regWeight, "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(NaN, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(NaN, regularExData$t, regularExData$y,
                              regWeight, "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(Inf, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(Inf, regularExData$t, regularExData$y,
                              regWeight, "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, c(1, regularExData$t), regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, c(1, regularExData$t), regularExData$y,
                              regWeight, "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, c(NA, regularExData$t), c(1, regularExData$y),
+  expect_error(gcvLocPoly1d(regBwCand, c(NA, regularExData$t), c(1, regularExData$y),
                              c(1, regWeight), "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, c(NaN, regularExData$t), c(1,regularExData$y),
+  expect_error(gcvLocPoly1d(regBwCand, c(NaN, regularExData$t), c(1,regularExData$y),
                              c(1, regWeight), "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, c(Inf, regularExData$t), c(1,regularExData$y),
+  expect_error(gcvLocPoly1d(regBwCand, c(Inf, regularExData$t), c(1,regularExData$y),
                              c(1, regWeight), "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, x, c(1, y), w, x, "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, c(1, regularExData$t), c(NA, regularExData$y),
+  expect_error(gcvLocPoly1d(regBwCand, x, c(1, y), w, x, "gauss", 0, 1))
+  expect_error(gcvLocPoly1d(regBwCand, c(1, regularExData$t), c(NA, regularExData$y),
                              c(1, regWeight), "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, c(1, regularExData$t), c(NaN,regularExData$y),
+  expect_error(gcvLocPoly1d(regBwCand, c(1, regularExData$t), c(NaN,regularExData$y),
                              c(1, regWeight), "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, c(1, regularExData$t), c(Inf,regularExData$y),
+  expect_error(gcvLocPoly1d(regBwCand, c(1, regularExData$t), c(Inf,regularExData$y),
                              c(1, regWeight), "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              c(1, regWeight), "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, c(1, regularExData$t), c(1, regularExData$y),
+  expect_error(gcvLocPoly1d(regBwCand, c(1, regularExData$t), c(1, regularExData$y),
                              c(NA, regWeight), "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, c(1, regularExData$t), c(1, regularExData$y),
+  expect_error(gcvLocPoly1d(regBwCand, c(1, regularExData$t), c(1, regularExData$y),
                              c(NaN, regWeight), "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, c(1, regularExData$t), c(1, regularExData$y),
+  expect_error(gcvLocPoly1d(regBwCand, c(1, regularExData$t), c(1, regularExData$y),
                              c(Inf, regWeight), "gauss", 0, 1))
-  expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "gauss", -1, 1))
-  expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "gauss", NA, 1))
-  expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "gauss", NaN, 1))
-  expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "gauss", Inf, 1))
-  expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "gauss", 0, -1))
-  expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "gauss", 0, NA))
-  expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "gauss", 0, NaN))
-  expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "gauss", 0, Inf))
-  expect_error(gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+  expect_error(gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "gauss", 2, 1))
 })
 
 context("7. test - adjGcvBw1d")
 
-reg_bw_gauss <- gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+reg_bw_gauss <- gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                               regWeight, "gauss", 0, 1)
-reg_bw_epan <- gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y,
+reg_bw_epan <- gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y,
                              regWeight, "epan", 0, 1)
-irr_bw_gauss <- gcv_locPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
+irr_bw_gauss <- gcvLocPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
                               irrWeight, "gauss", 0, 1)
-irr_bw_epan <- gcv_locPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
+irr_bw_epan <- gcvLocPoly1d(irrBwCand, irregularExData$t, irregularExData$y,
                              irrWeight, "epan", 0, 1)
-sps_bw_gauss <- gcv_locPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
+sps_bw_gauss <- gcvLocPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
                               spsWeight, "gauss", 0, 1)
-sps_bw_epan <- gcv_locPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
+sps_bw_epan <- gcvLocPoly1d(spsBwCand, sparseExData$t, sparseExData$y,
                              spsWeight, "epan", 0, 1)
 
 test_that("adjGcvBw1d", {
@@ -204,10 +204,23 @@ test_that("adjGcvBw1d", {
   expect_equal(adjGcvBw1d(sps_bw_epan, 0, "epan", 0), 1.010316, tolerance = 1e-6)
 })
 
-
-locPoly1d(adjGcvBw1d(reg_bw_gauss, 2, "gauss", 0), regularExData$t, regularExData$y, regWeight,
-          unique(regularExData$t), "gauss", 0, 1)
-
-locPoly1d(adjGcvBw1d(irr_bw_gauss, 2, "gauss", 0), irregularExData$t, irregularExData$y, irrWeight,
-          sort(unique(irregularExData$t)), "gauss", 0, 1)
-
+context("8. test - locQuantPoly1d")
+N <- 100
+x <- runif(N, 0, 10)
+y <- rnorm(N)
+w <- rep(1, N)
+xout <- sort(runif(200, 0, 10))
+probs <- c(0.25, 0.5, 0.75)
+test_that("test - locQuantPoly1d validate inputs", {
+  expect_error(locQuantPoly1d(0.01, probs, x, y, w, xout, "gauss", 0, 1), "The bandwidth is too small")
+  expect_error(locQuantPoly1d(-0.2, probs, x, y, w, xout, "gauss", 0, 1))
+  expect_error(locQuantPoly1d(NA, probs, x, y, w, xout, "gauss", 0, 1))
+  expect_error(locQuantPoly1d(NaN, probs, x, y, w, xout, "gauss", 0, 1))
+  expect_error(locQuantPoly1d(Inf, probs, x, y, w, xout, "gauss", 0, 1))
+  expect_error(locQuantPoly1d(1.2, c(-1, probs), x, y, w, xout, "gauss", 0, 1))
+  expect_error(locQuantPoly1d(1.2, c(1.2, probs), x, y, w, xout, "gauss", 0, 1))
+  expect_error(locQuantPoly1d(1.2, c(NA, probs), x, y, w, xout, "gauss", 0, 1))
+  expect_error(locQuantPoly1d(1.2, c(NaN, probs), x, y, w, xout, "gauss", 0, 1))
+  expect_error(locQuantPoly1d(1.2, c(Inf, probs), x, y, w, xout, "gauss", 0, 1))
+  expect_error(locQuantPoly1d(1.2, probs, x, y, w, c(10, xout), "gauss", 0, 1))
+})

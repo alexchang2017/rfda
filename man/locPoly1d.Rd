@@ -30,10 +30,11 @@ A estimated value on \code{xout} by one-dimensional kernel local polynominal smo
 Perform one-dimensional kernel local polynominal smoother for data \code{(x,y)} with weight \code{w} on \code{xout}.
 }
 \examples{
-x <- runif(100, 0, 10)
-y <- rnorm(100)
+N <- 100
+x <- runif(N, 0, 10)
+y <- rnorm(N)
 xout <- sort(runif(200, 0, 10))
-est <- locPoly1d(1.2, x, y, rep(1, 100), xout, 'gauss', 0, 1)
+est <- locPoly1d(1.2, x, y, rep(1, N), xout, 'gauss', 0, 1)
 require(ggplot2)
 ggplot(data.frame(x,y), aes(x,y)) + geom_point() +
   geom_line(aes(xout, est), data = data.frame(xout, est))

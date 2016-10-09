@@ -28,20 +28,13 @@ checkSparsity <- function(data, id.var, timeVarName){
 }
 
 #' @importFrom data.table setorder rbindlist
-getRawCrCov <- function(dataDT, MdfDT, cross = FALSE){
-  # calculation of demeaned data
-  demeanDataDT <- merge(dataDT, MdfDT, by = c("timePnt", "variable"), suffixes = c(".ori", ".mean")) %>>%
-    `[`( , value := (value.ori - value.mean)) %>>% `[`( , .(timePnt, variable, subId, value))
-
+getRawCrCov <- function(demeanDataDT){
   # geneerate the all combinations of t1,t2 and varaibles
   baseDT <- demeanDataDT[ , .(t1 = rep(timePnt, length(timePnt)), t2 = rep(timePnt, each=length(timePnt)),
                               value.var1 = rep(value, length(timePnt))), by = .(variable, subId)]
-
-  # whether to calculate cross-part
-  filter_f <- ifelse(cross, `>=`, `==`)
   # calculation of raw cross-covariance
   rawCrCovDT <- split(demeanDataDT, demeanDataDT$variable) %>>%
-    lapply(function(dt) merge(baseDT[filter_f(variable, dt$variable[1])], dt, suffixes = c("1", "2"),
+    lapply(function(dt) merge(baseDT[variable >= dt$variable[1]], dt, suffixes = c("1", "2"),
                               by.x = c("subId", "t2"), by.y = c("subId", "timePnt"))) %>>%
     rbindlist %>>% setnames("value", "value.var2") %>>%
     `[`( , .(sse = sum(value.var1 * value.var2), cnt = .N), by = .(variable1, variable2, t1, t2)) %>>%
@@ -81,14 +74,15 @@ getRawCrCov <- function(dataDT, MdfDT, cross = FALSE){
 #' @importFrom utils modifyList
 #' @export
 FPCA <- function(formula, id.var, data, options = list()){
+  # library(plyr); library(data.table); library(pipeR); library(assertthat)
   # formula = as.formula("y ~ t")
   # formula = as.formula("y + y2 ~ t")
   # formula = as.formula("y + y2 + y3 ~ t")
   # id.var = "sampleID"
   # data("irregularExData", package = "rfda")
   # data <- irregularExData %>>% data.table %>>% `[`( , `:=`(y2 = y*0.5 + rnorm(nrow(.)), y3 = y*rnorm(nrow(.))))
-  # data("sparseExData", package = "rfda")
-  # data <- sparseExData %>>% data.table %>>% `[`( , `:=`(y2 = y*0.5 + rnorm(nrow(.)), y3 = y*rnorm(nrow(.))))
+  # # data("sparseExData", package = "rfda")
+  # # data <- sparseExData %>>% data.table %>>% `[`( , `:=`(y2 = y*0.5 + rnorm(nrow(.)), y3 = y*rnorm(nrow(.))))
   # options <- list()
   assert_that(is.formula(formula), is.character(id.var), length(id.var) == 1, is.data.frame(data))
 
@@ -187,7 +181,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     message("Use the user-specified mean functions...")
     MFRes <- lapply(list(sampledTimePnts, allTimePnts), function(v){
       FPCA_opts$userMeanFuncList %>>%
-        `[`( , .(timePnt = v, value = as.vector(interp1(timePnt, as.matrix(value), v, 'spline'))),
+        `[`( , .(timePnt = v, value = interp1(timePnt, value, v, 'spline')),
              by = .(variable))
     })
     bwOptLocPoly1d <- NA
@@ -198,7 +192,7 @@ FPCA <- function(formula, id.var, data, options = list()){
       # get the candidates of bandwidths
       bwCand <- bwCandChooser(dat, "subId", "timePnt", sparsity, FPCA_opts$bwKernel, 1)
       # get the optimal bandwidth with gcv
-      bwOptLocPoly1d <- gcv_locPoly1d(bwCand, dat$timePnt, dat$value, dat$weight, FPCA_opts$bwKernel, 0, 1)
+      bwOptLocPoly1d <- gcvLocPoly1d(bwCand, dat$timePnt, dat$value, dat$weight, FPCA_opts$bwKernel, 0, 1)
       # adjust the bandwidth
       bwOptLocPoly1d <- adjGcvBw1d(bwOptLocPoly1d, sparsity, FPCA_opts$bwKernel, 0)
 
@@ -207,31 +201,39 @@ FPCA <- function(formula, id.var, data, options = list()){
         bwOptLocPoly1d <- sqrt(find_max_diff_f(dat[["timePnt"]], 2) * bwOptLocPoly1d)
 
       meanFunc <- locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
-                            sampledTimePnts, FPCA_opts$bwKernel, 0, 1) %>>% as.vector
+                            sampledTimePnts, FPCA_opts$bwKernel, 0, 1)
       meanFuncDense <- locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
-                            allTimePnts, FPCA_opts$bwKernel, 0, 1) %>>% as.vector
-      return(list(data.table(timePnt = sampledTimePnts, value = meanFunc, variable = unique(dat$variable)),
+                            allTimePnts, FPCA_opts$bwKernel, 0, 1)
+      return(list(data.table(variable = dat$variable[1], bwOpt = bwOptLocPoly1d),
+                  data.table(timePnt = sampledTimePnts, value = meanFunc, variable = unique(dat$variable)),
                   data.table(timePnt = allTimePnts, value = meanFuncDense, variable = unique(dat$variable))))
     }) %>>% rbindTransList
   }
 
-  if (sapply(MFRes, function(dt) all(is.na(dt$value))) %>>% any)
+  if (sapply(MFRes[2:3], function(dt) all(is.na(dt$value))) %>>% any)
     stop(paste0("The bandwidth of mean function is not appropriately!\n",
-                "If it is chosen automatically"))
+                "If it is chosen automatically, please provide your own mean functions."))
+
+  # calculation of demeaned data
+  demeanDataDT <- merge(dataDT, MFRes[[3]], by = c("timePnt", "variable"), suffixes = c(".ori", ".mean")) %>>%
+    `[`( , value := (value.ori - value.mean))
+
+  # get raw covariance
+  rawCov <- getRawCrCov(demeanDataDT)
+  if (FPCA_opts$weight){
+    if (sparsity == 0){
+      rawCov <- rawCov[ , weight := NULL] %>>%
+        merge(dataDT[, .(weight = weight[which.max(subId)]), by = .(variable,timePnt)],
+              by.x = c("variable1", "t1"), by.y = c("variable", "timePnt"))
+    } else {
+      rawCov[ , weight := 1/cnt]
+    }
+  }
 
   if (FPCA_opts$methodNorm == "variance"){
     message("Start to normalize data with smoothed variances...")
     # get rawCov
-    rawCov <- getRawCrCov(dataDT, MFRes[[2]], cross = FALSE)
-    if (FPCA_opts$weight){
-      if (sparsity == 0){
-        rawCov <- rawCrCov[ , weight := NULL] %>>%
-          merge(dataDT[, .(weight = weight[which.max(subId)]), by = .(variable,timePnt)],
-                by.x = c("variable1", "t1"), by.y = c("variable", "timePnt"))
-      } else {
-        rawCov[ , weight := 1/cnt]
-      }
-    }
+
     # get smoothed covariance
 
     # normalization
@@ -239,7 +241,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   } else if (FPCA_opts$methodNorm == "IQR") {
     message("Start to normalize data with smoothed IQRs...")
     # get IQR
-
+    ## diff(qnorm(probs))
     # normalization
 
   } else {

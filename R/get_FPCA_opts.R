@@ -70,7 +70,7 @@
 #'   Note: BIC and FVE produce the most parsimonious models.
 #' \item \code{FVE_threshold}: A positive number is between 0 and 1. It is the fraction of variance explained.
 #'   It is used with the option \code{numFPC} = 'FVE' to select the number of functional
-#'   principal components that explain at least \code{FVE_threshold} of total variation ().
+#'   principal components that explain at least \code{FVE_threshold} of total variation.
 #'   [Default is 0.85.]
 #' \item \code{maxNumFPC}: Default is 20. An integer, the maximum number of functional principal components.
 #'   If using automatic methods to choose K, i.e., 'AIC' or 'BIC' defined by \code{numFPC}.
@@ -115,6 +115,10 @@
 #'       deviding by the variance of smoothed covariance surface. (Take the minimum positive value as threshold.).
 #'       Please refer Chiou, Chen and Yang. (2014) in \code{\link{rfda}}.
 #'   }
+#' \item \code{quantile_probs}: A positive numeric vector is between 0 and 1.
+#'   It is the probabilities for quantiles to approximate the variances.
+#'   It is used with the option \code{methodNorm} = 'quantile' to choose the quantiles.
+#'   [Default is (0.25, 0.75).]
 #' \item \code{ncpus}: The number of threads used in computation.
 #'   \itemize{
 #'     \item \code{0}: To use all threads in computation. [Default]

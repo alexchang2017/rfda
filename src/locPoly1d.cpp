@@ -65,9 +65,9 @@ struct Worker_locPoly1d_nongauss: public RcppParallel::Worker {
                                                       xw >= xout(i) - bandwidth), 1)));
       if (in_windows.n_elem > 0)
       {
-        vec lx = xw(in_windows);
-        vec ly = yw(in_windows);
-        vec lw = ww(in_windows);
+        vec lx = xw.elem(in_windows);
+        vec ly = yw.elem(in_windows);
+        vec lw = ww.elem(in_windows);
         vec uni_lx = unique(lx);
         if (uni_lx.n_elem >= degree + 1)
         {
@@ -112,16 +112,17 @@ struct Worker_locPoly1d_nongauss: public RcppParallel::Worker {
 //' @param degree An integer, the degree of polynomial.
 //' @return A estimated value on \code{xout} by one-dimensional kernel local polynominal smoother.
 //' @examples
-//' x <- runif(100, 0, 10)
-//' y <- rnorm(100)
+//' N <- 100
+//' x <- runif(N, 0, 10)
+//' y <- rnorm(N)
 //' xout <- sort(runif(200, 0, 10))
-//' est <- locPoly1d(1.2, x, y, rep(1, 100), xout, 'gauss', 0, 1)
+//' est <- locPoly1d(1.2, x, y, rep(1, N), xout, 'gauss', 0, 1)
 //' require(ggplot2)
 //' ggplot(data.frame(x,y), aes(x,y)) + geom_point() +
 //'   geom_line(aes(xout, est), data = data.frame(xout, est))
 //' @export
 // [[Rcpp::export]]
-arma::vec locPoly1d(const double& bandwidth, const arma::vec& x, const arma::vec& y,
+Rcpp::NumericVector locPoly1d(const double& bandwidth, const arma::vec& x, const arma::vec& y,
                     const arma::vec& w, const arma::vec& xout, const std::string& kernel,
                     const double& drv, const double& degree){
   chk_mat(x, "x", "double");
@@ -148,8 +149,8 @@ arma::vec locPoly1d(const double& bandwidth, const arma::vec& x, const arma::vec
   if (degree < drv)
     Rcpp::stop("Degree of Polynomial should be not less than the order of derivative.\n");
 
-  uvec actobs = find(w != 0);
-  vec xw = x.elem(actobs), yw = y.elem(actobs), ww = w.elem(actobs), est = zeros<vec>(xout.n_elem);
+  uvec actObs = find(w != 0);
+  vec xw = x.elem(actObs), yw = y.elem(actObs), ww = w.elem(actObs), est = zeros<vec>(xout.n_elem);
   uvec flag = zeros<uvec>(xout.n_elem);
   if (kernel == "gauss" || kernel == "gaussvar")
   {
@@ -164,9 +165,9 @@ arma::vec locPoly1d(const double& bandwidth, const arma::vec& x, const arma::vec
   if (any(flag == 1))
   {
     RMessage("Too many gaps, please increase bandwidth.");
-    return errOut;
+    return Rcpp::NumericVector(errOut.begin(), errOut.end());
   }
-  return est;
+  return Rcpp::NumericVector(est.begin(), est.end());
 }
 
 //' Find the optimal bandwidth for one-dimensional kernel local polynominal smoother
@@ -185,10 +186,10 @@ arma::vec locPoly1d(const double& bandwidth, const arma::vec& x, const arma::vec
 //' data("regularExData", package = 'rfda')
 //' regBwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
 //' w <- rep(1, nrow(regularExData))
-//' bw_opt <- gcv_locPoly1d(regBwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
+//' bw_opt <- gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
 //' @export
 // [[Rcpp::export]]
-double gcv_locPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
+double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
                      const arma::vec& w, const std::string& kernel,
                      const double& drv, const double& degree){
   chk_mat(bwCand, "bwCand", "double");
@@ -234,7 +235,7 @@ double gcv_locPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
           for (uword k = 0; k < xout.n_elem; ++k)
             new_est.elem(find(x == xout(k))).fill(est(k));
         } else {
-          new_est = interp1(xout2, est, x, interp1_method);
+          new_est = interp1_cpp(xout2, est, x, interp1_method);
         }
       }
 
