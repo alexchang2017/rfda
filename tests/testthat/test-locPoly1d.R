@@ -68,6 +68,7 @@ test_that("test - locPoly1d validate inputs", {
   expect_error(locPoly1d(bw, x, y, w, x, "gauss", 0, NaN))
   expect_error(locPoly1d(bw, x, y, w, x, "gauss", 0, Inf))
   expect_error(locPoly1d(bw, x, y, w, x, "gauss", 2, 1))
+  expect_error(locPoly1d(bw, x, y, w, c(1, x), "gauss", 0, 1))
 })
 
 context("4. test - locPoly1d with different weights")
@@ -212,6 +213,7 @@ w <- rep(1, N)
 xout <- sort(runif(200, 0, 10))
 probs <- c(0.25, 0.5, 0.75)
 test_that("test - locQuantPoly1d validate inputs", {
+  expect_length(locQuantPoly1d(0.3, probs, x, y, w, xout, "gauss", 0, 1), 600)
   expect_error(locQuantPoly1d(0.01, probs, x, y, w, xout, "gauss", 0, 1), "The bandwidth is too small")
   expect_error(locQuantPoly1d(-0.2, probs, x, y, w, xout, "gauss", 0, 1))
   expect_error(locQuantPoly1d(NA, probs, x, y, w, xout, "gauss", 0, 1))
@@ -223,4 +225,5 @@ test_that("test - locQuantPoly1d validate inputs", {
   expect_error(locQuantPoly1d(1.2, c(NaN, probs), x, y, w, xout, "gauss", 0, 1))
   expect_error(locQuantPoly1d(1.2, c(Inf, probs), x, y, w, xout, "gauss", 0, 1))
   expect_error(locQuantPoly1d(1.2, probs, x, y, w, c(10, xout), "gauss", 0, 1))
+  expect_error(locQuantPoly1d(1.2, probs, c(0, x), y, w, xout, "gauss", 0, 1))
 })

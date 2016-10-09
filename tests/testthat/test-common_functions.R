@@ -75,5 +75,6 @@ test_that("binning data", {
   expect_equal(quantile(x, p, type = 7), as.vector(rfda:::quantileCpp(x, p)), check.attributes = FALSE)
   expect_equal(quantile(x2, p, type = 7), as.vector(rfda:::quantileCpp(x2, p)), check.attributes = FALSE)
   expect_equal(quantile(x3, p, type = 7), as.vector(rfda:::quantileCpp(x3, p)), check.attributes = FALSE)
+  expect_error(rfda:::quantileCpp(x3, -1))
 })
 
