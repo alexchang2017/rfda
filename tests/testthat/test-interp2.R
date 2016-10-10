@@ -1,6 +1,6 @@
 context("2D interpolation")
 
-load('interp2_res.rda') # results from MatLab
+load("interp2_res.rda") # results from MatLab
 
 context("1. test interp2 - case 1")
 A <- matrix(c(13, 5, 1, -1, 4, 6, 12, 3, 2), 3)

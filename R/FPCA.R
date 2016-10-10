@@ -203,7 +203,7 @@ FPCA <- function(formula, id.var, data, options = list()){
       meanFunc <- locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
                             sampledTimePnts, FPCA_opts$bwKernel, 0, 1)
       meanFuncDense <- locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
-                            allTimePnts, FPCA_opts$bwKernel, 0, 1)
+                                 allTimePnts, FPCA_opts$bwKernel, 0, 1)
       return(list(data.table(variable = dat$variable[1], bwOpt = bwOptLocPoly1d),
                   data.table(timePnt = sampledTimePnts, value = meanFunc, variable = unique(dat$variable)),
                   data.table(timePnt = allTimePnts, value = meanFuncDense, variable = unique(dat$variable))))

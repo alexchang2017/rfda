@@ -1,5 +1,5 @@
 require(testthat)
+require(data.table)
+require(pipeR)
 library("rfda")
-library(data.table)
-
 test_check('rfda')

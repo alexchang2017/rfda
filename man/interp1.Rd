@@ -7,28 +7,28 @@
 interp1(x, y, xi, method)
 }
 \arguments{
-\item{x}{A vector with n elements, x[i] is a support, i = 1, ..., n.
-If x is not sorted, it will be sorted. If x is not unique, the corresponding y values
+\item{x}{A vector with n elements, \code{x[i]} is a support, \code{i = 1, ..., n}.
+If \code{x} is not sorted, it will be sorted. If \code{x} is not unique, the corresponding \code{y} values
 will be averaged.}
 
-\item{y}{If y is vector, the length of y must be equal to the lenght of x.
-If y is matrix, the number of rows or the number of columns must be equal to the lenght of x.
-If the number of rows is equal to the lenght of x, y[i, j] is jth values on corresponding
-value of x[i], i = 1, ..., n.}
+\item{y}{If \code{y} is vector, the length of \code{y} must be equal to the lenght of \code{x}.
+If \code{y} is matrix, the number of rows or the number of columns must be equal to the lenght of \code{x}.
+If the number of rows is equal to the lenght of \code{x, y[i, j]} is jth values on corresponding
+value of \code{x[i], i = 1, ..., n}.}
 
-\item{xi}{A vector with m elements, xi[k] is the point which you want to interpolate,
-k = 1, ..., m.}
+\item{xi}{A vector with m elements, \code{xi[k]} is the point which you want to interpolate,
+\code{k = 1, ..., m}.}
 
 \item{method}{A string "linear" or "spline", the method of interpolation.}
 }
 \value{
-A vector or matrix (depends on y) with the interpolated values corresponding to
+A vector or matrix (depends on \code{y}) with the interpolated values corresponding to
   \code{xi}.
 }
 \description{
 Returns interpolated values of a 1-D function at specific query points using linear interpolation.
-The extrapolation is used, please be caution in using the values which xi is larger than
-max(x) and smaller than min(x).
+The extrapolation is used, please be caution in using the values which \code{xi} is larger than
+\code{max(x)} and smaller than \code{min(x)}.
 }
 \section{Reference}{
 

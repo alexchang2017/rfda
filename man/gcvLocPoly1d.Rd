@@ -29,8 +29,8 @@ Find the optimal bandwidth used in \code{\link{locPoly1d}}.
 }
 \examples{
 data("regularExData", package = 'rfda')
-regBwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
+bwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
 w <- rep(1, nrow(regularExData))
-bw_opt <- gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
+bwOpt <- gcvLocPoly1d(bwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
 }
 

@@ -7,21 +7,21 @@
 interp2(x, y, v, xi, yi, method)
 }
 \arguments{
-\item{x}{A vector with n1 elements, x[i] is a support, i = 1, ..., n1.
-If x is not sorted, it will be sorted. If x is not unique, the corresponding V values
+\item{x}{A vector with n1 elements, \code{x[i]} is a support, \code{i = 1, ..., n1}.
+If \code{x} is not sorted, it will be sorted. If \code{x} is not unique, the corresponding \code{v} values
 will be averaged.}
 
-\item{y}{A vector with n2 elements, y[j] is a support, j = 1, ..., n2.
-If y is not sorted, it will be sorted. If y is not unique, the corresponding V values
+\item{y}{A vector with n2 elements, \code{y[j]} is a support, \code{j = 1, ..., n2}.
+If \code{y} is not sorted, it will be sorted. If \code{y} is not unique, the corresponding \code{v} values
 will be averaged.}
 
-\item{v}{A matrix with size n1 by n2, v[i, j] is the corresponding value at grid (x[i], y[j]).}
+\item{v}{A matrix with size n1 by n2, \code{v[i, j]} is the corresponding value at grid \code{(x[i], y[j])}.}
 
-\item{xi}{A vector with m elements, xi[k] is the point which you want to interpolate,
-k = 1, ..., m1.}
+\item{xi}{A vector with m elements, \code{xi[k]} is the point which you want to interpolate,
+\code{k = 1, ..., m1}.}
 
-\item{yi}{A vector with m elements, yi[l] is the point which you want to interpolate,
-l = 1, ..., m2.}
+\item{yi}{A vector with m elements, \code{yi[l]} is the point which you want to interpolate,
+\code{l = 1, ..., m2}.}
 
 \item{method}{A string "linear" or "spline", the method of interpolation.}
 }
@@ -31,7 +31,7 @@ A matrix with the interpolated values corresponding to \code{xi} and \code{yi}.
 \description{
 Returns interpolated values of a 2-D function at specific query points using
 linear interpolation. The extrapolation is used, please be caution in using the
-values which xi is larger than max(x)/max(y) and smaller than min(x)/min(y).
+values which \code{xi} is larger than \code{max(x)/max(y)} and smaller than \code{min(x)/min(y)}.
 }
 \section{Reference}{
 

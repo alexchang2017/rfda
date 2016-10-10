@@ -3,6 +3,7 @@
 // [[Rcpp::depends(RcppParallel)]]
 #include <RcppParallel.h>
 
+// a parallel worker to compute quantiles of y give bandwidth along xout
 struct Worker_quantData: public RcppParallel::Worker {
   const double& bandwidth;
   const vec& probs;
@@ -22,18 +23,22 @@ struct Worker_quantData: public RcppParallel::Worker {
   {
     for (uword i = begin; i < end; ++i)
     {
+      // find the data between xout[i] - bandwidth and xout[i] + bandwidth
       uvec in_windows = linspace<uvec>(0, x.n_elem-1, x.n_elem);
       in_windows = in_windows.elem(find(all(join_rows(x <= xout(i) + bandwidth,
                                                       x >= xout(i) - bandwidth), 1)));
       if (in_windows.n_elem > 0)
       {
+        // find the median of x in the windows
         new_x(i) = median(x.elem(in_windows));
+        // find the median of w in the windows
         new_w(i) = median(w.elem(in_windows));
-
+        // find the quantiles of y in the windows
         mat ly = y.rows(in_windows);
         new_y.row(i) = quantileCpp(ly, probs).t();
       } else
       {
+        // return nan if there is no data in the windows
         new_x(i) = datum::nan;
         new_w(i) = datum::nan;
         new_y.row(i).fill(datum::nan);
@@ -82,6 +87,7 @@ struct Worker_quantData: public RcppParallel::Worker {
 arma::mat locQuantPoly1d(const double& bandwidth, const arma::vec& probs, const arma::vec& x,
                          const arma::vec& y, const arma::vec& w, const arma::vec& xout,
                          const std::string& kernel, const double& drv, const double& degree){
+  // check data
   chk_mat(probs, "probs", "double");
   chk_mat(x, "x", "double");
   chk_mat(y, "y", "double");
@@ -96,11 +102,14 @@ arma::mat locQuantPoly1d(const double& bandwidth, const arma::vec& probs, const 
   if (any(probs > 1.0) || any(probs < 0.0))
     Rcpp::stop("probs must be a numeric vector with values between 0 and 1.\n");
 
+  // remove the data with 0 weights
   uvec actObs = find(w != 0);
   vec xw = x.elem(actObs), yw = y.elem(actObs), ww = w.elem(actObs);
+  // allocate output data
   mat new_y = zeros<mat>(xout.n_elem, probs.n_elem);
   vec new_x = zeros<vec>(xout.n_elem), new_w = zeros<vec>(xout.n_elem);
 
+  // compute parallely the quantiles given bandwidth
   Worker_quantData quantData(bandwidth, probs, xw, yw, ww, xout, new_x, new_y, new_w);
   RcppParallel::parallelFor(0, xout.n_elem, quantData);
   // remove the infinite values
@@ -113,6 +122,7 @@ arma::mat locQuantPoly1d(const double& bandwidth, const arma::vec& probs, const 
     new_y.rows(idxNonfinte).zeros();
   }
 
+  // smooth the quantiles with local kernel polynominal smoother
   mat est = zeros<mat>(xout.n_elem, probs.n_elem);
   for (uword i = 0; i < probs.n_elem; i++){
     vec tmp_y = new_y.col(i);

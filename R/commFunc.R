@@ -32,13 +32,18 @@ trapz <- function(x, y = NULL){
   return(as.vector(trapz_cpp(x, as.matrix(y))))
 }
 
+# function to perform data binning
 #' @importFrom data.table setnames
 #' @importFrom utils head
 binData <- function(data, numBins){
+  # check data
   assert_that(!is.na(numBins), is.finite(numBins), numBins > 0, numBins - floor(numBins) < 1e-6)
 
+  # find the boudaries to split data
   boundaries <- seq(min(data$timePnt), max(data$timePnt), length.out = numBins + 1)
+  # find the middle points to stand time points of binned data
   newTimePnts <- head(boundaries, numBins) + diff(boundaries) / 2
+  # average the data in the interval for data binning
   newDataDT <- data %>>% `[`( , idx_agg := findInterval(timePnt, boundaries, TRUE), by = .(subId,variable)) %>>%
     `[`( , .(value = mean(value), timePnt = newTimePnts[idx_agg]), by = .(subId,variable,idx_agg)) %>>%
     `[`( , idx_agg := NULL)
@@ -75,17 +80,20 @@ find_max_diff_f <- function(t, lag_n){
 #' @rdname bwCandChooser
 #' @export
 bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
+  # check data
   assert_that(is.data.frame(data), is.character(id.var), is.character(timeVarName),
               !is.na(sparsity), is.finite(sparsity), sparsity %in% c(0, 1, 2),
               kernel %in% c('gauss','epan','gaussvar','quar'),
               !is.na(degree), is.finite(degree), degree > 0, degree - floor(degree) < 1e-6)
 
+  # get the range of time points
   r <- diff(range(data[[timeVarName]]))
+  # get the minimum bandwidth given sparsity of data
   if (sparsity == 0){
     dstar <- find_max_diff_f(data[[timeVarName]], degree + 2)
     if (dstar > r / 4){
       dstar <- dstar * 0.75
-      message(sprintf("The min bandwidth choice is too big, reduce to %.6f", minBW))
+      message(sprintf("The min bandwidth choice is too big, reduce to %.6f", dstar))
     }
     minBW <- 2.5 * dstar
   } else if (sparsity == 1){
@@ -94,13 +102,75 @@ bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
     minBW <- 1.5 * find_max_diff_f(data[[timeVarName]], degree + 1)
   }
 
+  # use range / 2 if kernel is gaussian and minimum is not found
   if (is.na(minBW) && kernel == "gauss"){
     minBW <- 0.5 * r;
   } else if (minBW < 0 && kernel != "gauss"){
     stop("The data is too sparse, no suitable bandwidth can be found! Try Gaussian kernel instead!\n");
   }
 
+  # find the candidates
   minBW <- min(minBW, r)
   q <- (r / minBW / 4)^(1/9)
-  return(q^(0:9) * minBW)
+  return(sort(q^(0:9) * minBW, decreasing = FALSE))
 }
+
+#' Find the candidates of bandwidths for locLinear2d
+#'
+#' @param dataAllGrid An data.table containing the id of subjects nameing \code{sampleID} and
+#'   all timepoints combinations by variables naming \code{t1} and \code{t2} in model. (see examples.)
+#' @return The candidates of bandwidths
+#' @examples
+#' require(data.table)
+#' require(pipeR)
+#'
+#' data("sparseExData", package = 'rfda')
+#' sparsity <- checkSparsity(sparseExData, "sampleID", "t")
+#' sparseExData %>>% data.table %>>% `[`( , .(t1 = rep(t, length(t)),
+#'   t2 = rep(t, each=length(t))), by = .(sampleID)) %>>%
+#'   bwCandChooser2("sampleID", c("t1", "t2"), sparsity, "gauss", 1)
+#'
+#' data("regularExData", package = 'rfda')
+#' sparsity <- checkSparsity(regularExData, "sampleID", "t")
+#' regularExData %>>% data.table %>>% `[`( , .(t1 = rep(t, length(t)),
+#'   t2 = rep(t, each=length(t))), by = .(sampleID)) %>>%
+#'   bwCandChooser2("sampleID", c("t1", "t2"), sparsity, "gauss", 1)
+#' @rdname bwCandChooser
+#' @importFrom data.table data.table setorder is.data.table
+#' @export
+bwCandChooser2 <- function(dataAllGrid, id.var, timeVarName, sparsity, kernel, degree){
+  # cehck data
+  assert_that(is.data.table(dataAllGrid), is.character(id.var), all(is.character(timeVarName)),
+              length(timeVarName) == 2L, !is.na(sparsity), is.finite(sparsity), sparsity %in% c(0, 1, 2),
+              kernel %in% c('gauss','epan','gaussvar','quar'),
+              !is.na(degree), is.finite(degree), degree > 0, degree - floor(degree) < 1e-6)
+
+  # get output grid
+  xout <- unique(dataAllGrid$t1)
+  # get range of time points
+  r <- diff(range(dataAllGrid$t1))
+  # get the minimum bandwidth given sparsity of data
+  if (sparsity == 0){
+    outGrid <- data.table(expand.grid(t1 = range(xout), t2 = xout))
+    b <- dataAllGrid[t1 != t2, .(t1, t2)] %>>% rbind(outGrid) %>>% unique %>>% setorder(t2, t1) %>>% `$`(t1)
+    minBW <- max(find_max_diff_f(xout, degree + 2), max(diff(b)) / 2.0)
+  } else if (sparsity == 1){
+    minBW <- 2.0 * find_max_diff_f(xout, degree + 1)
+  } else if (sparsity == 2){
+    minBW <- 1.5 * find_max_diff_f(xout, degree + 2)
+  }
+
+  # shrink the minimum bandwidth if kernel is gaussian
+  if (kernel == "gauss"){
+    minBW <- 0.2 * minBW;
+  } else if (is.na(minBW) || (minBW < 0 && kernel != "gauss")){
+    stop("The data is too sparse, no suitable bandwidth can be found! Try Gaussian kernel instead!\n");
+  }
+
+  # find the candidates
+  minBW <- min(minBW, r / 4)
+  q <- (r / minBW / 4)^(1/9)
+  bwMat <- matrix(rep(q^(0:9) * minBW, 2), 10)
+  return(bwMat[order(bwMat[,1], bwMat[,2], decreasing = FALSE), ])
+}
+

@@ -15,5 +15,5 @@ arma::mat unique_rows(arma::mat x);
 double factorial_f(double k);
 arma::vec kernelDensity(const arma::vec& xin, const std::string& kernel);
 arma::vec quantileCpp(const arma::vec& x, const arma::vec& probs);
-
+arma::mat trapz_cpp(const arma::vec& x, const arma::mat& y);
 #endif

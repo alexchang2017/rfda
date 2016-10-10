@@ -2,11 +2,13 @@
 #include <cmath>
 #include <sstream>
 
+// function to print message on R console
 void RMessage(const std::string& msg){
   Rcpp::Function RMessage("message");
   RMessage(msg);
 }
 
+// function to convert integer, double into string
 template <typename T>
 std::string to_string(T const& value) {
   std::stringstream sstr;
@@ -14,7 +16,7 @@ std::string to_string(T const& value) {
   return sstr.str();
 }
 
-// the function to check the input data type
+// function to check whether the input data with correct type
 void chk_mat(const mat& x, const std::string& varName, const std::string& type){
   if (!is_finite(x))
     Rcpp::stop(varName + " must be numerical.\n");
@@ -25,6 +27,7 @@ void chk_mat(const mat& x, const std::string& varName, const std::string& type){
   }
 }
 
+// function to compute factorial in C++ implementation
 // [[Rcpp::export]]
 double factorial_f(double k){
   if (std::abs(k - floor(k)) > 1e-6)
@@ -42,6 +45,7 @@ double factorial_f(double k){
   }
 }
 
+// function to compute kernel density with 4 kinds of kernel
 arma::vec kernelDensity(const arma::vec& x, const std::string& kernel){
   vec kx(x.n_elem);
   if (kernel == "epan")
@@ -62,20 +66,38 @@ arma::vec kernelDensity(const arma::vec& x, const std::string& kernel){
   return kx;
 }
 
+// function to compute quantiles with interpolation method in C++ implementation
 // [[Rcpp::export]]
 arma::vec quantileCpp(const arma::vec& x, const arma::vec& probs){
+  // check data
   chk_mat(x, "x", "double");
   chk_mat(probs, "probs", "double");
   if (any(probs < 0) || any(probs > 1))
     Rcpp::stop("There is values in probs outside [0, 1].");
 
+  // sort data
   vec x_sort = sort(x);
+  // find the location of quantiles
   vec index = (x.n_elem - 1) * probs;
+  // find the floor and ceiling integer index
   uvec lo = conv_to<uvec>::from(floor(index)), hi = conv_to<uvec>::from(ceil(index));
+  // find the weight to interpolate
   vec h = (index - conv_to<vec>::from(lo));
+  // interpolate the quantiles
   vec qs = (1 - h) % x_sort.elem(lo) + h % x_sort.elem(hi);
   return qs;
 }
 
+// function to compute trapezoidal numerical integration
+// [[Rcpp::export]]
+arma::mat trapz_cpp(const arma::vec& x, const arma::mat& y){
+  // check data
+  chk_mat(x, "x", "double");
+  chk_mat(y, "y", "double");
+  if (y.n_rows != x.n_elem)
+    Rcpp::stop("The number of rows or length of y must be equal to the length of x.");
+  if (x.n_elem <= 1)
+    Rcpp::stop("The length of x must be greater than 2.");
 
-
+  return diff(x).t() * (y.rows(0, y.n_rows-2) + y.rows(1, y.n_rows-1)) * 0.5;
+}

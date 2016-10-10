@@ -174,7 +174,7 @@ q = (r/(4*h0))^(1/9);
 bwc = sort(q.^(0:9).*h0);
 sprintf('%.6f, ', bwc) 
 
-%% test results for rawCov_res (not used)
+%% test results for rawCov_res
 for example_case = 0:2
   switch example_case
     case 0
@@ -196,7 +196,7 @@ for example_case = 0:2
   [~, muDense] = lwls(bopt, 'gauss', 1, 1, 0, tt, yy', w, sort(unique(tt)), 0);
   rawCov1 = getRawCov(y, t, sort(unique(tt)), muDense, example_case, 0);
   rawCov2 = getRawCov(y, t, sort(unique(tt)), muDense, example_case, 1);
-  % save(['testMat/rawCov_res_', exampleName], 'rawCov1', 'rawCov2') 
+  save(['testMat/rawCov_res_', exampleName], 'rawCov1', 'rawCov2') 
 end
 
 %% test for getRawCov and locLinear2d
@@ -231,11 +231,100 @@ for example_case = 0:2
   [~, xcov_15]= mullwlsk([1.5, 1.5], 'gauss', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
   [~, xcov_20]= mullwlsk([2, 2], 'gauss', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
   
+  rcov.tparin, rcov.cxxn
   eval(['rcov_case', int2str(regular), '=[rcov.tpairn; rcov.cxxn]'';'])
   eval(['xcov_10_case', int2str(regular), '=xcov_10;'])
   eval(['xcov_15_case', int2str(regular), '=xcov_15;'])
   eval(['xcov_20_case', int2str(regular), '=xcov_20;'])
 end
-save('testMat/covRes.mat', 'rcov_case0', 'rcov_case1', 'rcov_case2', 'xcov_10_case0', ...
+save('covRes.mat', 'rcov_case0', 'rcov_case1', 'rcov_case2', 'xcov_10_case0', ...
   'xcov_10_case1', 'xcov_10_case2', 'xcov_15_case0', 'xcov_15_case1', 'xcov_15_case2', ...
-  'xcov_20_case0', 'xcov_20_case1', 'xcov_20_case2');
+  
+    )
+
+
+% sparse case
+
+
+
+covFunc_cv = cv_mullwlsn(y, t, mu, 4, 4, regular, 1, 'gauss', rcov, 'on');
+covFunc_gcv = gcv_mullwlsn(t, 30, regular, 1, 'gauss',rcov, 'on');
+covFunc_gcv = adjustBW2('gauss', covFunc_gcv, 1, 0, regular,'on');
+sprintf('%.7f, ', covFunc_cv)
+sprintf('%.7f, ', covFunc_gcv)
+
+ngrid = 30;
+tpairn = rcov.tpairn;
+tneq = find(tpairn(1,:)~=tpairn(2,:));
+cyy = rcov.cyy;
+tpairn = tpairn(:,tneq);
+cxxn=cyy(tneq);
+win=ones(1,length(cxxn));
+out21 = linspace(min(tt),max(tt),ngrid);
+[~, xcov_s10]= mullwlsk([1, 1], 'gauss', tpairn, cxxn', win, out21, out21);
+[~, xcov_s20]= mullwlsk([2, 2], 'gauss', tpairn, cxxn', win, out21, out21);
+[~, xcov_s15]= mullwlsk([1.5, 1.5], 'gauss', tpairn, cxxn', win, out21, out21);
+
+% regular with missing data case
+regular = 1;
+y = {[0.1,0.2,0.3], [0.4,0.5,0.6], [0.7,0.8], [0.9,1]};
+t = {[1,2,4], [1,2,3], [3,4], [1,4]};
+tt = cell2mat(t);
+yy = cell2mat(y);
+out1 = sort(unique(tt));
+bopt = gcv_lwls(yy, tt, 'gauss', 1, 1, 0, regular, 'on');
+[~, mu] = lwls(adjustBW1('gauss',bopt, 1, 0, 0,'on'), 'gauss', 1, 1, 0, tt, yy', ones(1,length(tt)), out1, 0);
+rcov = getRawCov(y, t, out1, mu, regular, 0);
+
+covFunc_cv = cv_mullwlsn(y, t, mu, 4, 4, regular, 1, 'gauss', rcov, 'on');
+covFunc_gcv = gcv_mullwlsn(t, 30, regular, 1, 'gauss',rcov, 'on');
+covFunc_gcv = adjustBW2('gauss', covFunc_gcv, 1, 0, regular,'on');
+sprintf('%.7f, ', covFunc_cv)
+sprintf('%.7f, ', covFunc_gcv)
+
+ngrid = 30;
+tpairn = rcov.tpairn;
+tneq=find(tpairn(1,:)~=tpairn(2,:));
+cyy = rcov.cyy;
+tpairn = tpairn(:,tneq);
+cxxn=cyy(tneq);
+count=rcov.count(tneq);
+win=ones(1,length(cxxn));
+out21 = linspace(min(tt),max(tt),ngrid);
+[~, xcov_rm10]= mullwlsk([1, 1], 'gauss', tpairn, cxxn', win, out21, out21, count);
+[~, xcov_rm20]= mullwlsk([2, 2], 'gauss', tpairn, cxxn', win, out21, out21, count);
+[~, xcov_rm15]= mullwlsk([1.5, 1.5], 'gauss', tpairn, cxxn', win, out21, out21, count);
+
+% regular case
+regular = 2;
+y = {[0.1,0.2,0.3], [0.4,0.5,0.6], [0.7,0.8,0.9], [0.9,1,1]};
+t = {[1,2,3], [1,2,3], [1,2,3], [1,2,3]};
+tt = cell2mat(t);
+yy = cell2mat(y);
+out1 = sort(unique(tt));
+bopt = gcv_lwls(yy, tt, 'gauss', 1, 1, 0, regular, 'on');
+[~, mu] = lwls(adjustBW1('gauss',bopt, 1, 0, 0,'on'), 'gauss', 1, 1, 0, tt, yy', ones(1,length(tt)), out1, 0);
+rcov = getRawCov(y, t, out1, mu, regular, 0);
+
+covFunc_cv = cv_mullwlsn(y, t, mu, 4, 4, regular, 1, 'gauss', rcov, 'on');
+covFunc_gcv = gcv_mullwlsn(t, 30, regular, 1, 'gauss',rcov, 'on');
+covFunc_gcv = adjustBW2('gauss', covFunc_gcv, 1, 0, regular,'on');
+sprintf('%.7f, ', covFunc_cv)
+sprintf('%.7f, ', covFunc_gcv)
+
+ngrid = 30;
+tpairn = rcov.tpairn;
+tneq=find(tpairn(1,:)~=tpairn(2,:));
+cyy = rcov.cyy;
+tpairn = tpairn(:,tneq);
+cxxn = cyy(tneq);
+win = ones(1,length(cxxn));
+out21 = linspace(min(tt),max(tt),ngrid);
+[~, xcov_r10]= mullwlsk([1, 1], 'gauss', tpairn, cxxn', win, out21, out21);
+[~, xcov_r20]= mullwlsk([2, 2], 'gauss', tpairn, cxxn', win, out21, out21);
+[~, xcov_r15]= mullwlsk([1.5, 1.5], 'gauss', tpairn, cxxn', win, out21, out21);
+
+[~, xcov_r_epan]= mullwlsk([3, 3], 'epan', tpairn, cxxn', win, out21, out21);
+[~, xcov_r_gaussvar]= mullwlsk([3, 3], 'gausvar', tpairn, cxxn', win, out21, out21);
+[~, xcov_r_rect]= mullwlsk([3, 3], 'rect', tpairn, cxxn', win, out21, out21);
+[~, xcov_r_quar]= mullwlsk([3, 3], 'quar', tpairn, cxxn', win, out21, out21);

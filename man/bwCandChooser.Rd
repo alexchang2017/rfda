@@ -2,9 +2,12 @@
 % Please edit documentation in R/commFunc.R
 \name{bwCandChooser}
 \alias{bwCandChooser}
+\alias{bwCandChooser2}
 \title{Find the candidates of bandwidths for locPoly1d}
 \usage{
 bwCandChooser(data, id.var, timeVarName, sparsity, kernel, degree)
+
+bwCandChooser2(dataAllGrid, id.var, timeVarName, sparsity, kernel, degree)
 }
 \arguments{
 \item{data}{An data.frame or data.table containing the variables in model.}
@@ -18,15 +21,36 @@ bwCandChooser(data, id.var, timeVarName, sparsity, kernel, degree)
 \item{kernel}{The kernel function used in locPoly1d.}
 
 \item{degree}{The degree of polyminal function used in locPoly1d.}
+
+\item{dataAllGrid}{An data.table containing the id of subjects nameing \code{sampleID} and
+all timepoints combinations by variables naming \code{t1} and \code{t2} in model. (see examples.)}
 }
 \value{
+The candidates of bandwidths
+
 The candidates of bandwidths
 }
 \description{
 Find the candidates of bandwidths for locPoly1d
+
+Find the candidates of bandwidths for locLinear2d
 }
 \examples{
 data("regularExData", package = 'rfda')
 bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
+require(data.table)
+require(pipeR)
+
+data("sparseExData", package = 'rfda')
+sparsity <- checkSparsity(sparseExData, "sampleID", "t")
+sparseExData \%>>\% data.table \%>>\% `[`( , .(t1 = rep(t, length(t)),
+  t2 = rep(t, each=length(t))), by = .(sampleID)) \%>>\%
+  bwCandChooser2("sampleID", c("t1", "t2"), sparsity, "gauss", 1)
+
+data("regularExData", package = 'rfda')
+sparsity <- checkSparsity(regularExData, "sampleID", "t")
+regularExData \%>>\% data.table \%>>\% `[`( , .(t1 = rep(t, length(t)),
+  t2 = rep(t, each=length(t))), by = .(sampleID)) \%>>\%
+  bwCandChooser2("sampleID", c("t1", "t2"), sparsity, "gauss", 1)
 }
 

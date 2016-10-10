@@ -4,6 +4,7 @@
 // [[Rcpp::depends(RcppParallel)]]
 #include <RcppParallel.h>
 
+// a parallel worker to compute estimate of local kernel polynominal smoother with gaussian-like kernel on (x, y)
 struct Worker_locPoly1d_gauss: public RcppParallel::Worker {
   const double& bandwidth;
   const vec& xw;
@@ -17,7 +18,7 @@ struct Worker_locPoly1d_gauss: public RcppParallel::Worker {
 
   Worker_locPoly1d_gauss(const double& bandwidth, const vec& xw, const vec& yw, const vec& ww,
                          const vec& xout, const std::string& kernel, const double& drv,
-                        const double& degree, vec& est):
+                         const double& degree, vec& est):
     bandwidth(bandwidth), xw(xw), yw(yw), ww(ww), xout(xout), kernel(kernel),
     drv(drv), degree(degree), est(est) {}
 
@@ -25,19 +26,25 @@ struct Worker_locPoly1d_gauss: public RcppParallel::Worker {
   {
     for (uword i = begin; i < end; ++i)
     {
+      // compute demean data
       vec x_minus_range = xw - xout(i);
+      // compute weights
       vec w = ww % exp(-0.5*square(x_minus_range / bandwidth)) / sqrt(2 * datum::pi);
-      if (kernel.compare("gaussvar") == 0)
+      if (kernel == "gaussvar")
         w %= (1.25 - 0.25 * square(x_minus_range / bandwidth));
+      // get model matrix
       mat dx = ones<mat>(xw.n_elem, degree+1);
       for (uword j = 0; j < degree; ++j)
         dx.col(j+1) = pow(-x_minus_range, j + 1);
+      // fit a WLS
       vec p = pinv(dx.t() * (repmat(w, 1, degree+1) % dx)) * dx.t() * (w % yw);
+      // get the estimation
       est(i) = p((uword) drv) * factorial_f(drv) * std::pow(-1.0, drv);
     }
   }
 };
 
+// a parallel worker to compute estimate of local kernel polynominal smoother with non-gaussian kernel on (x, y)
 struct Worker_locPoly1d_nongauss: public RcppParallel::Worker {
   const double& bandwidth;
   const vec& xw;
@@ -60,18 +67,23 @@ struct Worker_locPoly1d_nongauss: public RcppParallel::Worker {
   {
     for (uword i = begin; i < end; ++i)
     {
+      // find the data between xout[i] - bandwidth and xout[i] + bandwidth
       uvec in_windows = linspace<uvec>(0, xw.n_elem-1, xw.n_elem);
       in_windows = in_windows.elem(find(all(join_rows(xw <= xout(i) + bandwidth,
                                                       xw >= xout(i) - bandwidth), 1)));
       if (in_windows.n_elem > 0)
       {
+        // collect the data in the windwos
         vec lx = xw.elem(in_windows);
         vec ly = yw.elem(in_windows);
         vec lw = ww.elem(in_windows);
+        // find the unique x in the windows and check that the degree of free is sufficient
         vec uni_lx = unique(lx);
         if (uni_lx.n_elem >= degree + 1)
         {
+          // compute demean data
           vec x_minus_range = lx - xout(i);
+          // compute weights
           vec w = lw % (1 - square(x_minus_range / bandwidth)) * 0.75;
           if (kernel == "quar")
             w %= (1 - square(x_minus_range / bandwidth)) * (5.0 / 4.0);
@@ -79,20 +91,23 @@ struct Worker_locPoly1d_nongauss: public RcppParallel::Worker {
             epan: (1 - square(x_minus_range / bandwidth)) * (3.0 / 4.0)
             quar: square(1 - square(x_minus_range / bandwidth)) * (15.0 / 16.0)
           */
+          // get model matrix
           mat dx = ones<mat>(lx.n_elem, degree+1);
           for (uword j = 0; j < degree; ++j)
             dx.col(j+1) = pow(-x_minus_range, j + 1);
+          // fit a WLS
           vec p = pinv(dx.t() * (repmat(w, 1, degree+1) % dx)) * dx.t() * (w % ly);
+          // get the estimation
           est(i) = p((uword) drv) * factorial_f(drv) * std::pow(-1.0, drv);
         } else
         {
+          // return flag = 1 if there is no data in the windows
           flag(i) = 1;
-          est(i) = 0;
         }
       } else
       {
+        // return flag = 1 if there is no data in the windows
         flag(i) = 1;
-        est(i) = 0;
       }
     }
   }
@@ -125,15 +140,17 @@ struct Worker_locPoly1d_nongauss: public RcppParallel::Worker {
 Rcpp::NumericVector locPoly1d(const double& bandwidth, const arma::vec& x, const arma::vec& y,
                     const arma::vec& w, const arma::vec& xout, const std::string& kernel,
                     const double& drv, const double& degree){
+  // check data
   chk_mat(x, "x", "double");
   chk_mat(y, "y", "double");
   chk_mat(w, "w", "double");
+  chk_mat(xout, "xout", "double");
   if (x.n_elem != y.n_elem || x.n_elem != w.n_elem)
     Rcpp::stop("The lengths of x, y and w must be equal.\n");
-  chk_mat(xout, "xout", "double");
   if (!xout.is_sorted())
     Rcpp::stop("xout must be sorted.\n");
 
+  // check parameters
   if (kernel != "gauss" && kernel != "gaussvar" && kernel != "epan" && kernel != "quar")
     Rcpp::stop("Unsupported kernel. Kernal must be 'gauss', 'gaussvar', 'epan' or 'quar'.\n");
   if (!is_finite(bandwidth) || bandwidth <= 0)
@@ -149,9 +166,12 @@ Rcpp::NumericVector locPoly1d(const double& bandwidth, const arma::vec& x, const
   if (degree < drv)
     Rcpp::stop("Degree of Polynomial should be not less than the order of derivative.\n");
 
+  // remove the data with 0 weights
   uvec actObs = find(w != 0);
   vec xw = x.elem(actObs), yw = y.elem(actObs), ww = w.elem(actObs), est = zeros<vec>(xout.n_elem);
+  // allocate output data
   uvec flag = zeros<uvec>(xout.n_elem);
+  // compute parallely the estimates given bandwidth
   if (kernel == "gauss" || kernel == "gaussvar")
   {
     Worker_locPoly1d_gauss locPoly1d(bandwidth, xw, yw, ww, xout, kernel, drv, degree, est);
@@ -161,6 +181,7 @@ Rcpp::NumericVector locPoly1d(const double& bandwidth, const arma::vec& x, const
     Worker_locPoly1d_nongauss locPoly1d(bandwidth, xw, yw, ww, xout, kernel, drv, degree, est, flag);
     RcppParallel::parallelFor(0, xout.n_elem, locPoly1d);
   }
+  // return NaN if there is a interval with no data
   vec errOut = {datum::nan};
   if (any(flag == 1))
   {
@@ -184,14 +205,15 @@ Rcpp::NumericVector locPoly1d(const double& bandwidth, const arma::vec& x, const
 //' @return A optimal bandwidth selected by minimizing gcv scores.
 //' @examples
 //' data("regularExData", package = 'rfda')
-//' regBwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
+//' bwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
 //' w <- rep(1, nrow(regularExData))
-//' bw_opt <- gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
+//' bwOpt <- gcvLocPoly1d(bwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
 //' @export
 // [[Rcpp::export]]
 double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
                      const arma::vec& w, const std::string& kernel,
                      const double& drv, const double& degree){
+  // check data
   chk_mat(bwCand, "bwCand", "double");
   chk_mat(x, "x", "double");
   chk_mat(y, "y", "double");
@@ -199,6 +221,7 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
   if (x.n_elem != y.n_elem || x.n_elem != w.n_elem)
     Rcpp::stop("The lengths of x, y and w must be equal.\n");
 
+  // check parameters
   if (kernel != "gauss" && kernel != "gaussvar" && kernel != "epan" && kernel != "quar")
     Rcpp::stop("Unsupported kernel. Kernal must be 'gauss', 'gaussvar', 'epan' or 'quar'.\n");
   if (!is_finite(degree))
@@ -212,11 +235,15 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
   if (degree < drv)
     Rcpp::stop("Degree of Polynomial should be not less than the order of derivative.\n");
 
+  // find the GCV-adjusted term
   vec k0 = kernelDensity(zeros<vec>(1.0), kernel);
+  // find the range of x and allocate output
   double r = x.max() - x.min(), bw_opt;
+  // find the GCV-adjusted term
   vec gcv_param = pow(1 - r * k0(0) / bwCand / (double) x.n_elem, 2.0),
     gcv = zeros<vec>(bwCand.n_elem), new_est(x.n_elem);
 
+  // initialize gcv
   bool con = true, sparse = false, secondRun = false;
   std::string interp1_method = "spline";
   vec xout = sort(unique(x)), xout2 = xout;
@@ -225,11 +252,14 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
   vec est = zeros<vec>(xout2.n_elem);
   while (con)
   {
+    // fill gcv score with big number
     gcv.fill(1e35);
     for (uword k = 0; k < bwCand.n_elem; ++k)
     {
+      // get smoothed values
       est = locPoly1d(bwCand(k), x, y, w, xout2, kernel, drv, degree);
       if (is_finite(est)){
+        // map the smoothed values onto x
         if (xout2.n_elem == xout.n_elem){
           new_est.zeros();
           for (uword k = 0; k < xout.n_elem; ++k)
@@ -241,6 +271,7 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
 
       if (is_finite(new_est))
       {
+        // compute gcv scores
         gcv(k) = dot(y - new_est, y - new_est) / gcv_param(k);
         if (k > 0 && gcv(k) > gcv(k-1))
         {
@@ -252,9 +283,11 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
 
     if (all(gcv == 1e35))
     {
-      if (!secondRun && bwCand(9) < r)
+      // if bw are all too small, then re-compute or
+      // stop implementation if it has the same situation in second round
+      if (!secondRun && bwCand(bwCand.n_elem - 1) < r)
       {
-        bw_opt = bwCand(9);
+        bw_opt = bwCand(bwCand.n_elem - 1);
         sparse = true;
       } else
       {
@@ -262,31 +295,34 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
       }
     } else
     {
+      // select the optimal bandwidth with minimum gcv scores
       uword min_gcv_idx = as_scalar(find(gcv == min(gcv), 1, "first"));
       bw_opt = bwCand(min_gcv_idx);
     }
 
     if (bw_opt == r)
     {
+      // stop implementation if data is too sparse
       con = false;
       Rcpp::stop("The data is too sparse, optimal bandwidth includes all the data! You may want to change to Gaussian kernel!\n");
-    } else if (bw_opt == bwCand(9) && !secondRun)
+    } else if (bw_opt == bwCand(bwCand.n_elem - 1) && !secondRun)
     {
+      // re-compute with new bandwidth candidates
       uvec gcvInf = find(gcv == 1e35);
       double minBW;
       if (sparse || gcvInf.n_elem == 9)
       {
         RMessage("The data is too sparse, retry with larger bandwidths!");
-        minBW = bwCand(9) * 1.01;
+        minBW = bwCand(bwCand.n_elem - 1) * 1.01;
       } else
       {
         RMessage("Bandwidth candidates are too small, retry with larger choices now!");
-        minBW = bwCand(8);
+        minBW = bwCand(bwCand.n_elem - 2);
       }
-      vec newr = r * linspace<vec>(0.5, 1, 11);
+      vec newr = r * linspace<vec>(0.5, 1, bwCand.n_elem + 1);
       uword min_idx = as_scalar(find(minBW < newr, 1, "first"));
-      double q = std::pow(newr(min_idx) / minBW, 1.0 / 9.0);
-      bwCand = linspace<vec>(0, 9, 10);
+      double q = std::pow(newr(min_idx) / minBW, 1.0 / ((double) bwCand.n_elem - 1.0));
+      bwCand = linspace<vec>(0, bwCand.n_elem - 1, bwCand.n_elem);
       for (uword i = 0; i < bwCand.n_elem; ++i)
         bwCand(i) = std::pow(q, bwCand(i)) * minBW;
       bwCand = sort(bwCand);
@@ -301,7 +337,6 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
     }
     secondRun = true;
   }
-
   return bw_opt;
 }
 

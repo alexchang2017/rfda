@@ -47,7 +47,7 @@
 #' @importFrom Rcpp cppFunction sourceCpp
 #' @importFrom pipeR %>>%
 #' @importFrom data.table :=
-#' @importFrom utils globalVariables
+#' @importFrom utils globalVariables data
 #' @importFrom RcppParallel RcppParallelLibs
 utils::globalVariables(c(".", "%>>%", ":=", ".N", ".SD"))
 

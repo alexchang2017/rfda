@@ -9,6 +9,10 @@ quantileCpp <- function(x, probs) {
     .Call('rfda_quantileCpp', PACKAGE = 'rfda', x, probs)
 }
 
+trapz_cpp <- function(x, y) {
+    .Call('rfda_trapz_cpp', PACKAGE = 'rfda', x, y)
+}
+
 spline_cpp <- function(x, y, xi) {
     .Call('rfda_spline_cpp', PACKAGE = 'rfda', x, y, xi)
 }
@@ -21,19 +25,19 @@ interp1_cpp <- function(x, y, xi, method) {
 #'
 #' Returns interpolated values of a 2-D function at specific query points using
 #' linear interpolation. The extrapolation is used, please be caution in using the
-#' values which xi is larger than max(x)/max(y) and smaller than min(x)/min(y).
+#' values which \code{xi} is larger than \code{max(x)/max(y)} and smaller than \code{min(x)/min(y)}.
 #'
-#' @param x A vector with n1 elements, x[i] is a support, i = 1, ..., n1.
-#'   If x is not sorted, it will be sorted. If x is not unique, the corresponding V values
+#' @param x A vector with n1 elements, \code{x[i]} is a support, \code{i = 1, ..., n1}.
+#'   If \code{x} is not sorted, it will be sorted. If \code{x} is not unique, the corresponding \code{v} values
 #'   will be averaged.
-#' @param y A vector with n2 elements, y[j] is a support, j = 1, ..., n2.
-#'   If y is not sorted, it will be sorted. If y is not unique, the corresponding V values
+#' @param y A vector with n2 elements, \code{y[j]} is a support, \code{j = 1, ..., n2}.
+#'   If \code{y} is not sorted, it will be sorted. If \code{y} is not unique, the corresponding \code{v} values
 #'   will be averaged.
-#' @param v A matrix with size n1 by n2, v[i, j] is the corresponding value at grid (x[i], y[j]).
-#' @param xi A vector with m elements, xi[k] is the point which you want to interpolate,
-#'   k = 1, ..., m1.
-#' @param yi A vector with m elements, yi[l] is the point which you want to interpolate,
-#'   l = 1, ..., m2.
+#' @param v A matrix with size n1 by n2, \code{v[i, j]} is the corresponding value at grid \code{(x[i], y[j])}.
+#' @param xi A vector with m elements, \code{xi[k]} is the point which you want to interpolate,
+#'   \code{k = 1, ..., m1}.
+#' @param yi A vector with m elements, \code{yi[l]} is the point which you want to interpolate,
+#'   \code{l = 1, ..., m2}.
 #' @param method A string "linear" or "spline", the method of interpolation.
 #' @return A matrix with the interpolated values corresponding to \code{xi} and \code{yi}.
 #' @section Reference:
@@ -66,6 +70,44 @@ interp1_cpp <- function(x, y, xi, method) {
 #' @export
 interp2 <- function(x, y, v, xi, yi, method) {
     .Call('rfda_interp2', PACKAGE = 'rfda', x, y, v, xi, yi, method)
+}
+
+#' Two-dimensional kernel linear local smoother
+#'
+#' Perform two-dimensional kernel linear local smoother for data \code{(x,y)} with weight \code{w} on \code{xout}.
+#'
+#' @param bandwidth A numeric vector with two values. The kernel smoothing parameters.
+#' @param x A matrix, the variable of of x-axis and y-axis.
+#' @param y A vector, the variable of of z-axis. \code{y[i]} is corresponding value of \code{x[i, ]}.
+#' @param w A vector, the weight of data. \code{w[i]} is corresponding value of \code{x[i,]}.
+#' @param count A vector, the number of observations at \code{x[i, ]}.
+#' @param out1 A vector, vector of x-coordinate output time points. It should be a sorted vecotr.
+#' @param out2 A vector, vector of y-coordinate output time points. It should be a sorted vecotr.
+#' @param kernel A string. It could be 'gauss', 'gaussvar', 'epan' or 'quar'.
+#' @return A smoothed covariance estimated by two-dimensional kernel local linear smoother.
+#' @examples
+#' data("regularExData", package = 'rfda')
+#' sparsity <- checkSparsity(regularExData, "sampleID", "t")
+#' bwCand <- bwCandChooser(regularExData, "sampleID", "t", sparsity, "gauss", 1)
+#' w <- rep(1, nrow(regularExData))
+#' bwOpt <- gcvLocPoly1d(bwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
+#' bwOpt <- rfda:::adjGcvBw1d(bwOpt, sparsity, "gauss", 0)
+#' xout <- sort(unique(regularExData$t))
+#' meanFunc <- locPoly1d(bwOpt, regularExData$t, regularExData$y, w, xout, "gauss", 0, 1)
+#' require(data.table)
+#' require(pipeR)
+#' demeanDataDT <- merge(data.table(regularExData), data.table(mf = meanFunc, t = xout), by = "t") %>>%
+#'   `[`( , `:=`(y = y - mf, variable = "y")) %>>%
+#'   setnames(c("t", "y", "sampleID"), c("timePnt", "value", "subId"))
+#' RawCov <- rfda:::getRawCrCov(demeanDataDT)
+#'
+#' xout2 <- seq(min(regularExData$t), max(regularExData$t), len = 30)
+#' RawCovNoDiag <- RawCov[t1 != t2]
+#' covFunc <- locLinear2d(c(1, 1), as.matrix(RawCovNoDiag[ , .(t1, t2)]), RawCovNoDiag$sse,
+#'   RawCovNoDiag$weight, RawCovNoDiag$cnt, xout2, xout2, "gauss")
+#' @export
+locLinear2d <- function(bandwidth, x, y, w, count, out1, out2, kernel) {
+    .Call('rfda_locLinear2d', PACKAGE = 'rfda', bandwidth, x, y, w, count, out1, out2, kernel)
 }
 
 #' One-dimensional kernel local polynominal smoother
@@ -109,9 +151,9 @@ locPoly1d <- function(bandwidth, x, y, w, xout, kernel, drv, degree) {
 #' @return A optimal bandwidth selected by minimizing gcv scores.
 #' @examples
 #' data("regularExData", package = 'rfda')
-#' regBwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
+#' bwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
 #' w <- rep(1, nrow(regularExData))
-#' bw_opt <- gcvLocPoly1d(regBwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
+#' bwOpt <- gcvLocPoly1d(bwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
 #' @export
 gcvLocPoly1d <- function(bwCand, x, y, w, kernel, drv, degree) {
     .Call('rfda_gcvLocPoly1d', PACKAGE = 'rfda', bwCand, x, y, w, kernel, drv, degree)
@@ -155,10 +197,6 @@ gcvLocPoly1d <- function(bwCand, x, y, w, kernel, drv, degree) {
 #' @export
 locQuantPoly1d <- function(bandwidth, probs, x, y, w, xout, kernel, drv, degree) {
     .Call('rfda_locQuantPoly1d', PACKAGE = 'rfda', bandwidth, probs, x, y, w, xout, kernel, drv, degree)
-}
-
-trapz_cpp <- function(x, y) {
-    .Call('rfda_trapz_cpp', PACKAGE = 'rfda', x, y)
 }
 
 #' unique rows

@@ -1,5 +1,6 @@
 #include "common.h"
 
+// a function to extract data of vector to a matrix with a index matrix
 arma::mat take_elem_from_umat(const arma::vec& x, const arma::umat& idx){
   mat out = zeros<mat>(size(idx));
   for (uword i = 0; i < idx.n_cols; ++i)
@@ -7,7 +8,7 @@ arma::mat take_elem_from_umat(const arma::vec& x, const arma::umat& idx){
   return out;
 }
 
-
+// spline function in C++ implementation
 // [[Rcpp::export]]
 arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi){
   chk_mat(x, "x", "double");
@@ -149,6 +150,7 @@ arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi
   return ret;
 }
 
+// interp1 function in C++ implementation
 // [[Rcpp::export]]
 arma::mat interp1_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi,
                   const std::string& method){
@@ -205,19 +207,19 @@ arma::mat interp1_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& x
 //'
 //' Returns interpolated values of a 2-D function at specific query points using
 //' linear interpolation. The extrapolation is used, please be caution in using the
-//' values which xi is larger than max(x)/max(y) and smaller than min(x)/min(y).
+//' values which \code{xi} is larger than \code{max(x)/max(y)} and smaller than \code{min(x)/min(y)}.
 //'
-//' @param x A vector with n1 elements, x[i] is a support, i = 1, ..., n1.
-//'   If x is not sorted, it will be sorted. If x is not unique, the corresponding V values
+//' @param x A vector with n1 elements, \code{x[i]} is a support, \code{i = 1, ..., n1}.
+//'   If \code{x} is not sorted, it will be sorted. If \code{x} is not unique, the corresponding \code{v} values
 //'   will be averaged.
-//' @param y A vector with n2 elements, y[j] is a support, j = 1, ..., n2.
-//'   If y is not sorted, it will be sorted. If y is not unique, the corresponding V values
+//' @param y A vector with n2 elements, \code{y[j]} is a support, \code{j = 1, ..., n2}.
+//'   If \code{y} is not sorted, it will be sorted. If \code{y} is not unique, the corresponding \code{v} values
 //'   will be averaged.
-//' @param v A matrix with size n1 by n2, v[i, j] is the corresponding value at grid (x[i], y[j]).
-//' @param xi A vector with m elements, xi[k] is the point which you want to interpolate,
-//'   k = 1, ..., m1.
-//' @param yi A vector with m elements, yi[l] is the point which you want to interpolate,
-//'   l = 1, ..., m2.
+//' @param v A matrix with size n1 by n2, \code{v[i, j]} is the corresponding value at grid \code{(x[i], y[j])}.
+//' @param xi A vector with m elements, \code{xi[k]} is the point which you want to interpolate,
+//'   \code{k = 1, ..., m1}.
+//' @param yi A vector with m elements, \code{yi[l]} is the point which you want to interpolate,
+//'   \code{l = 1, ..., m2}.
 //' @param method A string "linear" or "spline", the method of interpolation.
 //' @return A matrix with the interpolated values corresponding to \code{xi} and \code{yi}.
 //' @section Reference:
@@ -260,7 +262,6 @@ arma::mat interp2(const arma::vec& x, const arma::vec& y, const arma::mat& v,
     Rcpp::stop("The number of columns of v must be equal to the length of x.");
   if (y.n_elem != v.n_rows)
     Rcpp::stop("The number of rows of v must be equal to the length of y.");
-
   if (!x.is_sorted())
     RMessage("x are not strictly monotonic increasing.\nx will be sorted.");
   if (method != "linear" && method != "spline")

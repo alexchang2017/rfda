@@ -29,6 +29,18 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// trapz_cpp
+arma::mat trapz_cpp(const arma::vec& x, const arma::mat& y);
+RcppExport SEXP rfda_trapz_cpp(SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type y(ySEXP);
+    __result = Rcpp::wrap(trapz_cpp(x, y));
+    return __result;
+END_RCPP
+}
 // spline_cpp
 arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi);
 RcppExport SEXP rfda_spline_cpp(SEXP xSEXP, SEXP ySEXP, SEXP xiSEXP) {
@@ -69,6 +81,24 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec& >::type yi(yiSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type method(methodSEXP);
     __result = Rcpp::wrap(interp2(x, y, v, xi, yi, method));
+    return __result;
+END_RCPP
+}
+// locLinear2d
+arma::mat locLinear2d(const arma::vec& bandwidth, const arma::mat& x, const arma::vec& y, const arma::vec& w, const arma::vec& count, const arma::vec& out1, const arma::vec& out2, const std::string& kernel);
+RcppExport SEXP rfda_locLinear2d(SEXP bandwidthSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP countSEXP, SEXP out1SEXP, SEXP out2SEXP, SEXP kernelSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const arma::vec& >::type bandwidth(bandwidthSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type out1(out1SEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type out2(out2SEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type kernel(kernelSEXP);
+    __result = Rcpp::wrap(locLinear2d(bandwidth, x, y, w, count, out1, out2, kernel));
     return __result;
 END_RCPP
 }
@@ -123,18 +153,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double& >::type drv(drvSEXP);
     Rcpp::traits::input_parameter< const double& >::type degree(degreeSEXP);
     __result = Rcpp::wrap(locQuantPoly1d(bandwidth, probs, x, y, w, xout, kernel, drv, degree));
-    return __result;
-END_RCPP
-}
-// trapz_cpp
-arma::mat trapz_cpp(const arma::vec& x, const arma::mat& y);
-RcppExport SEXP rfda_trapz_cpp(SEXP xSEXP, SEXP ySEXP) {
-BEGIN_RCPP
-    Rcpp::RObject __result;
-    Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type y(ySEXP);
-    __result = Rcpp::wrap(trapz_cpp(x, y));
     return __result;
 END_RCPP
 }
