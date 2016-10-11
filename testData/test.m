@@ -227,9 +227,15 @@ for example_case = 0:2
   out21 = linspace(min(tt),max(tt),ngrid);
   tneq = find(rcov.tpairn(1,:) ~= rcov.tpairn(2,:));
   win = ones(1,length(tneq));
-  [~, xcov_10]= mullwlsk([1, 1], 'gauss', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
-  [~, xcov_15]= mullwlsk([1.5, 1.5], 'gauss', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
-  [~, xcov_20]= mullwlsk([2, 2], 'gauss', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
+  if example_case ~= 1
+    [~, xcov_10]= mullwlsk([1, 1], 'gauss', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
+    [~, xcov_15]= mullwlsk([1.5, 1.5], 'gauss', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
+    [~, xcov_20]= mullwlsk([2, 2], 'gauss', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
+  else
+    [~, xcov_10]= mullwlsk([1, 1], 'gauss', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21, rcov.count(tneq));
+    [~, xcov_15]= mullwlsk([1.5, 1.5], 'gauss', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21, rcov.count(tneq));
+    [~, xcov_20]= mullwlsk([2, 2], 'gauss', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21, rcov.count(tneq));
+  end
   
   eval(['rcov_case', int2str(regular), '=[rcov.tpairn; rcov.cxxn]'';'])
   eval(['xcov_10_case', int2str(regular), '=xcov_10;'])

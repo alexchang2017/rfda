@@ -28,5 +28,3 @@ matFiles %>>% lapply(function(x){
   detach(matRes)
 })
 
-
-

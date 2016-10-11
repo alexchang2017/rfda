@@ -135,10 +135,10 @@
 #' @export
 get_FPCA_opts <- function(numFunc){
   return(list(
-    bwMean = -1, bwCov = c(-2, -2), bwNumGrid = 30, bwKernel = 'gauss', numBins = 0,
-    errTerm = TRUE, numGrid = 51, weight = FALSE, numFPC = 'FVE', FVE_threshold = 0.85,
-    maxNumFPC = 20, methodFPCS = 'CE', shrink = FALSE, varErr = 'cv', outPercent = 0,
-    methodNorm = ifelse(numFunc == 1, 'no', 'quantile'), ncpus = 0,
+    bwMean = -1, bwCov = c(-2, -2), bwNumGrid = 30, bwKernel = "gauss", numBins = 0,
+    errTerm = TRUE, numGrid = 51, weight = FALSE, numFPC = "FVE", FVE_threshold = 0.85,
+    maxNumFPC = 20, methodFPCS = "CE", shrink = FALSE, varErr = "cv", outPercent = 0,
+    methodNorm = ifelse(numFunc == 1, "no", "quantile"), ncpus = 0,
     userMeanFuncList = NULL, userCovFuncList = NULL
   ))
 }
@@ -165,7 +165,7 @@ chk_FPCA_opts <- function(optns, dataSize){
   assert_that(length(optns$bwNumGrid) == 1, is.numeric(optns$bwNumGrid), is.finite(optns$bwNumGrid),
               optns$bwNumGrid > 0)
   # check bwKernel
-  assert_that(is.character(optns$bwKernel), optns$bwKernel %in% c('gauss','epan','gaussvar','quar'))
+  assert_that(is.character(optns$bwKernel), optns$bwKernel %in% c("gauss", "epan", "gaussvar", "quar"))
 
   # check numBines
   if (!is.null(optns$numBins))
@@ -183,43 +183,42 @@ chk_FPCA_opts <- function(optns, dataSize){
   assert_that(length(optns$numFPC) == 1)
   if (is.numeric(optns$numFPC))
   {
-    assert_that(optns$numFPC > 0, optns$numFPC - floor(optns$numFPC) < 1e-6)
-    assert_that(is.finite(optns$numFPC))
+    assert_that(is.finite(optns$numFPC), optns$numFPC > 0, optns$numFPC - floor(optns$numFPC) < 1e-6)
     if (optns$numFPC > optns$numGrid - 2)
     {
-      warning(paste0('numFPC can only be less than or equal to numGrid-2!',
-                     ' Reset it to be numGrid-2 now!'))
+      warning(paste0("numFPC can only be less than or equal to numGrid-2!",
+                     " Reset it to be numGrid-2 now!"))
       optns$numFPC <- optns$numGrid - 2
     }
   } else
   {
-    assert_that(is.character(optns$numFPC), optns$numFPC %in% c('AIC', 'BIC', 'FVE', 'AIC_R'))
-    if (optns$numFPC == 'FVE')
+    assert_that(is.character(optns$numFPC), optns$numFPC %in% c("AIC", "BIC", "FVE", "AIC_R"))
+    if (optns$numFPC == "FVE")
     {
       assert_that(length(optns$FVE_threshold) == 1, is.numeric(optns$FVE_threshold),
                   optns$FVE_threshold > 0, optns$FVE_threshold <= 1)
-    } else if (optns$numFPC %in% c('AIC', 'BIC'))
+    } else if (optns$numFPC %in% c("AIC", "BIC"))
     {
       assert_that(length(optns$maxNumFPC) == 1, optns$maxNumFPC > 0,
                   is.numeric(optns$maxNumFPC), is.finite(optns$maxNumFPC))
       if (optns$maxNumFPC > optns$numGrid - 2)
       {
-        warning(paste0('maxNumFPC can only be less than or equal to numGrid-2!',
-                       ' Reset it to be numGrid-2 now!'))
+        warning(paste0("maxNumFPC can only be less than or equal to numGrid-2!",
+                       " Reset it to be numGrid-2 now!"))
         optns$maxNumFPC<- optns$numGrid - 2
       }
     }
   }
 
   # check methodFPCS
-  assert_that(length(optns$methodFPCS) == 1, optns$methodFPCS %in% c('IN', 'CE', 'LS', 'WLS'))
+  assert_that(length(optns$methodFPCS) == 1, optns$methodFPCS %in% c("IN", "CE", "LS", "WLS"))
 
   # check shrink
   assert_that(length(optns$shrink) == 1, is.logical(optns$shrink), !is.na(optns$shrink))
-  if (optns$shrink && (!optns$errTerm || optns$methodFPCS != 'IN'))
+  if (optns$shrink && (!optns$errTerm || optns$methodFPCS != "IN"))
   {
-    warning(paste0('The shrinkage method only had effects when methodFPCS = "IN"',
-                   ' and errTerm = TRUE! Reset to shrink = FALSE now!'))
+    warning(paste0("The shrinkage method only had effects when methodFPCS = \"IN\"",
+                   " and errTerm = TRUE! Reset to shrink = FALSE now!"))
     optns$shrink <- FALSE
   }
 

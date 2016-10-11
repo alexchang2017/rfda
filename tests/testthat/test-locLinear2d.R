@@ -1,9 +1,9 @@
 context("test - locLinear2d")
 
 load("covRes.rda") # results from MatLab
-data("regularExData", package = 'rfda')
-data("irregularExData", package = 'rfda')
-data("sparseExData", package = 'rfda')
+data("regularExData", package = "rfda")
+data("irregularExData", package = "rfda")
+data("sparseExData", package = "rfda")
 
 testDataRegular <- data.table(y = c(seq(0.1, 0.9, 0.1), c(0.9,1,1)), t = rep(1:3, 4),
                               sampleID = c(rep(1:4, each=3)))
@@ -11,7 +11,7 @@ testDataIrregular <- data.table(y = seq(0.1, 1, 0.1), t = c(1,2,4,1:3,3,4,1,4),
                                 sampleID = c(rep(1:2, each=3), rep(3:4, each=2)))
 testDataSparse <- data.table(y = seq(0.1, 1, 0.1), t = c(1,2,4,3,5,7,6,10,8,9),
                              sampleID = c(rep(1:2, each=3), rep(3:4, each=2)))
-testDT_list <- lapply(list(testDataRegular, testDataIrregular, testDataSparse), function(dt){
+testDT_list <- suppressMessages(lapply(list(testDataRegular, testDataIrregular, testDataSparse), function(dt){
   sparsity <- checkSparsity(dt, "sampleID", "t")
   bwCand <- bwCandChooser(dt, "sampleID", "t", sparsity, "gauss", 1)
   w <- rep(1, nrow(dt))
@@ -24,7 +24,7 @@ testDT_list <- lapply(list(testDataRegular, testDataIrregular, testDataSparse), 
     `[`( , `:=`(y = y - mf, variable = "y")) %>>%
     setnames(c("t", "y", "sampleID"), c("timePnt", "value", "subId")) %>>%
     `[`( , mf := NULL)
-})
+}))
 
 compareCovResList <- lapply(list(rcov_case2, rcov_case1, rcov_case0), function(m){
   data.table(m) %>>% setnames(c("t1", "t2", "sse")) %>>% setorder(t1, t2)
@@ -54,7 +54,25 @@ test_that("test - bwCandChooser2", {
                  2.030204, 2.247787, 2.488689), tolerance = 1e-6)
 })
 
-# context("3. test - locLinear2d: sparse case")
-
+context("3. test - locLinear2d: sparse case")
+xcovResList <- lapply(rawCovList, function(x){
+  xout <- seq(min(x$t1), max(x$t1), length.out = 30)
+  x %>>% `[`(t1 != t2) %>>% {
+    lapply(seq(10, 20, by = 5)/10, function(bw){
+      locLinear2d(c(bw, bw), as.matrix(.[ , .(t1, t2)]), .$sse, .$weight, .$cnt, xout, xout, "gauss")
+    })
+  }
+})
+test_that("test - locLinear2d", {
+  expect_equal(xcovResList[[1]][[1]], xcov_10_case2, tolerance = 1e-6)
+  expect_equal(xcovResList[[1]][[2]], xcov_15_case2, tolerance = 1e-6)
+  expect_equal(xcovResList[[1]][[3]], xcov_20_case2, tolerance = 1e-6)
+  expect_equal(xcovResList[[2]][[1]], xcov_10_case1, tolerance = 1e-6)
+  expect_equal(xcovResList[[2]][[2]], xcov_15_case1, tolerance = 1e-6)
+  expect_equal(xcovResList[[2]][[3]], xcov_20_case1, tolerance = 1e-6)
+  expect_equal(xcovResList[[3]][[1]], xcov_10_case0, tolerance = 1e-6)
+  expect_equal(xcovResList[[3]][[2]], xcov_15_case0, tolerance = 1e-6)
+  expect_equal(xcovResList[[3]][[3]], xcov_20_case0, tolerance = 1e-6)
+})
 
 

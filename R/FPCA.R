@@ -181,7 +181,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     message("Use the user-specified mean functions...")
     MFRes <- lapply(list(sampledTimePnts, allTimePnts), function(v){
       FPCA_opts$userMeanFuncList %>>%
-        `[`( , .(timePnt = v, value = interp1(timePnt, value, v, 'spline')),
+        `[`( , .(timePnt = v, value = interp1(timePnt, value, v, "spline")),
              by = .(variable))
     })
     bwOptLocPoly1d <- NA
