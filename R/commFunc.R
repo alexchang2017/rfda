@@ -44,9 +44,9 @@ binData <- function(data, numBins){
   # find the middle points to stand time points of binned data
   newTimePnts <- head(boundaries, numBins) + diff(boundaries) / 2
   # average the data in the interval for data binning
-  newDataDT <- data %>>% `[`( , idx_agg := findInterval(timePnt, boundaries, TRUE), by = .(subId,variable)) %>>%
-    `[`( , .(value = mean(value), timePnt = newTimePnts[idx_agg]), by = .(subId,variable,idx_agg)) %>>%
-    `[`( , idx_agg := NULL)
+  newDataDT <- data %>>% `[`(j = idx_agg := findInterval(timePnt, boundaries, TRUE), by = .(subId,variable)) %>>%
+    `[`(j = .(value = mean(value), timePnt = newTimePnts[idx_agg]), by = .(subId,variable,idx_agg)) %>>%
+    `[`(j = idx_agg := NULL)
   return(newDataDT)
 }
 

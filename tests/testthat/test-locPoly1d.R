@@ -42,6 +42,7 @@ test_that("locPoly1d - with same weights", {
 context("3. test - locPoly1d validate inputs")
 test_that("test - locPoly1d validate inputs", {
   expect_true(is.na(locPoly1d(0.01, x, y, w, x, "epan", 0, 1)))
+  expect_true(is.na(locPoly1d(0.01, x, y, w, x + 0.05, "epan", 0, 1)))
   expect_error(locPoly1d(bw, x, y, w, x, "guass", 0, 1), 'Unsupported kernel')
   expect_error(locPoly1d(-0.2, x, y, w, x, "gauss", 0, 1))
   expect_error(locPoly1d(NA, x, y, w, x, "gauss", 0, 1))

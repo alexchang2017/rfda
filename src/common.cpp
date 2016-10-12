@@ -20,11 +20,10 @@ std::string to_string(T const& value) {
 void chk_mat(const mat& x, const std::string& varName, const std::string& type){
   if (!is_finite(x))
     Rcpp::stop(varName + " must be numerical.\n");
-
-  if (type == "integer") {
-    if (all(all(abs(x - floor(x)) < 1e-6)))
-      Rcpp::stop(varName + " must be integer.\n");
-  }
+  // if (type == "integer") {
+  //   if (all(all(abs(x - floor(x)) < 1e-6)))
+  //     Rcpp::stop(varName + " must be integer.\n");
+  // }
 }
 
 // function to compute factorial in C++ implementation

@@ -37,8 +37,8 @@ getRawCrCov <- function(demeanDataDT){
     lapply(function(dt) merge(baseDT[variable >= dt$variable[1]], dt, suffixes = c("1", "2"),
                               by.x = c("subId", "t2"), by.y = c("subId", "timePnt"))) %>>%
     rbindlist %>>% setnames("value", "value.var2") %>>%
-    `[`( , .(sse = sum(value.var1 * value.var2), cnt = .N), by = .(variable1, variable2, t1, t2)) %>>%
-    setorder(variable1, variable2, t1, t2) %>>% `[`( , weight := 1)
+    `[`(j = .(sse = sum(value.var1 * value.var2), cnt = .N), by = .(variable1, variable2, t1, t2)) %>>%
+    setorder(variable1, variable2, t1, t2) %>>% `[`(j = weight := 1)
   return(rawCrCovDT)
 }
 
@@ -118,7 +118,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   # additionally, give names for id.var and timeVarName
   dataDT <- melt.data.table(data.table(data), id.vars = c(id.var, timeVarName),
                             measure.vars = varName, variable.factor = TRUE) %>>%
-    `[`( , variable := as.integer(variable)) %>>% `[`(!is.na(value) & is.finite(value)) %>>%
+    `[`(j = variable := as.integer(variable)) %>>% `[`(!is.na(value) & is.finite(value)) %>>%
     setnames(c(id.var, timeVarName) , c("subId", "timePnt"))
 
   # find the number of observations for each observed function
@@ -181,7 +181,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     message("Use the user-specified mean functions...")
     MFRes <- lapply(list(sampledTimePnts, allTimePnts), function(v){
       FPCA_opts$userMeanFuncList %>>%
-        `[`( , .(timePnt = v, value = interp1(timePnt, value, v, "spline")),
+        `[`(j = .(timePnt = v, value = interp1(timePnt, value, v, "spline")),
              by = .(variable))
     })
     bwOptLocPoly1d <- NA
@@ -216,7 +216,7 @@ FPCA <- function(formula, id.var, data, options = list()){
 
   # calculation of demeaned data
   demeanDataDT <- merge(dataDT, MFRes[[3]], by = c("timePnt", "variable"), suffixes = c(".ori", ".mean")) %>>%
-    `[`( , value := (value.ori - value.mean))
+    `[`(j = value := (value.ori - value.mean))
 
   # get raw covariance
   rawCov <- getRawCrCov(demeanDataDT)
@@ -247,8 +247,6 @@ FPCA <- function(formula, id.var, data, options = list()){
   } else {
     message("Not perform the normalization...")
   }
-
-  # find cross-covariance
 
   # decide the number of FPC
 
