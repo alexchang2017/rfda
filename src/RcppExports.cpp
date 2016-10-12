@@ -102,9 +102,9 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
-// locPoly1d
-Rcpp::NumericVector locPoly1d(const double& bandwidth, const arma::vec& x, const arma::vec& y, const arma::vec& w, const arma::vec& xout, const std::string& kernel, const double& drv, const double& degree);
-RcppExport SEXP rfda_locPoly1d(SEXP bandwidthSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP xoutSEXP, SEXP kernelSEXP, SEXP drvSEXP, SEXP degreeSEXP) {
+// locPoly1d_cpp
+arma::vec locPoly1d_cpp(const double& bandwidth, const arma::vec& x, const arma::vec& y, const arma::vec& w, const arma::vec& xout, const std::string& kernel, const double& drv, const double& degree);
+RcppExport SEXP rfda_locPoly1d_cpp(SEXP bandwidthSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP xoutSEXP, SEXP kernelSEXP, SEXP drvSEXP, SEXP degreeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -116,7 +116,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const std::string& >::type kernel(kernelSEXP);
     Rcpp::traits::input_parameter< const double& >::type drv(drvSEXP);
     Rcpp::traits::input_parameter< const double& >::type degree(degreeSEXP);
-    __result = Rcpp::wrap(locPoly1d(bandwidth, x, y, w, xout, kernel, drv, degree));
+    __result = Rcpp::wrap(locPoly1d_cpp(bandwidth, x, y, w, xout, kernel, drv, degree));
     return __result;
 END_RCPP
 }

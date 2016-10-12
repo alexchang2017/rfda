@@ -110,31 +110,8 @@ locLinear2d <- function(bandwidth, x, y, w, count, out1, out2, kernel) {
     .Call('rfda_locLinear2d', PACKAGE = 'rfda', bandwidth, x, y, w, count, out1, out2, kernel)
 }
 
-#' One-dimensional kernel local polynominal smoother
-#'
-#' Perform one-dimensional kernel local polynominal smoother for data \code{(x,y)} with weight \code{w} on \code{xout}.
-#'
-#' @param bandwidth A single numerical value. The kernel smoothing parameter.
-#' @param x A vector, the variable of of x-axis.
-#' @param y A vector, the variable of of y-axis. \code{y[i]} is corresponding value of \code{x[i]}.
-#' @param w A vector, the weight of data. \code{w[i]} is corresponding value of \code{x[i]}.
-#' @param xout A vector, vector of output time points. It should be a sorted vecotr.
-#' @param kernel A string. It could be 'gauss', 'gaussvar', 'epan' or 'quar'.
-#' @param drv An integer, the order of derivative.
-#' @param degree An integer, the degree of polynomial.
-#' @return A estimated value on \code{xout} by one-dimensional kernel local polynominal smoother.
-#' @examples
-#' N <- 100
-#' x <- runif(N, 0, 10)
-#' y <- rnorm(N)
-#' xout <- sort(runif(200, 0, 10))
-#' est <- locPoly1d(1.2, x, y, rep(1, N), xout, 'gauss', 0, 1)
-#' require(ggplot2)
-#' ggplot(data.frame(x,y), aes(x,y)) + geom_point() +
-#'   geom_line(aes(xout, est), data = data.frame(xout, est))
-#' @export
-locPoly1d <- function(bandwidth, x, y, w, xout, kernel, drv, degree) {
-    .Call('rfda_locPoly1d', PACKAGE = 'rfda', bandwidth, x, y, w, xout, kernel, drv, degree)
+locPoly1d_cpp <- function(bandwidth, x, y, w, xout, kernel, drv, degree) {
+    .Call('rfda_locPoly1d_cpp', PACKAGE = 'rfda', bandwidth, x, y, w, xout, kernel, drv, degree)
 }
 
 #' Find the optimal bandwidth for one-dimensional kernel local polynominal smoother

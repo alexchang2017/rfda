@@ -113,33 +113,10 @@ struct Worker_locPoly1d_nongauss: public RcppParallel::Worker {
   }
 };
 
-//' One-dimensional kernel local polynominal smoother
-//'
-//' Perform one-dimensional kernel local polynominal smoother for data \code{(x,y)} with weight \code{w} on \code{xout}.
-//'
-//' @param bandwidth A single numerical value. The kernel smoothing parameter.
-//' @param x A vector, the variable of of x-axis.
-//' @param y A vector, the variable of of y-axis. \code{y[i]} is corresponding value of \code{x[i]}.
-//' @param w A vector, the weight of data. \code{w[i]} is corresponding value of \code{x[i]}.
-//' @param xout A vector, vector of output time points. It should be a sorted vecotr.
-//' @param kernel A string. It could be 'gauss', 'gaussvar', 'epan' or 'quar'.
-//' @param drv An integer, the order of derivative.
-//' @param degree An integer, the degree of polynomial.
-//' @return A estimated value on \code{xout} by one-dimensional kernel local polynominal smoother.
-//' @examples
-//' N <- 100
-//' x <- runif(N, 0, 10)
-//' y <- rnorm(N)
-//' xout <- sort(runif(200, 0, 10))
-//' est <- locPoly1d(1.2, x, y, rep(1, N), xout, 'gauss', 0, 1)
-//' require(ggplot2)
-//' ggplot(data.frame(x,y), aes(x,y)) + geom_point() +
-//'   geom_line(aes(xout, est), data = data.frame(xout, est))
-//' @export
 // [[Rcpp::export]]
-Rcpp::NumericVector locPoly1d(const double& bandwidth, const arma::vec& x, const arma::vec& y,
-                    const arma::vec& w, const arma::vec& xout, const std::string& kernel,
-                    const double& drv, const double& degree){
+arma::vec locPoly1d_cpp(const double& bandwidth, const arma::vec& x, const arma::vec& y,
+                        const arma::vec& w, const arma::vec& xout, const std::string& kernel,
+                        const double& drv, const double& degree){
   // check data
   chk_mat(x, "x", "double");
   chk_mat(y, "y", "double");
@@ -174,21 +151,21 @@ Rcpp::NumericVector locPoly1d(const double& bandwidth, const arma::vec& x, const
   // compute parallely the estimates given bandwidth
   if (kernel == "gauss" || kernel == "gaussvar")
   {
-    Worker_locPoly1d_gauss locPoly1d(bandwidth, xw, yw, ww, xout, kernel, drv, degree, est);
-    RcppParallel::parallelFor(0, xout.n_elem, locPoly1d);
+    Worker_locPoly1d_gauss locPoly1d_worker(bandwidth, xw, yw, ww, xout, kernel, drv, degree, est);
+    RcppParallel::parallelFor(0, xout.n_elem, locPoly1d_worker);
   } else
   {
-    Worker_locPoly1d_nongauss locPoly1d(bandwidth, xw, yw, ww, xout, kernel, drv, degree, est, flag);
-    RcppParallel::parallelFor(0, xout.n_elem, locPoly1d);
+    Worker_locPoly1d_nongauss locPoly1d_worker(bandwidth, xw, yw, ww, xout, kernel, drv, degree, est, flag);
+    RcppParallel::parallelFor(0, xout.n_elem, locPoly1d_worker);
   }
   // return NaN if there is a interval with no data
   vec errOut = {datum::nan};
   if (any(flag == 1))
   {
     RMessage("Too many gaps, please increase bandwidth.");
-    return Rcpp::NumericVector(errOut.begin(), errOut.end());
+    return errOut;
   }
-  return Rcpp::NumericVector(est.begin(), est.end());
+  return est;
 }
 
 //' Find the optimal bandwidth for one-dimensional kernel local polynominal smoother
@@ -241,7 +218,7 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
   double r = x.max() - x.min(), bw_opt;
   // find the GCV-adjusted term
   vec gcv_param = pow(1 - r * k0(0) / bwCand / (double) x.n_elem, 2.0),
-    gcv = zeros<vec>(bwCand.n_elem), new_est(x.n_elem);
+    gcv = zeros<vec>(bwCand.n_elem), new_est = zeros<vec>(y.n_elem);
 
   // initialize gcv
   bool con = true, sparse = false, secondRun = false;
@@ -250,14 +227,15 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
   if (xout.n_elem > 101)
     xout2 = linspace<vec>(min(xout), max(xout), 101);
   vec est = zeros<vec>(xout2.n_elem);
+  uvec nonfiniteLoc;
   while (con)
   {
     // fill gcv score with big number
-    gcv.fill(1e35);
+    gcv.fill(datum::inf);
     for (uword k = 0; k < bwCand.n_elem; ++k)
     {
       // get smoothed values
-      est = locPoly1d(bwCand(k), x, y, w, xout2, kernel, drv, degree);
+      est = locPoly1d_cpp(bwCand(k), x, y, w, xout2, kernel, drv, degree);
       if (is_finite(est)){
         // map the smoothed values onto x
         if (xout2.n_elem == xout.n_elem){
@@ -267,6 +245,8 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
         } else {
           new_est = interp1_cpp(xout2, est, x, interp1_method);
         }
+      } else {
+        new_est.fill(datum::nan);
       }
 
       if (is_finite(new_est))
@@ -281,7 +261,8 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
       }
     }
 
-    if (all(gcv == 1e35))
+    nonfiniteLoc = find_nonfinite(gcv);
+    if (nonfiniteLoc.n_elem == bwCand.n_elem)
     {
       // if bw are all too small, then re-compute or
       // stop implementation if it has the same situation in second round
@@ -308,9 +289,8 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
     } else if (bw_opt == bwCand(bwCand.n_elem - 1) && !secondRun)
     {
       // re-compute with new bandwidth candidates
-      uvec gcvInf = find(gcv == 1e35);
       double minBW;
-      if (sparse || gcvInf.n_elem == 9)
+      if (sparse || nonfiniteLoc.n_elem == bwCand.n_elem-1)
       {
         RMessage("The data is too sparse, retry with larger bandwidths!");
         minBW = bwCand(bwCand.n_elem - 1) * 1.01;
@@ -331,7 +311,7 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
       std::stringstream bwCand_str;
       bwCand.print(bwCand_str);
       RMessage(bwCand_str.str());
-    } else if (bw_opt < bwCand(9) || secondRun)
+    } else if (bw_opt < bwCand(bwCand.n_elem - 1) || secondRun)
     {
       con = false;
     }

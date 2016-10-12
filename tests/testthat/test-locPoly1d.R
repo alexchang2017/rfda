@@ -130,8 +130,8 @@ test_that("gcvLocPoly1d", {
                             weightList[[3]], "quar", 0, 1), 1.178395, tolerance = 1e-6)
 })
 
-context("6. test - locPoly1d validate inputs")
-test_that("test - locPoly1d validate inputs", {
+context("6. test - gcvlocPoly1d validate inputs")
+test_that("test - gcvlocPoly1d validate inputs", {
   expect_error(gcvLocPoly1d(bwCandList[[1]], regularExData$t, regularExData$y,
                             weightList[[1]], "guass", 0, 1), 'Unsupported kernel')
   expect_error(gcvLocPoly1d(-0.2, regularExData$t, regularExData$y,
@@ -185,7 +185,13 @@ test_that("test - locPoly1d validate inputs", {
                             weightList[[1]], "gauss", 2, 1))
 })
 
-context("7. test - adjGcvBw1d")
+context("7. test - gcvlocPoly1d error handling")
+test_that("test - gcvlocPoly1d error handling", {
+  expect_message(gcvLocPoly1d(c(0.01, 0.03), regularExData$t, regularExData$y, weightList[[1]], "epan", 0, 1),
+                 'The data is too sparse, retry with larger bandwidths!')
+})
+
+context("8. test - adjGcvBw1d")
 test_that("adjGcvBw1d", {
   expect_equal(rfda:::adjGcvBw1d(0.789474, 2, "gauss", 0), 0.868421, tolerance = 1e-6)
   expect_equal(rfda:::adjGcvBw1d(1.019959, 2, "epan", 0), 1.121955, tolerance = 1e-6)
@@ -195,7 +201,7 @@ test_that("adjGcvBw1d", {
   expect_equal(rfda:::adjGcvBw1d(0.918469, 0, "epan", 0), 1.010316, tolerance = 1e-6)
 })
 
-context("8. test - locQuantPoly1d")
+context("9. test - locQuantPoly1d")
 set.seed(100)
 N <- 100
 x <- runif(N, 0, 10)

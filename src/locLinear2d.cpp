@@ -184,6 +184,8 @@ arma::mat locLinear2d(const arma::vec& bandwidth, const arma::mat& x, const arma
   chk_mat(count, "count", "double");
   if (x.n_rows != y.n_elem || x.n_rows != w.n_elem || x.n_rows != count.n_elem)
     Rcpp::stop("The number of rows of x must be equal to the lengths of y, w and count.\n");
+  if (x.n_cols != 2)
+    Rcpp::stop("x must be a matrix with 2 columns.\n");
   if (!out1.is_sorted() || !out2.is_sorted())
     Rcpp::stop("out1 and out2 must be sorted.\n");
 

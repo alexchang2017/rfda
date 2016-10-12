@@ -126,7 +126,7 @@ arma::mat locQuantPoly1d(const double& bandwidth, const arma::vec& probs, const 
   mat est = zeros<mat>(xout.n_elem, probs.n_elem);
   for (uword i = 0; i < probs.n_elem; i++){
     vec tmp_y = new_y.col(i);
-    est.col(i) = Rcpp::as<vec>(locPoly1d(bandwidth, new_x, tmp_y, new_w, xout, kernel, drv, degree));
+    est.col(i) = locPoly1d_cpp(bandwidth, new_x, tmp_y, new_w, xout, kernel, drv, degree);
   }
 
   return est;

@@ -89,3 +89,67 @@ test_that("test - locLinear2d", {
   expect_equal(xcovResList2[[2]], xcov_30_gaussvar, tolerance = 1e-5) # there is a percision issue
 })
 
+context("4. test - locLinear2d: validate inputs")
+m <- rcov_test[t1 != t2]
+
+test_that("test - locLinear2d: validate inputs", {
+  expect_true(is.na(locLinear2d(c(0.3, 0.3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                                m$weight, m$cnt, xout, xout, "epan")))
+  expect_error(locLinear2d(c(3, -2), as.matrix(m[ , .(t1, t2)]), m$sse, m$weight, m$cnt, xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, NA), as.matrix(m[ , .(t1, t2)]), m$sse, m$weight, m$cnt, xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, NaN), as.matrix(m[ , .(t1, t2)]), m$sse, m$weight, m$cnt, xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, Inf), as.matrix(m[ , .(t1, t2)]), m$sse, m$weight, m$cnt, xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3, 3), as.matrix(m[ , .(t1, t2)]), m$sse, m$weight, m$cnt, xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2, cnt)]), m$sse,
+                           m$weight, m$cnt, xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, 1), as.matrix(m[ , .(t1, t2)])), m$sse,
+                           m$weight, m$cnt, xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, NA), as.matrix(m[ , .(t1, t2)])), c(1, m$sse),
+                           c(1, m$weight), c(1, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, NaN), as.matrix(m[ , .(t1, t2)])), c(1, m$sse),
+                           c(1, m$weight), c(1, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, Inf), as.matrix(m[ , .(t1, t2)])), c(1, m$sse),
+                           c(1, m$weight), c(1, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), c(1, m$sse),
+                           m$weight, m$cnt, xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, 1), as.matrix(m[ , .(t1, t2)])), c(NA, m$sse),
+                           c(1, m$weight), c(1, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, 1), as.matrix(m[ , .(t1, t2)])), c(NaN, m$sse),
+                           c(1, m$weight), c(1, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, 1), as.matrix(m[ , .(t1, t2)])), c(Inf, m$sse),
+                           c(1, m$weight), c(1, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                           c(1, m$weight), m$cnt, xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, 1), as.matrix(m[ , .(t1, t2)])), c(1, m$sse),
+                           c(NA, m$weight), c(1, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, 1), as.matrix(m[ , .(t1, t2)])), c(1, m$sse),
+                           c(NaN, m$weight), c(1, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, 1), as.matrix(m[ , .(t1, t2)])), c(1, m$sse),
+                           c(Inf, m$weight), c(1, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                           m$weight, c(1, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, 1), as.matrix(m[ , .(t1, t2)])), c(1, m$sse),
+                           c(1, m$weight), c(NA, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, 1), as.matrix(m[ , .(t1, t2)])), c(1, m$sse),
+                           c(1, m$weight), c(NaN, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), rbind(c(1, 1), as.matrix(m[ , .(t1, t2)])), c(1, m$sse),
+                           c(1, m$weight), c(Inf, m$cnt), xout, xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                           m$weight, m$cnt, c(2, xout), xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                           m$weight, m$cnt, c(NA, xout), xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                           m$weight, m$cnt, c(NaN, xout), xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                           m$weight, m$cnt, c(Inf, xout), xout, "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                           m$weight, m$cnt, xout, c(2, xout), "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                           m$weight, m$cnt, xout, c(NA, xout), "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                           m$weight, m$cnt, xout, c(NaN, xout), "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                           m$weight, m$cnt, xout, c(Inf, xout), "gauss"))
+  expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
+                           m$weight, m$cnt, xout, xout, "guass"))
+})
