@@ -91,11 +91,15 @@ bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
   # get the minimum bandwidth given sparsity of data
   if (sparsity == 0){
     dstar <- find_max_diff_f(data[[timeVarName]], degree + 2)
-    if (dstar > r / 4){
-      dstar <- dstar * 0.75
-      message(sprintf("The min bandwidth choice is too big, reduce to %.6f", dstar))
+    if (!is.na(dstar)){
+      if (dstar > r / 4){
+        dstar <- dstar * 0.75
+        message(sprintf("The min bandwidth choice is too big, reduce to %.6f", dstar))
+      }
+      minBW <- 2.5 * dstar
+    } else {
+      minBW <- NA
     }
-    minBW <- 2.5 * dstar
   } else if (sparsity == 1){
     minBW <- 2.0 * find_max_diff_f(data[[timeVarName]], degree + 1)
   } else if (sparsity == 2){
@@ -103,10 +107,11 @@ bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
   }
 
   # use range / 2 if kernel is gaussian and minimum is not found
-  if (is.na(minBW) && kernel == "gauss"){
+  if ((is.na(minBW) || minBW < 0) && kernel == "gauss"){
+    message("Data is too sparse, use the range / 2 as minimum bandwidth.")
     minBW <- 0.5 * r;
-  } else if (minBW < 0 && kernel != "gauss"){
-    stop("The data is too sparse, no suitable bandwidth can be found! Try Gaussian kernel instead!\n");
+  } else if ((is.na(minBW) || minBW < 0) && kernel != "gauss"){
+    stop("Data is too sparse, no suitable bandwidth can be found! Try Gaussian kernel instead!\n");
   }
 
   # find the candidates
@@ -161,10 +166,14 @@ bwCandChooser2 <- function(dataAllGrid, id.var, timeVarName, sparsity, kernel, d
   }
 
   # shrink the minimum bandwidth if kernel is gaussian
-  if (kernel == "gauss"){
+  if (kernel == "gauss") {
+    if (is.na(minBW) || minBW < 0){
+      message("Data is too sparse, use the max(t) as minimum bandwidth.")
+      minBW <- max(xout)
+    }
     minBW <- 0.2 * minBW;
-  } else if (is.na(minBW) || (minBW < 0 && kernel != "gauss")){
-    stop("The data is too sparse, no suitable bandwidth can be found! Try Gaussian kernel instead!\n");
+  } else if ((is.na(minBW) || minBW < 0) && kernel != "gauss") {
+    stop("Data is too sparse, no suitable bandwidth can be found! Try Gaussian kernel instead!\n");
   }
 
   # find the candidates

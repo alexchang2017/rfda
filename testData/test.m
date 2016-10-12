@@ -241,7 +241,14 @@ for example_case = 0:2
   eval(['xcov_10_case', int2str(regular), '=xcov_10;'])
   eval(['xcov_15_case', int2str(regular), '=xcov_15;'])
   eval(['xcov_20_case', int2str(regular), '=xcov_20;'])
+  
+  if example_case == 2
+    [~, xcov_30_gaussvar] = mullwlsk([3, 3], 'gausvar', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
+    [~, xcov_30_epan] = mullwlsk([3, 3], 'epan', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
+    [~, xcov_30_quar] = mullwlsk([3, 3], 'quar', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
+  end
 end
 save('testMat/covRes.mat', 'rcov_case0', 'rcov_case1', 'rcov_case2', 'xcov_10_case0', ...
   'xcov_10_case1', 'xcov_10_case2', 'xcov_15_case0', 'xcov_15_case1', 'xcov_15_case2', ...
-  'xcov_20_case0', 'xcov_20_case1', 'xcov_20_case2');
+  'xcov_20_case0', 'xcov_20_case1', 'xcov_20_case2', 'xcov_30_gaussvar', 'xcov_30_epan', ...
+  'xcov_30_quar');

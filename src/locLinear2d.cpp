@@ -38,6 +38,7 @@ struct Worker_locLinear2d_gauss: public RcppParallel::Worker {
         if (kernel == "gaussvar")
           w %= (1.25 - 0.25 * square(dx.col(1) / bandwidth(0))) %
             (1.5 - 0.5 * square(dx.col(2) / bandwidth(1)));
+
         mat dxw = dx;
         dxw.each_col() %= (w % countw);
         vec p = pinv(dxw.t() * dx) * dx.t() * (w % yw);
@@ -96,6 +97,8 @@ struct Worker_locLinear2d_nongauss: public RcppParallel::Worker {
             vec ly = yw(in_windows_2);
             vec lw = ww(in_windows_2);
             vec lc = countw(in_windows_2);
+            if (i == 0 && j == 0)
+              Rcpp::Rcout << lw << endl;
             // find the unique x in the windows and check that the degree of free is sufficient
             mat uni_lx = unique_rows(lx);
             if (uni_lx.n_rows >= 3)
@@ -111,8 +114,17 @@ struct Worker_locLinear2d_nongauss: public RcppParallel::Worker {
                       square(1 - square(x_minus_range[,2] / bandwidth[2])) * (225.0 / 256.0)
               */
               // fit a WLS
+              if (i == 0 && j == 0){
+                Rcpp::Rcout << lx << endl;
+                Rcpp::Rcout << w << endl;
+              }
+
               mat lxw = lx;
               lxw.each_col() %= (w % lc);
+              if (i ==j && i == 0){
+                Rcpp::Rcout << lxw.t() * lx << endl;
+                Rcpp::Rcout << lx.t() * (w % ly) << endl;
+              }
               vec p = pinv(lxw.t() * lx) * lx.t() * (w % ly);
               // get the estimation
               est(i, j) = p(0);

@@ -42,6 +42,8 @@ context("2. test - bwCandChooser2")
 allGridList <- lapply(list(regularExData, irregularExData, sparseExData), function(df){
   data.table(df) %>>% `[`( , .(t1 = rep(t, length(t)), t2 = rep(t, each=length(t))), by = .(sampleID))
 })
+testErrDt <- data.table(sampleID = rep(1:4, each=2), t = c(1,3,11,9,1,13,4,2), y = rnorm(8)) %>>%
+  `[`( , .(t1 = rep(t, length(t)), t2 = rep(t, each=length(t))), by = .(sampleID))
 test_that("test - bwCandChooser2", {
   expect_equal(bwCandChooser2(allGridList[[1]], "sampleID", c("t1", "t2"), 2, "gauss", 1)[ , 1],
                c(0.315789, 0.397407, 0.500119, 0.629378, 0.792045, 0.996754, 1.254371,
@@ -52,6 +54,8 @@ test_that("test - bwCandChooser2", {
   expect_equal(bwCandChooser2(allGridList[[3]], "sampleID", c("t1", "t2"), 0, "gauss", 1)[ , 1],
                c(0.995476, 1.102164, 1.220286, 1.351068, 1.495867, 1.656184, 1.833682,
                  2.030204, 2.247787, 2.488689), tolerance = 1e-6)
+  expect_message(bwCandChooser2(testErrDt, "sampleID", c("t1", "t2"), 0, "gauss", 9), "Data is too sparse")
+  expect_error(bwCandChooser2(testErrDt, "sampleID", c("t1", "t2"), 0, "epan", 9), "Data is too sparse")
 })
 
 context("3. test - locLinear2d: sparse case")
@@ -61,6 +65,15 @@ xcovResList <- lapply(rawCovList, function(x){
     lapply(seq(10, 20, by = 5)/10, function(bw){
       locLinear2d(c(bw, bw), as.matrix(.[ , .(t1, t2)]), .$sse, .$weight, .$cnt, xout, xout, "gauss")
     })
+  }
+})
+rcov_test <- rawCovList[[1]]
+xout <- seq(min(rcov_test$t1), max(rcov_test$t1), length.out = 30)
+xcovResList2 <- lapply(c("epan", "gaussvar", "quar"), function(k){
+  rcov_test %>>% `[`(t1 != t2) %>>% {
+    browser()
+    locLinear2d(c(3, 3), as.matrix(.[ , .(t1, t2)]), .$sse, .$weight, .$cnt, xout, xout, k)
+    tmp <- locLinear2d(c(2, 2), as.matrix(.[ , .(t1, t2)]), .$sse, .$weight, .$cnt, xout, xout, k)
   }
 })
 test_that("test - locLinear2d", {
@@ -73,6 +86,8 @@ test_that("test - locLinear2d", {
   expect_equal(xcovResList[[3]][[1]], xcov_10_case0, tolerance = 1e-6)
   expect_equal(xcovResList[[3]][[2]], xcov_15_case0, tolerance = 1e-6)
   expect_equal(xcovResList[[3]][[3]], xcov_20_case0, tolerance = 1e-6)
+  expect_equal(xcovResList2[[1]], xcov_30_epan, tolerance = 1e-6)
+  expect_equal(xcovResList2[[3]], xcov_30_quar, tolerance = 1e-6)
+  expect_equal(xcovResList2[[2]], xcov_30_gaussvar, tolerance = 1e-5) # there is a percision issue
 })
-
 
