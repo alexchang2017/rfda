@@ -15,8 +15,8 @@ test_that("test - bwCandChooser", {
   expect_equal(bwCandChooser(sparseExData, "sampleID", "t", 0, "gauss", 1),
                c(0.264199, 0.338967, 0.434895, 0.557970, 0.715876, 0.918469, 1.178395,
                  1.511881, 1.939743, 2.488689), tolerance = 1e-6)
-  expect_message(bwCandChooser(dt, "sampleID", "t", 0, "gauss", 9), "Data is too sparse")
-  expect_error(bwCandChooser(dt, "sampleID", "t", 0, "epan", 9), "Data is too sparse")
+  expect_message(bwCandChooser(testErrDt, "sampleID", "t", 0, "gauss", 9), "Data is too sparse")
+  expect_error(bwCandChooser(testErrDt, "sampleID", "t", 0, "epan", 9), "Data is too sparse")
 })
 
 context("2. test - locPoly1d with same weights")
@@ -196,6 +196,7 @@ test_that("adjGcvBw1d", {
 })
 
 context("8. test - locQuantPoly1d")
+set.seed(100)
 N <- 100
 x <- runif(N, 0, 10)
 y <- rnorm(N)
@@ -204,7 +205,7 @@ xout <- sort(runif(200, 0, 10))
 probs <- c(0.25, 0.5, 0.75)
 test_that("test - locQuantPoly1d validate inputs", {
   expect_length(locQuantPoly1d(0.3, 0.5, x, y, w, xout, "gauss", 0, 1), 200)
-  expect_length(locQuantPoly1d(0.07, 0.5, x, y, w, xout, "gauss", 0, 1), 200) # remove some obs
+  expect_length(locQuantPoly1d(0.067, 0.5, x, y, w, xout, "gauss", 0, 1), 200) # bw=0.067 will remove some obs
   expect_error(locQuantPoly1d(0.01, probs, x, y, w, xout, "gauss", 0, 1), "The bandwidth is too small")
   expect_error(locQuantPoly1d(-0.2, probs, x, y, w, xout, "gauss", 0, 1))
   expect_error(locQuantPoly1d(NA, probs, x, y, w, xout, "gauss", 0, 1))

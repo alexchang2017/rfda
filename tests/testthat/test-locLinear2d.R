@@ -71,9 +71,7 @@ rcov_test <- rawCovList[[1]]
 xout <- seq(min(rcov_test$t1), max(rcov_test$t1), length.out = 30)
 xcovResList2 <- lapply(c("epan", "gaussvar", "quar"), function(k){
   rcov_test %>>% `[`(t1 != t2) %>>% {
-    browser()
     locLinear2d(c(3, 3), as.matrix(.[ , .(t1, t2)]), .$sse, .$weight, .$cnt, xout, xout, k)
-    tmp <- locLinear2d(c(2, 2), as.matrix(.[ , .(t1, t2)]), .$sse, .$weight, .$cnt, xout, xout, k)
   }
 })
 test_that("test - locLinear2d", {
