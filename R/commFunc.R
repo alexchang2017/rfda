@@ -183,3 +183,41 @@ bwCandChooser2 <- function(dataAllGrid, id.var, timeVarName, sparsity, kernel, d
   return(bwMat[order(bwMat[,1], bwMat[,2], decreasing = FALSE), ])
 }
 
+#' Find the candidates of bandwidths for locLinear2d
+#'
+#' @param data A data.frame containing sample id, observed time points and correponding observed values.
+#' @param subid The column name of the id of subjects.
+#' @param sparsity A numeric vector between 0 and 1. The proportion of data will be extracted.
+#'   The length of sparsity must 1 or the number of observation.
+#'   (The number of observation does not mean the number of rows of data, see examples.)
+#' @return A data.frame after sparsifying.
+#' @examples
+#' require(ggplot2)
+#' tp <- seq(1, 10, len = 101)
+#' DT <- funcDataGen(3, tp, function(x) sin(x), function(x) rep(1, length(x)), "BesselJ")
+#' sparseDT <- sparsify(DT, "sampleID", 0.85)
+#' ggplot(sparseDT, aes(x = t, y = y, color = factor(sampleID))) +
+#'   geom_line() + geom_point() + labs(color = "Sample ID")
+#'
+#' message("The number of observation is ", no <- length(unique(DT$sampleID)))
+#' sparseDT2 <- sparsify(DT, "sampleID", runif(no))
+#' ggplot(sparseDT2, aes(x = t, y = y, color = factor(sampleID))) +
+#'   geom_line() + geom_point() + labs(color = "Sample ID")
+#' @importFrom data.table between setDT
+#' @export
+sparsify <- function(data, subid, sparsity){
+  # cehck data
+  assert_that(is.data.frame(data), subid %in% names(data), all(between(sparsity, 0, 1, FALSE)))
+
+  setDT(data)
+  uniSubIds <- unique(data[[subid]])
+  if (length(sparsity) != length(uniSubIds) && length(sparsity) != 1)
+    stop("The length of sparsity must 1 or the number of observation.")
+  if (length(sparsity) == 1)
+    sparsity <- rep(sparsity, length(uniSubIds))
+  if (length(uniSubIds))
+
+  sparseDT <- mapply(function(dt, p) dt[sample(nrow(dt), round(nrow(dt)*p))],
+                     split(data, data[[subid]]), 1-sparsity, SIMPLIFY = FALSE) %>>% rbindlist
+  return(sparseDT)
+}

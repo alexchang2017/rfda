@@ -13,6 +13,62 @@ trapz_cpp <- function(x, y) {
     .Call('rfda_trapz_cpp', PACKAGE = 'rfda', x, y)
 }
 
+#' Correlation Generation Function
+#'
+#' This function performs the generation of correlation sequence.
+#'
+#' The Matern correlation is \deqn{rho1 = 2 * sqrt(n) * rho / rho0} and
+#' \deqn{r = rho1 ^ nu * besselK(nu, rho1) / gamma(nu) / 2 ^ (nu - 1)}
+#' As nu goes to infinity, the correlation converges to \deqn{exp(-(rho/rho0)^2)}.
+#'
+#' @param x A numerical vector.
+#' @param corrType A string, the type of correlation function, "BesselJ", "Matern" or "rq".
+#'   Please see "Details" for more details.
+#' @param x0 A numeric, the shape of correlation. It must be greater than zero. Default value is 1.
+#' @param nu A numeric, it is only used when corrType is 'Matern'. It must be greater than zero.
+#'   Default value is 2.5. Please see "Details" for more details.
+#' @return A correlation sequence.
+#' @examples
+#' require(ggplot2)
+#' x <- seq(-10, 10, len = 101)
+#' ggplot(data.frame(x, y = corrGen(x, "BesselJ")), aes(x, y, colour = "BesselJ")) +
+#'   geom_line(size = 1.2) + geom_line(aes(x, y, colour = "Matern (nu=2.5)"),
+#'   data.frame(x, y = corrGen(x, "Matern")), size = 1.2) +
+#'   geom_line(aes(x, y, colour = "rq"), data.frame(x, y = corrGen(x, "rq")), size = 1.2) +
+#'   labs(title = "Three types of correlation sequences", colour = "Correlation Type",
+#'        x = "Distance", y = "Correlation Strength")
+#' @export
+corrGen <- function(x, corrType, x0 = 1.0, nu = 2.5) {
+    .Call('rfda_corrGen', PACKAGE = 'rfda', x, corrType, x0, nu)
+}
+
+#' Correlation Generation Function
+#'
+#' This function performs the generation of correlation sequence.
+#'
+#' The Matern correlation is \deqn{rho1 = 2 * sqrt(n) * rho / rho0} and
+#' \deqn{r = rho1 ^ nu * besselK(nu, rho1) / gamma(nu) / 2 ^ (nu - 1)}
+#' As nu goes to infinity, the correlation converges to \deqn{exp(-(rho/rho0)^2)}.
+#'
+#' @param n An integer, the number of sample size.
+#' @param timePnt A numeric vector, the observed time.
+#' @param meanFunc,varFunc The function to generate mean function and variance function.
+#' @param measErrVar The variance of measurement error.
+#' @param corrType,x0,nu The parameters to generate correlation sequence.
+#' @return A data.frame containing sample id, observed time and corresponding observed values.
+#' @examples
+#' require(ggplot2)
+#' tp <- seq(1, 10, len = 7)
+#' DT <- funcDataGen(6, tp, function(x) sin(x), function(x) rep(1, length(x)), "BesselJ")
+#' ggplot(DT, aes(x = t, y = y, color = factor(sampleID))) + geom_line() + labs(color = "Sample ID")
+#'
+#' DT2 <- funcDataGen(6, tp, function(x) sin(x), function(x) cos(x)/2 + 2, "BesselJ")
+#' ggplot(DT2, aes(x = t, y = y, color = factor(sampleID))) + geom_line() + labs(color = "Sample ID")
+#' @export
+funcDataGen <- function(n, timePnt, meanFunc, varFunc, corrType, measErrVar = 1, x0 = 1.0, nu = 2.5) {
+    .Call('rfda_funcDataGen', PACKAGE = 'rfda', n, timePnt, meanFunc, varFunc, corrType, measErrVar, x0, nu)
+}
+
 spline_cpp <- function(x, y, xi) {
     .Call('rfda_spline_cpp', PACKAGE = 'rfda', x, y, xi)
 }

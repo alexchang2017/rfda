@@ -41,6 +41,38 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// corrGen
+Rcpp::NumericVector corrGen(const arma::vec& x, const std::string& corrType, const double x0, const double nu);
+RcppExport SEXP rfda_corrGen(SEXP xSEXP, SEXP corrTypeSEXP, SEXP x0SEXP, SEXP nuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type corrType(corrTypeSEXP);
+    Rcpp::traits::input_parameter< const double >::type x0(x0SEXP);
+    Rcpp::traits::input_parameter< const double >::type nu(nuSEXP);
+    __result = Rcpp::wrap(corrGen(x, corrType, x0, nu));
+    return __result;
+END_RCPP
+}
+// funcDataGen
+Rcpp::DataFrame funcDataGen(const double& n, const arma::vec& timePnt, const Rcpp::Function meanFunc, const Rcpp::Function varFunc, const std::string corrType, const double measErrVar, const double x0, const double nu);
+RcppExport SEXP rfda_funcDataGen(SEXP nSEXP, SEXP timePntSEXP, SEXP meanFuncSEXP, SEXP varFuncSEXP, SEXP corrTypeSEXP, SEXP measErrVarSEXP, SEXP x0SEXP, SEXP nuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const double& >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type timePnt(timePntSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::Function >::type meanFunc(meanFuncSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::Function >::type varFunc(varFuncSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type corrType(corrTypeSEXP);
+    Rcpp::traits::input_parameter< const double >::type measErrVar(measErrVarSEXP);
+    Rcpp::traits::input_parameter< const double >::type x0(x0SEXP);
+    Rcpp::traits::input_parameter< const double >::type nu(nuSEXP);
+    __result = Rcpp::wrap(funcDataGen(n, timePnt, meanFunc, varFunc, corrType, measErrVar, x0, nu));
+    return __result;
+END_RCPP
+}
 // spline_cpp
 arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi);
 RcppExport SEXP rfda_spline_cpp(SEXP xSEXP, SEXP ySEXP, SEXP xiSEXP) {
