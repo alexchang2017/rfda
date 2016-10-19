@@ -232,7 +232,10 @@ sparsify <- function(data, subid, sparsity){
 #' require(jsonlite)
 #' require(data.table)
 #' jsonDataFile <- system.file("extdata", "funcdata.json", package = "rfda")
-#' DT <- unnest(data.table(fromJSON(jsonDataFile)))
+#' # Following line may have a parse error with message "premature EOF has occured".
+#' \dontrun{
+#'   DT <- unnest(data.table(fromJSON(jsonDataFile)))
+#' }
 #' @importFrom data.table .SD
 #' @export
 unnest <- function(DT, unnestCols = NULL){
