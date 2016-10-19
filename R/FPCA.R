@@ -66,10 +66,9 @@ getRawCrCov <- function(demeanDataDT){
 #' # regular case
 #' data("regularExData", package = 'rfda')
 #' }
-#'
 #' @importFrom plyr is.formula
 #' @importFrom RcppParallel setThreadOptions
-#' @importFrom data.table data.table melt.data.table setnames is.data.table rbindlist .N
+#' @importFrom data.table data.table melt.data.table setnames is.data.table rbindlist .N .SD
 #' @importFrom stats median
 #' @importFrom utils modifyList
 #' @export

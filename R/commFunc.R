@@ -203,13 +203,13 @@ bwCandChooser2 <- function(dataAllGrid, id.var, timeVarName, sparsity, kernel, d
 #' sparseDT2 <- sparsify(DT, "sampleID", runif(no))
 #' ggplot(sparseDT2, aes(x = t, y = y, color = factor(sampleID))) +
 #'   geom_line() + geom_point() + labs(color = "Sample ID")
-#' @importFrom data.table between setDT
+#' @importFrom data.table between
 #' @export
 sparsify <- function(data, subid, sparsity){
   # cehck data
   assert_that(is.data.frame(data), subid %in% names(data), all(between(sparsity, 0, 1, FALSE)))
 
-  setDT(data)
+  data <- data.table(data)
   uniSubIds <- unique(data[[subid]])
   if (length(sparsity) != length(uniSubIds) && length(sparsity) != 1)
     stop("The length of sparsity must 1 or the number of observation.")

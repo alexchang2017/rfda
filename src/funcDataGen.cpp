@@ -87,7 +87,7 @@ Rcpp::DataFrame funcDataGen(const double& n, const arma::vec& timePnt, const Rcp
                             const Rcpp::Function varFunc, const std::string corrType,
                             const double measErrVar = 1, const double x0 = 1.0, const double nu = 2.5){
   chk_mat(timePnt, "timePnt", "double");
-  if (!is_finite(n) || n <= 0 || abs(n - floor(n)) > 1e-6)
+  if (!is_finite(n) || n <= 0 || std::abs(n - std::floor(n)) > 1e-6)
     Rcpp::stop("n must be a positive integer.\n");
   if (corrType != "BesselJ" && corrType != "Matern" && corrType != "rq")
     Rcpp::stop("Unsupported corrType. corrType must be 'BesselJ', 'Matern' or 'rq'.\n");

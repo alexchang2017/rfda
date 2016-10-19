@@ -35,7 +35,6 @@ data("irregularExData", package = 'rfda')
 # regular case
 data("regularExData", package = 'rfda')
 }
-
 }
 \seealso{
 \code{\link{get_FPCA_opts}} for input options.
