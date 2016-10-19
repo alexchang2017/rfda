@@ -41,6 +41,18 @@ test_that("test - funcDataGen", {
 })
 
 test_that("test - funcDataGen validate input", {
+  expect_error(funcDataGen(0, x, function(x) sin(x),
+                           function(x) rep(1, length(x)), "BesselJ"))
+  expect_error(funcDataGen(2.5, x, function(x) sin(x),
+                           function(x) rep(1, length(x)), "BesselJ"))
+  expect_error(funcDataGen(-1, x, function(x) sin(x),
+                           function(x) rep(1, length(x)), "BesselJ"))
+  expect_error(funcDataGen(NA, x, function(x) sin(x),
+                           function(x) rep(1, length(x)), "BesselJ"))
+  expect_error(funcDataGen(NaN, x, function(x) sin(x),
+                           function(x) rep(1, length(x)), "BesselJ"))
+  expect_error(funcDataGen(Inf, x, function(x) sin(x),
+                           function(x) rep(1, length(x)), "BesselJ"))
   expect_error(funcDataGen(n, c(x, NA), function(x) sin(x),
                            function(x) rep(1, length(x)), "BesselJ"))
   expect_error(funcDataGen(n, c(x, NaN), function(x) sin(x),

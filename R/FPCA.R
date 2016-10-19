@@ -27,7 +27,7 @@ checkSparsity <- function(data, id.var, timeVarName){
   return(ifelse(propNonSparse == 1, 2, ifelse(propNonSparse > 0.75, 1, 0)))
 }
 
-#' @importFrom data.table setorder rbindlist
+#' @importFrom data.table setorder rbindlist .N
 getRawCrCov <- function(demeanDataDT){
   # geneerate the all combinations of t1,t2 and varaibles
   baseDT <- demeanDataDT[ , .(t1 = rep(timePnt, length(timePnt)), t2 = rep(timePnt, each=length(timePnt)),
@@ -69,7 +69,7 @@ getRawCrCov <- function(demeanDataDT){
 #'
 #' @importFrom plyr is.formula
 #' @importFrom RcppParallel setThreadOptions
-#' @importFrom data.table data.table melt.data.table setnames is.data.table rbindlist
+#' @importFrom data.table data.table melt.data.table setnames is.data.table rbindlist .N
 #' @importFrom stats median
 #' @importFrom utils modifyList
 #' @export

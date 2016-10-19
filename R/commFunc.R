@@ -221,3 +221,31 @@ sparsify <- function(data, subid, sparsity){
                      split(data, data[[subid]]), 1-sparsity, SIMPLIFY = FALSE) %>>% rbindlist
   return(sparseDT)
 }
+
+#' Find the candidates of bandwidths for locLinear2d
+#'
+#' @param DT A data.table containing list or vector in the cell.
+#'   The cells in each row must have the same number of elements.
+#' @param unnestCols The column names to unnest.
+#' @return A unnested data.table.
+#' @examples
+#' require(jsonlite)
+#' require(data.table)
+#' jsonDataFile <- system.file("extdata", "funcdata.json", package = "rfda")
+#' DT <- unnest(data.table(fromJSON(jsonDataFile)))
+#' @importFrom data.table .SD
+#' @export
+unnest <- function(DT, unnestCols = NULL){
+  if (is.null(unnestCols))
+    unnestCols <- names(DT)[sapply(DT, function(x) any(class(x) %in% "list"))]
+  groupbyVar <- setdiff(names(DT), unnestCols)
+  chkExpr <- paste0(groupbyVar, "=NULL", collapse = ",") %>>% (paste0("`:=`(", ., ")"))
+  chkLenAllEqual <- DT[ , lapply(.SD, function(x) sapply(x, length)), by = groupbyVar] %>>%
+    `[`(j = eval(parse(text = chkExpr))) %>>% as.matrix %>>% apply(1, diff) %>>% `==`(0) %>>% all
+  if(!chkLenAllEqual)
+    stop("The length in each cell is not equal.")
+
+  expr <- unnestCols %>>% (paste0(., "=unlist(",  ., ")")) %>>%
+    paste0(collapse = ",") %>>% (paste0(".(", ., ")"))
+  return(DT[ , eval(parse(text = expr)), by = groupbyVar])
+}
