@@ -29,19 +29,21 @@
 // [[Rcpp::export]]
 Rcpp::NumericVector corrGen(const arma::vec& x, const std::string& corrType,
                             const double x0 = 1.0, const double nu = 2.5){
+  // data checking
   chk_mat(x, "x", "double");
   if (!is_finite(x0) || x0 <= 0)
     Rcpp::stop("x0 must be a positive number.\n");
   if (!is_finite(nu) || nu <= 0)
     Rcpp::stop("nu must be a positive number.\n");
-
   if (corrType != "BesselJ" && corrType != "Matern" && corrType != "rq")
     Rcpp::stop("Unsupported corrType. corrType must be 'BesselJ', 'Matern' or 'rq'.\n");
 
+  // import R function
   Rcpp::Function RbesselJ("besselJ");
   Rcpp::Function RbesselK("besselK");
   Rcpp::Function Rgamma("gamma");
 
+  // initialize data
   Rcpp::NumericVector outVec(x.n_elem);
   if (corrType == "BesselJ"){
     outVec = RbesselJ(Rcpp::wrap(abs(x) / x0), 0.0);
@@ -55,6 +57,7 @@ Rcpp::NumericVector corrGen(const arma::vec& x, const std::string& corrType,
   } else if (corrType == "rq") {
     outVec = Rcpp::wrap(pow(1.0 + square(x / x0), -1.0));
   }
+  // remove dimesion of output
   outVec.attr("dim") = R_NilValue;
   return(outVec);
 }
@@ -86,6 +89,7 @@ Rcpp::NumericVector corrGen(const arma::vec& x, const std::string& corrType,
 Rcpp::DataFrame funcDataGen(const double& n, const arma::vec& timePnt, const Rcpp::Function meanFunc,
                             const Rcpp::Function varFunc, const std::string corrType,
                             const double measErrVar = 1, const double x0 = 1.0, const double nu = 2.5){
+  // data checking
   chk_mat(timePnt, "timePnt", "double");
   if (!is_finite(n) || n <= 0 || std::abs(n - std::floor(n)) > 1e-6)
     Rcpp::stop("n must be a positive integer.\n");

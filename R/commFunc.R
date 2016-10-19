@@ -209,14 +209,16 @@ sparsify <- function(data, subid, sparsity){
   # cehck data
   assert_that(is.data.frame(data), subid %in% names(data), all(between(sparsity, 0, 1, FALSE)))
 
+  # convert data to data.table with copy (not change the data)
   data <- data.table(data)
+  #  get the unique subject id
   uniSubIds <- unique(data[[subid]])
+  # check the length of sparsity
   if (length(sparsity) != length(uniSubIds) && length(sparsity) != 1)
     stop("The length of sparsity must 1 or the number of observation.")
   if (length(sparsity) == 1)
     sparsity <- rep(sparsity, length(uniSubIds))
-  if (length(uniSubIds))
-
+  # sparsify data
   sparseDT <- mapply(function(dt, p) dt[sample(nrow(dt), round(nrow(dt)*p))],
                      split(data, data[[subid]]), 1-sparsity, SIMPLIFY = FALSE) %>>% rbindlist
   return(sparseDT)
@@ -239,16 +241,24 @@ sparsify <- function(data, subid, sparsity){
 #' @importFrom data.table .SD
 #' @export
 unnest <- function(DT, unnestCols = NULL){
-  if (is.null(unnestCols))
+  # check the columns to unnest
+  if (is.null(unnestCols)) {
     unnestCols <- names(DT)[sapply(DT, function(x) any(class(x) %in% "list"))]
+    message("Automatical recognize the nested columns: ", paste0(unnestCols, collapse = ", "))
+  }
+  # get the group by variable
   groupbyVar <- setdiff(names(DT), unnestCols)
+  # generate the expression to remove group by variable
   chkExpr <- paste0(groupbyVar, "=NULL", collapse = ",") %>>% (paste0("`:=`(", ., ")"))
+  # check the lengths of each cell in list-column are all the same
   chkLenAllEqual <- DT[ , lapply(.SD, function(x) sapply(x, length)), by = groupbyVar] %>>%
     `[`(j = eval(parse(text = chkExpr))) %>>% as.matrix %>>% apply(1, diff) %>>% `==`(0) %>>% all
   if(!chkLenAllEqual)
     stop("The length in each cell is not equal.")
 
+  # generate unnest expression
   expr <- unnestCols %>>% (paste0(., "=unlist(",  ., ")")) %>>%
     paste0(collapse = ",") %>>% (paste0(".(", ., ")"))
+  # return unnested data.table
   return(DT[ , eval(parse(text = expr)), by = groupbyVar])
 }

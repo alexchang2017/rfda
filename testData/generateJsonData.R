@@ -6,10 +6,3 @@ DT <- funcDataGen(100, tp, function(x) sin(x), function(x) rep(1, length(x)), "B
 sparseDT <- sparsify(DT, "sampleID", 0.85)
 sparseDT %>>% `[`(j = .(t = list(t), y = list(y)), by = sampleID) %>>%
   toJSON %>>% write("../inst/extdata/funcData.json")
-
-library(ndjson)
-
-library(jsonlite)
-
-fromJSON(paste(readLines("../inst/extdata/funcData.json", warn = FALSE), collapse=""))
-
