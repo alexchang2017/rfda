@@ -78,3 +78,14 @@ test_that("binning data", {
   expect_error(rfda:::quantileCpp(x3, -1))
 })
 
+context("6. unnest")
+tp <- seq(1, 10, len = 101)
+DT <- funcDataGen(100, tp, function(x) sin(x), function(x) rep(1, length(x)), "BesselJ")
+sparseDT <- sparsify(DT, "sampleID", 0.85)
+nestSparseDT <- sparseDT %>>% `[`(j = .(t = list(t), y = list(y)), by = sampleID)
+test_that("unnest", {
+  expect_equal(sparseDT, unnest(nestSparseDT))
+  expect_equal(sparseDT, unnest(nestSparseDT, c("t", "y")))
+  expect_error(unnest(nestSparseDT, c("t1", "y1")))
+  expect_error(unnest(data.table(V1 = list(c(1,3,5), c(1,7)), V2 = list(c(2,5,3), c(4,6,7)), V3 = 1:2)))
+})

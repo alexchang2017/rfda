@@ -237,6 +237,7 @@ sparsify <- function(data, subid, sparsity){
 #' # Following line may have a parse error with message "premature EOF has occured".
 #' \dontrun{
 #'   DT <- unnest(data.table(fromJSON(jsonDataFile)))
+#'   DT <- unnest(data.table(V1 = list(c(1,3,5), c(1,7)), V2 = list(c(2,5,3), c(4,6)), V3 = 1:2))
 #' }
 #' @importFrom data.table .SD
 #' @export
@@ -244,8 +245,12 @@ unnest <- function(DT, unnestCols = NULL){
   # check the columns to unnest
   if (is.null(unnestCols)) {
     unnestCols <- names(DT)[sapply(DT, function(x) any(class(x) %in% "list"))]
-    message("Automatical recognize the nested columns: ", paste0(unnestCols, collapse = ", "))
+    message("Automatically recognize the nested columns: ", paste0(unnestCols, collapse = ", "))
   }
+  # check unnestCols is in the DT
+  if (any(!unnestCols %in% names(DT)))
+    stop(sprintf("The columns, %s, does not in the DT.",
+                 paste0(unnestCols[!unnestCols %in% names(DT)], collapse = ", ")))
   # get the group by variable
   groupbyVar <- setdiff(names(DT), unnestCols)
   # generate the expression to remove group by variable
@@ -253,7 +258,7 @@ unnest <- function(DT, unnestCols = NULL){
   # check the lengths of each cell in list-column are all the same
   chkLenAllEqual <- DT[ , lapply(.SD, function(x) sapply(x, length)), by = groupbyVar] %>>%
     `[`(j = eval(parse(text = chkExpr))) %>>% as.matrix %>>% apply(1, diff) %>>% `==`(0) %>>% all
-  if(!chkLenAllEqual)
+  if (!chkLenAllEqual)
     stop("The length in each cell is not equal.")
 
   # generate unnest expression
