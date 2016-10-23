@@ -169,7 +169,7 @@ chk_FPCA_opts <- function(optns, dataSize){
   # check numBines
   if (!is.null(optns$numBins))
     assert_that(length(optns$numBins) == 1, is.numeric(optns$numBins), is.finite(optns$numBins),
-                optns$numBins >= 0)
+                optns$numBins >= 0 || optns$numBins == -1)
   # check errTerm
   assert_that(length(optns$errTerm) == 1, is.logical(optns$errTerm), !is.na(optns$errTerm))
   # check numGrid
