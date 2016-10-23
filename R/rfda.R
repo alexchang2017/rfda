@@ -49,7 +49,7 @@
 #' @importFrom data.table :=
 #' @importFrom utils globalVariables data
 #' @importFrom RcppParallel RcppParallelLibs
-utils::globalVariables(c(".", "%>>%", ":="))
+utils::globalVariables(c(".", "%>>%", ":=", "~<-"))
 # variables used in data.table
 utils::globalVariables(c("cnt", "idx_agg", "subId", "t1", "t2", "timePnt", "value", "value.mean",
                          "value.ori", "value.var1", "value.var2", "variable", "variable1", "variable2",

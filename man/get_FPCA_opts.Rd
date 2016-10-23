@@ -136,9 +136,9 @@ The options of FPCA: (The number of curve is denoted by n. The number of observa
     \item \code{0}: To use all threads in computation. [Default]
     \item Any positive integer: To use user-specified number of threads in computation.
   }
-\item \code{userMeanFuncList}: Default is NULL. A list of vectors which size is \code{numGrid}.
+\item \code{userMeanFunc}: Default is NULL. A list of vectors which size is \code{numGrid}.
   The user-defined smoothed mean function.
-\item \code{userCovFuncList}: Default is NULL. A list of vectors which size is \code{numGrid x numGrid}.
+\item \code{userCovFunc}: Default is NULL. A list of vectors which size is \code{numGrid x numGrid}.
   The user-defined smoothed covariance function.
 }
 }

@@ -123,9 +123,9 @@
 #'     \item \code{0}: To use all threads in computation. [Default]
 #'     \item Any positive integer: To use user-specified number of threads in computation.
 #'   }
-#' \item \code{userMeanFuncList}: Default is NULL. A list of vectors which size is \code{numGrid}.
+#' \item \code{userMeanFunc}: Default is NULL. A list of vectors which size is \code{numGrid}.
 #'   The user-defined smoothed mean function.
-#' \item \code{userCovFuncList}: Default is NULL. A list of vectors which size is \code{numGrid x numGrid}.
+#' \item \code{userCovFunc}: Default is NULL. A list of vectors which size is \code{numGrid x numGrid}.
 #'   The user-defined smoothed covariance function.
 #' }
 #'
@@ -138,7 +138,7 @@ get_FPCA_opts <- function(numFunc){
     errTerm = TRUE, numGrid = 51, weight = FALSE, numFPC = "FVE", FVE_threshold = 0.85,
     maxNumFPC = 20, methodFPCS = "CE", shrink = FALSE, varErr = "cv", outPercent = 0,
     methodNorm = ifelse(numFunc == 1, "no", "quantile"), ncpus = 0,
-    userMeanFuncList = NULL, userCovFuncList = NULL
+    userMeanFunc = NULL, userCovFunc = NULL
   ))
 }
 

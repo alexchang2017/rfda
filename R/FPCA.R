@@ -98,7 +98,7 @@ FPCA <- function(formula, id.var, data, options = list()){
 
   # get the full options of FPCA and check
   default_FPCA_opts <- get_FPCA_opts(length(varName))
-  optNamesUsed <- names(options) %in% default_FPCA_opts
+  optNamesUsed <- names(options) %in% names(default_FPCA_opts)
   FPCA_opts <- modifyList(default_FPCA_opts, options[optNamesUsed]) %>>%
     chk_FPCA_opts(nrow(data))
   message(ifelse(all(optNamesUsed), "All options are checked...",
@@ -117,6 +117,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   # additionally, give names for id.var and timeVarName
   dataDT <- melt.data.table(data.table(data), id.vars = c(id.var, timeVarName),
                             measure.vars = varName, variable.factor = TRUE) %>>%
+    (~ varNameMapping <- levels(.$variable)) %>>%
     `[`(j = variable := as.integer(variable)) %>>% `[`(!is.na(value) & is.finite(value)) %>>%
     setnames(c(id.var, timeVarName) , c("subId", "timePnt"))
 
@@ -172,18 +173,20 @@ FPCA <- function(formula, id.var, data, options = list()){
   dataList <- split(dataDT, dataDT$variable)
 
   # validate the list of user-specified mean functions
-  validMFList <- !is.null(FPCA_opts$userMeanFuncList) && is.data.table(FPCA_opts$userMeanFuncList) &&
-    all(c("timePnt", "value", "variable") %in% names(FPCA_opts$userMeanFuncList)) &&
-    all(!unlist(FPCA_opts$userMeanFuncList[ , lapply(.SD, function(x) any(is.na(x) || is.infinite(x)))]))
+  validMFList <- !is.null(FPCA_opts$userMeanFunc) && is.data.table(FPCA_opts$userMeanFunc) &&
+    all(c("timePnt", "value", "variable") %in% names(FPCA_opts$userMeanFunc)) &&
+    all(!unlist(FPCA_opts$userMeanFunc[ , lapply(.SD, function(x) any(is.na(x) || is.infinite(x)))])) &&
+    all(unique(FPCA_opts$userMeanFunc) %in% varNameMapping)
   # get smoothing mean functions
   if (validMFList) {
     message("Use the user-specified mean functions...")
-    MFRes <- lapply(list(sampledTimePnts, allTimePnts), function(v){
-      FPCA_opts$userMeanFuncList %>>%
+    FPCA_opts$userMeanFunc[ , variable := match(variable, varNameMapping)]
+    MFRes <- c(list(data.table(variable = sort(unique(FPCA_opts$userMeanFunc$variable)), bwOpt = NA_real_)),
+      lapply(list(sampledTimePnts, allTimePnts), function(v){
+      FPCA_opts$userMeanFunc %>>%
         `[`(j = .(timePnt = v, value = interp1(timePnt, value, v, "spline")),
              by = .(variable))
-    })
-    bwOptLocPoly1d <- NA
+    }))
   } else {
     message("Get the smoothed mean functions...")
     # use gcv to get mean functions
@@ -229,7 +232,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     }
   }
 
-  if (FPCA_opts$methodNorm == "variance"){
+  if (FPCA_opts$methodNorm == "smoothCov"){
     message("Start to normalize data with smoothed variances...")
     # get rawCov
 
@@ -237,7 +240,7 @@ FPCA <- function(formula, id.var, data, options = list()){
 
     # normalization
 
-  } else if (FPCA_opts$methodNorm == "IQR") {
+  } else if (FPCA_opts$methodNorm == "quantile") {
     message("Start to normalize data with smoothed IQRs...")
     # get IQR
     ## diff(qnorm(probs))

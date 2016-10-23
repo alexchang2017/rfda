@@ -217,6 +217,16 @@ test_that("test - gcvLocLinear2d: validate inputs", {
   expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
                                                       weight, c(Inf, cnt), "gauss")))
   expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
-                                                      weight, cnt, "guass")))
+                                                      weight, cnt, "gauss", NA)))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, cnt, "gauss", NaN)))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, cnt, "gauss", Inf)))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, cnt, "gauss", -1)))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, cnt, "gauss", 0)))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, cnt, "gauss", 2.5)))
 })
 
