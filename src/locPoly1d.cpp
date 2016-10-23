@@ -172,7 +172,7 @@ arma::vec locPoly1d_cpp(const double& bandwidth, const arma::vec& x, const arma:
 //'
 //' Find the optimal bandwidth used in \code{\link{locPoly1d}}.
 //'
-//' @param bwCand A numerical vector for the candidates of bandwidth
+//' @param bwCand A numerical vector for the candidates of bandwidth.
 //' @param x A vector, the variable of of x-axis.
 //' @param y A vector, the variable of of y-axis. \code{y[i]} is corresponding value of \code{x[i]}.
 //' @param w A vector, the weight of data. \code{w[i]} is corresponding value of \code{x[i]}.
@@ -188,13 +188,15 @@ arma::vec locPoly1d_cpp(const double& bandwidth, const arma::vec& x, const arma:
 //' @export
 // [[Rcpp::export]]
 double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
-                     const arma::vec& w, const std::string& kernel,
-                     const double& drv, const double& degree){
+                    const arma::vec& w, const std::string& kernel,
+                    const double& drv, const double& degree){
   // check data
   chk_mat(bwCand, "bwCand", "double");
   chk_mat(x, "x", "double");
   chk_mat(y, "y", "double");
   chk_mat(w, "w", "double");
+  if (any(bwCand <= 0))
+    Rcpp::stop("The elements in bwCand must be greater 0.\n");
   if (x.n_elem != y.n_elem || x.n_elem != w.n_elem)
     Rcpp::stop("The lengths of x, y and w must be equal.\n");
 
@@ -213,20 +215,20 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
     Rcpp::stop("Degree of Polynomial should be not less than the order of derivative.\n");
 
   // find the GCV-adjusted term
-  vec k0 = kernelDensity(zeros<vec>(1.0), kernel);
+  vec k0 = kernelDensity(zeros<vec>(1), kernel);
   // find the range of x and allocate output
-  double r = x.max() - x.min(), bw_opt;
+  double r = x.max() - x.min(), bwOpt;
   // find the GCV-adjusted term
-  vec gcv_param = pow(1 - r * k0(0) / bwCand / (double) x.n_elem, 2.0),
-    gcv = zeros<vec>(bwCand.n_elem), new_est = zeros<vec>(y.n_elem);
+  vec gcv_param = pow(1 - r * k0(0) / bwCand / (double) x.n_elem, 2.0);
 
   // initialize gcv
+  vec gcv = zeros<vec>(bwCand.n_elem);
   bool con = true, sparse = false, secondRun = false;
   std::string interp1_method = "spline";
   vec xout = sort(unique(x)), xout2 = xout;
   if (xout.n_elem > 101)
     xout2 = linspace<vec>(min(xout), max(xout), 101);
-  vec est = zeros<vec>(xout2.n_elem);
+  vec est = zeros<vec>(xout2.n_elem), new_est = zeros<vec>(x.n_elem), diff = zeros<vec>(x.n_elem);
   uvec nonfiniteLoc;
   while (con)
   {
@@ -252,7 +254,8 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
       if (is_finite(new_est))
       {
         // compute gcv scores
-        gcv(k) = dot(y - new_est, y - new_est) / gcv_param(k);
+        diff = y - new_est;
+        gcv(k) = dot(diff, diff) / gcv_param(k);
         if (k > 0 && gcv(k) > gcv(k-1))
         {
           con = false;
@@ -268,7 +271,7 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
       // stop implementation if it has the same situation in second round
       if (!secondRun && bwCand(bwCand.n_elem - 1) < r)
       {
-        bw_opt = bwCand(bwCand.n_elem - 1);
+        bwOpt = bwCand(bwCand.n_elem - 1);
         sparse = true;
       } else
       {
@@ -278,15 +281,15 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
     {
       // select the optimal bandwidth with minimum gcv scores
       uword min_gcv_idx = as_scalar(find(gcv == min(gcv), 1, "first"));
-      bw_opt = bwCand(min_gcv_idx);
+      bwOpt = bwCand(min_gcv_idx);
     }
 
-    if (bw_opt == r)
+    if (bwOpt == r)
     {
       // stop implementation if data is too sparse
       con = false;
       Rcpp::stop("The data is too sparse, optimal bandwidth includes all the data! You may want to change to Gaussian kernel!\n");
-    } else if (bw_opt == bwCand(bwCand.n_elem - 1) && !secondRun)
+    } else if (bwOpt == bwCand(bwCand.n_elem - 1) && !secondRun)
     {
       // re-compute with new bandwidth candidates
       double minBW;
@@ -311,12 +314,12 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
       std::stringstream bwCand_str;
       bwCand.print(bwCand_str);
       RMessage(bwCand_str.str());
-    } else if (bw_opt < bwCand(bwCand.n_elem - 1) || secondRun)
+    } else if (bwOpt < bwCand(bwCand.n_elem - 1) || secondRun)
     {
       con = false;
     }
     secondRun = true;
   }
-  return bw_opt;
+  return bwOpt;
 }
 

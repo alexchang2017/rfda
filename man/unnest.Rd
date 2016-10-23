@@ -19,8 +19,10 @@ A unnested data.table.
 Find the candidates of bandwidths for locLinear2d
 }
 \examples{
-require(jsonlite)
 require(data.table)
+DT <- unnest(data.table(V1 = list(c(1,3,5), c(1,7)), V2 = list(c(2,5,3), c(4,6)), V3 = 1:2))
+
+require(jsonlite)
 jsonDataFile <- system.file("extdata", "funcdata.json", package = "rfda")
 # Following line may have a parse error with message "premature EOF has occured".
 \dontrun{

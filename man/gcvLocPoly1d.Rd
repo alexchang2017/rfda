@@ -7,7 +7,7 @@
 gcvLocPoly1d(bwCand, x, y, w, kernel, drv, degree)
 }
 \arguments{
-\item{bwCand}{A numerical vector for the candidates of bandwidth}
+\item{bwCand}{A numerical vector for the candidates of bandwidth.}
 
 \item{x}{A vector, the variable of of x-axis.}
 

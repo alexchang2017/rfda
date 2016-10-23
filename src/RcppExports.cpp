@@ -134,6 +134,23 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// gcvLocLinear2d
+Rcpp::NumericVector gcvLocLinear2d(arma::mat bwCand, const arma::mat& x, const arma::vec& y, const arma::vec& w, const arma::vec& count, const std::string& kernel, const double bwNumGrid);
+RcppExport SEXP rfda_gcvLocLinear2d(SEXP bwCandSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP countSEXP, SEXP kernelSEXP, SEXP bwNumGridSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::mat >::type bwCand(bwCandSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< const double >::type bwNumGrid(bwNumGridSEXP);
+    __result = Rcpp::wrap(gcvLocLinear2d(bwCand, x, y, w, count, kernel, bwNumGrid));
+    return __result;
+END_RCPP
+}
 // locPoly1d_cpp
 arma::vec locPoly1d_cpp(const double& bandwidth, const arma::vec& x, const arma::vec& y, const arma::vec& w, const arma::vec& xout, const std::string& kernel, const double& drv, const double& degree);
 RcppExport SEXP rfda_locPoly1d_cpp(SEXP bandwidthSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP xoutSEXP, SEXP kernelSEXP, SEXP drvSEXP, SEXP degreeSEXP) {

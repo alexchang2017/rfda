@@ -7,8 +7,8 @@ data("sparseExData", package = "rfda")
 
 testDataRegular <- data.table(y = c(seq(0.1, 0.9, 0.1), c(0.9,1,1)), t = rep(1:3, 4),
                               sampleID = c(rep(1:4, each=3)))
-testDataIrregular <- data.table(y = seq(0.1, 1, 0.1), t = c(1,2,4,1:3,3,4,1,4),
-                                sampleID = c(rep(1:2, each=3), rep(3:4, each=2)))
+testDataIrregular <- data.table(y = seq(0.1, 1.3, 0.1), t = c(1:4,1,2,4,2:4,1,3,4),
+                                sampleID = c(rep(1, 4), rep(2:4, each=3)))
 testDataSparse <- data.table(y = seq(0.1, 1, 0.1), t = c(1,2,4,3,5,7,6,10,8,9),
                              sampleID = c(rep(1:2, each=3), rep(3:4, each=2)))
 testDT_list <- suppressMessages(lapply(list(testDataRegular, testDataIrregular, testDataSparse), function(dt){
@@ -21,9 +21,9 @@ testDT_list <- suppressMessages(lapply(list(testDataRegular, testDataIrregular, 
   meanFunc <- locPoly1d(bwOpt, dt$t, dt$y, w, xout, "gauss", 0, 1)
 
   merge(dt, data.table(mf = meanFunc, t = xout), by = "t") %>>%
-    `[`( , `:=`(y = y - mf, variable = "y")) %>>%
+    `[`(j = `:=`(y = y - mf, variable = "y")) %>>%
     setnames(c("t", "y", "sampleID"), c("timePnt", "value", "subId")) %>>%
-    `[`( , mf := NULL)
+    `[`(j = mf := NULL)
 }))
 
 compareCovResList <- lapply(list(rcov_case2, rcov_case1, rcov_case0), function(m){
@@ -33,32 +33,32 @@ compareCovResList <- lapply(list(rcov_case2, rcov_case1, rcov_case0), function(m
 context("1. test - getCrCov")
 rawCovList <- lapply(testDT_list, rfda:::getRawCrCov)
 test_that("test - bwCandChooser2", {
-  expect_equal(rawCovList[[1]][ , .(t1,t2,sse)], compareCovResList[[1]] %>>% `[`( , sse := sse * 4))
+  expect_equal(rawCovList[[1]][ , .(t1,t2,sse)], compareCovResList[[1]] %>>% `[`(j = sse := sse * 4))
   expect_equal(rawCovList[[2]][ , .(t1,t2,sse)], compareCovResList[[2]])
   expect_equal(rawCovList[[3]][ , .(t1,t2,sse)], compareCovResList[[3]])
 })
 
 context("2. test - bwCandChooser2")
 allGridList <- lapply(list(regularExData, irregularExData, sparseExData), function(df){
-  data.table(df) %>>% `[`( , .(t1 = rep(t, length(t)), t2 = rep(t, each=length(t))), by = .(sampleID))
+  data.table(df) %>>% `[`(j = .(t1 = rep(t, length(t)), t2 = rep(t, each=length(t))), by = .(sampleID))
 })
 testErrDt <- data.table(sampleID = rep(1:4, each=2), t = c(1,3,11,9,1,13,4,2), y = rnorm(8)) %>>%
-  `[`( , .(t1 = rep(t, length(t)), t2 = rep(t, each=length(t))), by = .(sampleID))
+  `[`(j = .(t1 = rep(t, length(t)), t2 = rep(t, each=length(t))), by = .(sampleID))
 test_that("test - bwCandChooser2", {
-  expect_equal(bwCandChooser2(allGridList[[1]], "sampleID", c("t1", "t2"), 2, "gauss", 1)[ , 1],
+  expect_equal(bwCandChooser2(allGridList[[1]], 2, "gauss", 1)[ , 1],
                c(0.315789, 0.397407, 0.500119, 0.629378, 0.792045, 0.996754, 1.254371,
                  1.578570, 1.986561, 2.500000), tolerance = 1e-6)
-  expect_equal(bwCandChooser2(allGridList[[2]], "sampleID", c("t1", "t2"), 1, "gauss", 1)[ , 1],
+  expect_equal(bwCandChooser2(allGridList[[2]], 1, "gauss", 1)[ , 1],
                c(0.210526, 0.277147, 0.364850, 0.480306, 0.632297, 0.832387, 1.095794,
                  1.442556, 1.899049, 2.500000), tolerance = 1e-6)
-  expect_equal(bwCandChooser2(allGridList[[3]], "sampleID", c("t1", "t2"), 0, "gauss", 1)[ , 1],
+  expect_equal(bwCandChooser2(allGridList[[3]], 0, "gauss", 1)[ , 1],
                c(0.995476, 1.102164, 1.220286, 1.351068, 1.495867, 1.656184, 1.833682,
                  2.030204, 2.247787, 2.488689), tolerance = 1e-6)
-  expect_message(bwCandChooser2(testErrDt, "sampleID", c("t1", "t2"), 0, "gauss", 9), "Data is too sparse")
-  expect_error(bwCandChooser2(testErrDt, "sampleID", c("t1", "t2"), 0, "epan", 9), "Data is too sparse")
+  expect_message(bwCandChooser2(testErrDt, 0, "gauss", 9), "Data is too sparse")
+  expect_error(bwCandChooser2(testErrDt, 0, "epan", 9), "Data is too sparse")
 })
 
-context("3. test - locLinear2d: sparse case")
+context("3. test - locLinear2d")
 xcovResList <- lapply(rawCovList, function(x){
   xout <- seq(min(x$t1), max(x$t1), length.out = 30)
   x %>>% `[`(t1 != t2) %>>% {
@@ -153,3 +153,70 @@ test_that("test - locLinear2d: validate inputs", {
   expect_error(locLinear2d(c(3, 3), as.matrix(m[ , .(t1, t2)]), m$sse,
                            m$weight, m$cnt, xout, xout, "guass"))
 })
+
+context("5. test - gcvLocLinear2d")
+sparsities <- lapply(testDT_list, checkSparsity, id.var = "subId", timeVarName = "timePnt")
+gcvBws <- suppressMessages(mapply(function(rawCov, sparsity){
+  bwCand <- bwCandChooser2(rawCov, sparsity, "gauss", 1)
+  rawCovNoDiag <- rawCov[t1 != t2]
+  gcvLocLinear2d(bwCand, as.matrix(rawCovNoDiag[ , .(t1, t2)]), rawCovNoDiag$sse,
+                 rawCovNoDiag$weight, rawCovNoDiag$cnt, "gauss")
+}, rawCovList, sparsities))
+bwCand_test <- bwCandChooser2(rawCovList[[1]], 2, "epan", 1)
+rawCovNoDiag_test <- rawCovList[[1]][t1 != t2]
+test_that("test - gcvLocLinear2d", {
+  expect_equal(gcvBws[ , 1], gcv_bw_case2, tolerance = 1e-6)
+  expect_equal(gcvBws[ , 2], gcv_bw_case1, tolerance = 1e-6)
+  expect_equal(gcvBws[ , 3], gcv_bw_case0, tolerance = 1e-6)
+  expect_equal(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, cnt, "gaussvar")),
+               c(0.5, 0.5), tolerance = 1e-6)
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, cnt, "epan")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, cnt, "quar")))
+})
+
+test_that("test - gcvLocLinear2d: validate inputs", {
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(rbind(c(-1, 1), bwCand_test), cbind(t1, t2), sse,
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(rbind(c(0, 1), bwCand_test), cbind(t1, t2), sse,
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(rbind(c(NA, 1), bwCand_test), cbind(t1, t2), sse,
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(rbind(c(NaN, 1), bwCand_test), cbind(t1, t2), sse,
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(rbind(c(Inf, 1), bwCand_test), cbind(t1, t2), sse,
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, rbind(c(NA, 1), cbind(t1, t2)), sse,
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, rbind(c(NaN, 1), cbind(t1, t2)), sse,
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, rbind(c(Inf, 1), cbind(t1, t2)), sse,
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, rbind(c(1, 1), cbind(t1, t2)), sse,
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2, t2), sse,
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), c(NA, sse),
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), c(NaN, sse),
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), c(Inf, sse),
+                                                      weight, cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      c(NA, weight), cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      c(NaN, weight), cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      c(Inf, weight), cnt, "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, c(NA, cnt), "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, c(NaN, cnt), "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, c(Inf, cnt), "gauss")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
+                                                      weight, cnt, "guass")))
+})
+

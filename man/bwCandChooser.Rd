@@ -7,7 +7,7 @@
 \usage{
 bwCandChooser(data, id.var, timeVarName, sparsity, kernel, degree)
 
-bwCandChooser2(dataAllGrid, id.var, timeVarName, sparsity, kernel, degree)
+bwCandChooser2(dataAllGrid, sparsity, kernel, degree)
 }
 \arguments{
 \item{data}{An data.frame or data.table containing the variables in model.}
@@ -22,8 +22,8 @@ bwCandChooser2(dataAllGrid, id.var, timeVarName, sparsity, kernel, degree)
 
 \item{degree}{The degree of polyminal function used in locPoly1d.}
 
-\item{dataAllGrid}{An data.table containing the id of subjects nameing \code{sampleID} and
-all timepoints combinations by variables naming \code{t1} and \code{t2} in model. (see examples.)}
+\item{dataAllGrid}{An data.table containing the grid of timepoints with
+naming \code{t1} and \code{t2} in model. (see examples.)}
 }
 \value{
 The candidates of bandwidths
@@ -45,12 +45,12 @@ data("sparseExData", package = 'rfda')
 sparsity <- checkSparsity(sparseExData, "sampleID", "t")
 sparseExData \%>>\% data.table \%>>\% `[`( , .(t1 = rep(t, length(t)),
   t2 = rep(t, each=length(t))), by = .(sampleID)) \%>>\%
-  bwCandChooser2("sampleID", c("t1", "t2"), sparsity, "gauss", 1)
+  bwCandChooser2(sparsity, "gauss", 1)
 
 data("regularExData", package = 'rfda')
 sparsity <- checkSparsity(regularExData, "sampleID", "t")
 regularExData \%>>\% data.table \%>>\% `[`( , .(t1 = rep(t, length(t)),
   t2 = rep(t, each=length(t))), by = .(sampleID)) \%>>\%
-  bwCandChooser2("sampleID", c("t1", "t2"), sparsity, "gauss", 1)
+  bwCandChooser2(sparsity, "gauss", 1)
 }
 

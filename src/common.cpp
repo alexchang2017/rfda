@@ -36,7 +36,7 @@ double factorial_f(double k){
     return 1.0;
   } else if (k > 0) {
     double out = 1;
-    for (double i = k; i > 0; i--)
+    for (double i = k; i > 0; --i)
       out *= i;
     return out;
   } else {

@@ -19,8 +19,7 @@
 #'     \item \code{-2, -2}: use generalized cross-validation to choose bandwidth automatically. [default]
 #'   }
 #'   For Gaussian/Epanechnikov kernel, the optimal bandwidth from GCV would be adjusted.
-#' \item \code{bwNumGrid}: Default is 30. An integer is number of support points of covariance surface
-#'   when choosing bandwidths for smoothing the covariance surface. (for GCV)
+#' \item \code{bwNumGrid}: Default is 30. An integer is the number of support points of covariance surface. (for GCV)
 #'   A smaller \code{bwNumGrid} accelerate process at less accuracy.
 #' \item \code{bwKernel}: A character string to define the kernel to be used in the
 #'   smoothing procedures of mean and covariance surface.

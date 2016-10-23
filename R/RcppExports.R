@@ -137,8 +137,8 @@ interp2 <- function(x, y, v, xi, yi, method) {
 #' @param y A vector, the variable of of z-axis. \code{y[i]} is corresponding value of \code{x[i, ]}.
 #' @param w A vector, the weight of data. \code{w[i]} is corresponding value of \code{x[i,]}.
 #' @param count A vector, the number of observations at \code{x[i, ]}.
-#' @param out1 A vector, vector of x-coordinate output time points. It should be a sorted vecotr.
-#' @param out2 A vector, vector of y-coordinate output time points. It should be a sorted vecotr.
+#' @param out1 A vector, the output grid of x-coordinate. It should be a sorted vecotr.
+#' @param out2 A vector, the output grid of y-coordinate. It should be a sorted vecotr.
 #' @param kernel A string. It could be 'gauss', 'gaussvar', 'epan' or 'quar'.
 #' @return A smoothed covariance estimated by two-dimensional kernel local linear smoother.
 #' @examples
@@ -166,6 +166,44 @@ locLinear2d <- function(bandwidth, x, y, w, count, out1, out2, kernel) {
     .Call('rfda_locLinear2d', PACKAGE = 'rfda', bandwidth, x, y, w, count, out1, out2, kernel)
 }
 
+#' Find the optimal bandwidth for two-dimensional kernel linear local smoother
+#'
+#' Find the optimal bandwidth used in \code{\link{locLinear2d}}.
+#'
+#' @param bwCand A numerical vector for the candidates of bandwidth.
+#' @param x A matrix, the variable of of x-axis and y-axis.
+#' @param y A vector, the variable of of z-axis. \code{y[i]} is corresponding value of \code{x[i, ]}.
+#' @param w A vector, the weight of data. \code{w[i]} is corresponding value of \code{x[i,]}.
+#' @param count A vector, the number of observations at \code{x[i, ]}.
+#' @param kernel A string. It could be 'gauss', 'gaussvar', 'epan' or 'quar'.
+#' @param bwNumGrid The number of support points of smoothing surface.
+#'   A smaller \code{bwNumGrid} accelerate process at less accuracy.
+#' @return A optimal bandwidth selected by minimizing gcv scores.
+#' @examples
+#' data("regularExData", package = 'rfda')
+#' sparsity <- checkSparsity(regularExData, "sampleID", "t")
+#' bwCand <- bwCandChooser(regularExData, "sampleID", "t", sparsity, "gauss", 1)
+#' w <- rep(1, nrow(regularExData))
+#' bwOpt <- gcvLocPoly1d(bwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
+#' bwOpt <- rfda:::adjGcvBw1d(bwOpt, sparsity, "gauss", 0)
+#' xout <- sort(unique(regularExData$t))
+#' meanFunc <- locPoly1d(bwOpt, regularExData$t, regularExData$y, w, xout, "gauss", 0, 1)
+#' require(data.table)
+#' require(pipeR)
+#' demeanDataDT <- merge(data.table(regularExData), data.table(mf = meanFunc, t = xout), by = "t") %>>%
+#'   `[`( , `:=`(y = y - mf, variable = "y")) %>>%
+#'   setnames(c("t", "y", "sampleID"), c("timePnt", "value", "subId"))
+#' RawCov <- rfda:::getRawCrCov(demeanDataDT)
+#'
+#' RawCovNoDiag <- RawCov[t1 != t2]
+#' bwCand <- bwCandChooser2(RawCovNoDiag, sparsity, "gauss", 1)
+#' bwOpt <- gcvLocLinear2d(bwCand, as.matrix(RawCovNoDiag[ , .(t1, t2)]), RawCovNoDiag$sse,
+#'   RawCovNoDiag$weight, RawCovNoDiag$cnt, "gauss", 30)
+#' @export
+gcvLocLinear2d <- function(bwCand, x, y, w, count, kernel, bwNumGrid = 30.0) {
+    .Call('rfda_gcvLocLinear2d', PACKAGE = 'rfda', bwCand, x, y, w, count, kernel, bwNumGrid)
+}
+
 locPoly1d_cpp <- function(bandwidth, x, y, w, xout, kernel, drv, degree) {
     .Call('rfda_locPoly1d_cpp', PACKAGE = 'rfda', bandwidth, x, y, w, xout, kernel, drv, degree)
 }
@@ -174,7 +212,7 @@ locPoly1d_cpp <- function(bandwidth, x, y, w, xout, kernel, drv, degree) {
 #'
 #' Find the optimal bandwidth used in \code{\link{locPoly1d}}.
 #'
-#' @param bwCand A numerical vector for the candidates of bandwidth
+#' @param bwCand A numerical vector for the candidates of bandwidth.
 #' @param x A vector, the variable of of x-axis.
 #' @param y A vector, the variable of of y-axis. \code{y[i]} is corresponding value of \code{x[i]}.
 #' @param w A vector, the weight of data. \code{w[i]} is corresponding value of \code{x[i]}.

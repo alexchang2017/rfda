@@ -209,20 +209,21 @@ for example_case = 0:2
     t = {[1,2,4], [3,5,7], [6,10], [8,9]};
   case 1
     regular = 1;
-    y = {[0.1,0.2,0.3], [0.4,0.5,0.6], [0.7,0.8], [0.9,1]};
-    t = {[1,2,4], [1,2,3], [3,4], [1,4]};
+    y = {[0.1,0.2,0.3,0.4], [0.5,0.6,0.7], [0.8,0.9,1], [1.1,1.2,1.3]};
+    t = {[1,2,3,4], [1,2,4], [2,3,4], [1,3,4]};
   case 2
     regular = 2;
     y = {[0.1,0.2,0.3], [0.4,0.5,0.6], [0.7,0.8,0.9], [0.9,1,1]};
     t = {[1,2,3], [1,2,3], [1,2,3], [1,2,3]};
   end
-
+  
   tt = cell2mat(t);
   yy = cell2mat(y);
   out1 = sort(unique(tt));
   bopt = gcv_lwls(yy, tt, 'gauss', 1, 1, 0, regular, 'on');
   [~, mu] = lwls(adjustBW1('gauss',bopt, 1, 0, 0,'on'), 'gauss', 1, 1, 0, tt, yy', ones(1,length(tt)), out1, 0);
   rcov = getRawCov(y, t, out1, mu, regular, 0);
+  gcv_bw = gcv_mullwlsn(t, 30, regular, 1, 'gauss', rcov, 'on');
 
   out21 = linspace(min(tt),max(tt),ngrid);
   tneq = find(rcov.tpairn(1,:) ~= rcov.tpairn(2,:));
@@ -241,6 +242,7 @@ for example_case = 0:2
   eval(['xcov_10_case', int2str(regular), '=xcov_10;'])
   eval(['xcov_15_case', int2str(regular), '=xcov_15;'])
   eval(['xcov_20_case', int2str(regular), '=xcov_20;'])
+  eval(['gcv_bw_case', int2str(regular), '=gcv_bw;'])
   
   if example_case == 2
     [~, xcov_30_gaussvar] = mullwlsk([3, 3], 'gausvar', rcov.tpairn(:,tneq), rcov.cyy(tneq)', win, out21, out21);
@@ -251,4 +253,5 @@ end
 save('testMat/covRes.mat', 'rcov_case0', 'rcov_case1', 'rcov_case2', 'xcov_10_case0', ...
   'xcov_10_case1', 'xcov_10_case2', 'xcov_15_case0', 'xcov_15_case1', 'xcov_15_case2', ...
   'xcov_20_case0', 'xcov_20_case1', 'xcov_20_case2', 'xcov_30_gaussvar', 'xcov_30_epan', ...
-  'xcov_30_quar');
+  'xcov_30_quar', 'gcv_bw_case0', 'gcv_bw_case1', 'gcv_bw_case2');
+

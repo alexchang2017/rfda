@@ -122,8 +122,8 @@ bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
 
 #' Find the candidates of bandwidths for locLinear2d
 #'
-#' @param dataAllGrid An data.table containing the id of subjects nameing \code{sampleID} and
-#'   all timepoints combinations by variables naming \code{t1} and \code{t2} in model. (see examples.)
+#' @param dataAllGrid An data.table containing the grid of timepoints with
+#'   naming \code{t1} and \code{t2} in model. (see examples.)
 #' @return The candidates of bandwidths
 #' @examples
 #' require(data.table)
@@ -133,22 +133,21 @@ bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
 #' sparsity <- checkSparsity(sparseExData, "sampleID", "t")
 #' sparseExData %>>% data.table %>>% `[`( , .(t1 = rep(t, length(t)),
 #'   t2 = rep(t, each=length(t))), by = .(sampleID)) %>>%
-#'   bwCandChooser2("sampleID", c("t1", "t2"), sparsity, "gauss", 1)
+#'   bwCandChooser2(sparsity, "gauss", 1)
 #'
 #' data("regularExData", package = 'rfda')
 #' sparsity <- checkSparsity(regularExData, "sampleID", "t")
 #' regularExData %>>% data.table %>>% `[`( , .(t1 = rep(t, length(t)),
 #'   t2 = rep(t, each=length(t))), by = .(sampleID)) %>>%
-#'   bwCandChooser2("sampleID", c("t1", "t2"), sparsity, "gauss", 1)
+#'   bwCandChooser2(sparsity, "gauss", 1)
 #' @rdname bwCandChooser
 #' @importFrom data.table data.table setorder is.data.table
 #' @export
-bwCandChooser2 <- function(dataAllGrid, id.var, timeVarName, sparsity, kernel, degree){
+bwCandChooser2 <- function(dataAllGrid, sparsity, kernel, degree){
   # cehck data
-  assert_that(is.data.table(dataAllGrid), is.character(id.var), all(is.character(timeVarName)),
-              length(timeVarName) == 2L, !is.na(sparsity), is.finite(sparsity), sparsity %in% c(0, 1, 2),
-              kernel %in% c('gauss','epan','gaussvar','quar'),
-              !is.na(degree), is.finite(degree), degree > 0, degree - floor(degree) < 1e-6)
+  assert_that(is.data.table(dataAllGrid), !is.na(sparsity), is.finite(sparsity), sparsity %in% c(0, 1, 2),
+              kernel %in% c("gauss", "epan", "gaussvar", "quar"), !is.na(degree), is.finite(degree),
+              degree > 0, degree - floor(degree) < 1e-6)
 
   # get output grid
   xout <- unique(dataAllGrid$t1)
@@ -231,13 +230,14 @@ sparsify <- function(data, subid, sparsity){
 #' @param unnestCols The column names to unnest.
 #' @return A unnested data.table.
 #' @examples
-#' require(jsonlite)
 #' require(data.table)
+#' DT <- unnest(data.table(V1 = list(c(1,3,5), c(1,7)), V2 = list(c(2,5,3), c(4,6)), V3 = 1:2))
+#'
+#' require(jsonlite)
 #' jsonDataFile <- system.file("extdata", "funcdata.json", package = "rfda")
 #' # Following line may have a parse error with message "premature EOF has occured".
 #' \dontrun{
 #'   DT <- unnest(data.table(fromJSON(jsonDataFile)))
-#'   DT <- unnest(data.table(V1 = list(c(1,3,5), c(1,7)), V2 = list(c(2,5,3), c(4,6)), V3 = 1:2))
 #' }
 #' @importFrom data.table .SD
 #' @export

@@ -146,8 +146,8 @@ struct Worker_locLinear2d_nongauss: public RcppParallel::Worker {
 //' @param y A vector, the variable of of z-axis. \code{y[i]} is corresponding value of \code{x[i, ]}.
 //' @param w A vector, the weight of data. \code{w[i]} is corresponding value of \code{x[i,]}.
 //' @param count A vector, the number of observations at \code{x[i, ]}.
-//' @param out1 A vector, vector of x-coordinate output time points. It should be a sorted vecotr.
-//' @param out2 A vector, vector of y-coordinate output time points. It should be a sorted vecotr.
+//' @param out1 A vector, the output grid of x-coordinate. It should be a sorted vecotr.
+//' @param out2 A vector, the output grid of y-coordinate. It should be a sorted vecotr.
 //' @param kernel A string. It could be 'gauss', 'gaussvar', 'epan' or 'quar'.
 //' @return A smoothed covariance estimated by two-dimensional kernel local linear smoother.
 //' @examples
@@ -220,4 +220,168 @@ arma::mat locLinear2d(const arma::vec& bandwidth, const arma::mat& x, const arma
     return errOut;
   }
   return est;
+}
+
+//' Find the optimal bandwidth for two-dimensional kernel linear local smoother
+//'
+//' Find the optimal bandwidth used in \code{\link{locLinear2d}}.
+//'
+//' @param bwCand A numerical vector for the candidates of bandwidth.
+//' @param x A matrix, the variable of of x-axis and y-axis.
+//' @param y A vector, the variable of of z-axis. \code{y[i]} is corresponding value of \code{x[i, ]}.
+//' @param w A vector, the weight of data. \code{w[i]} is corresponding value of \code{x[i,]}.
+//' @param count A vector, the number of observations at \code{x[i, ]}.
+//' @param kernel A string. It could be 'gauss', 'gaussvar', 'epan' or 'quar'.
+//' @param bwNumGrid The number of support points of smoothing surface.
+//'   A smaller \code{bwNumGrid} accelerate process at less accuracy.
+//' @return A optimal bandwidth selected by minimizing gcv scores.
+//' @examples
+//' data("regularExData", package = 'rfda')
+//' sparsity <- checkSparsity(regularExData, "sampleID", "t")
+//' bwCand <- bwCandChooser(regularExData, "sampleID", "t", sparsity, "gauss", 1)
+//' w <- rep(1, nrow(regularExData))
+//' bwOpt <- gcvLocPoly1d(bwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
+//' bwOpt <- rfda:::adjGcvBw1d(bwOpt, sparsity, "gauss", 0)
+//' xout <- sort(unique(regularExData$t))
+//' meanFunc <- locPoly1d(bwOpt, regularExData$t, regularExData$y, w, xout, "gauss", 0, 1)
+//' require(data.table)
+//' require(pipeR)
+//' demeanDataDT <- merge(data.table(regularExData), data.table(mf = meanFunc, t = xout), by = "t") %>>%
+//'   `[`( , `:=`(y = y - mf, variable = "y")) %>>%
+//'   setnames(c("t", "y", "sampleID"), c("timePnt", "value", "subId"))
+//' RawCov <- rfda:::getRawCrCov(demeanDataDT)
+//'
+//' RawCovNoDiag <- RawCov[t1 != t2]
+//' bwCand <- bwCandChooser2(RawCovNoDiag, sparsity, "gauss", 1)
+//' bwOpt <- gcvLocLinear2d(bwCand, as.matrix(RawCovNoDiag[ , .(t1, t2)]), RawCovNoDiag$sse,
+//'   RawCovNoDiag$weight, RawCovNoDiag$cnt, "gauss", 30)
+//' @export
+// [[Rcpp::export]]
+Rcpp::NumericVector gcvLocLinear2d(arma::mat bwCand, const arma::mat& x, const arma::vec& y,
+                                   const arma::vec& w, const arma::vec& count, const std::string& kernel,
+                                   const double bwNumGrid = 30.0){
+  // check data
+  chk_mat(bwCand, "bwCand", "double");
+  chk_mat(x, "x", "double");
+  chk_mat(y, "y", "double");
+  chk_mat(w, "w", "double");
+  chk_mat(count, "count", "double");
+  if (any(any(bwCand <= 0)))
+    Rcpp::stop("The elements in bwCand must be greater 0.\n");
+  if (x.n_rows != y.n_elem || x.n_rows != w.n_elem || x.n_rows != count.n_elem)
+    Rcpp::stop("The number of rows of x must be equal to the lengths of y, w and count.\n");
+  if (x.n_cols != 2)
+    Rcpp::stop("x must be a matrix with 2 columns.\n");
+  if (!is_finite(bwNumGrid) || bwNumGrid <= 0 || std::abs(bwNumGrid - std::floor(bwNumGrid)) > 1e-6)
+    Rcpp::stop("bwNumGrid must be a positive integer.\n");
+
+  // sorted unique x
+  vec xout = sort(unique(x.col(0)));
+
+  // find the index convert 2d matrix to 1d vector for calculating gcv scores
+  uvec mapIndx = zeros<uvec>(x.n_rows), idx1 = zeros<uvec>(x.n_rows), idx2 = zeros<uvec>(x.n_rows);
+  for (uword k = 0; k < xout.n_elem; ++k)
+  {
+    idx1.elem(find(x(span::all, 0) == xout(k))).fill(k);
+    idx2.elem(find(x(span::all, 1) == xout(k))).fill(k);
+  }
+  mapIndx = idx2*xout.n_elem + idx1;
+
+  // find the GCV-adjusted term
+  vec k0 = kernelDensity(zeros<vec>(1), kernel);
+  // find the range of x and allocate output
+  double r = x.max() - x.min();
+  // find the GCV-adjusted term
+  vec gcv_param = pow(1 - pow(r * k0(0) / bwCand.col(0), 2.0) / (double) x.n_rows, 2.0);
+
+  // initialize gcv
+  vec gcv = zeros<vec>(bwCand.n_rows), bwTmp = zeros<vec>(2), bwOpt = zeros<vec>(2);
+  bool con = true, sparse = false, secondRun = false;
+  std::string interp2_method = "spline";
+  vec xout2 = linspace<vec>(x.min(), x.max(), bwNumGrid), diff = zeros<vec>(x.n_rows);
+  mat est = zeros<mat>(xout.n_elem, xout.n_elem), new_est = zeros<mat>(bwNumGrid, bwNumGrid);
+  uvec nonfiniteLoc;
+  while (con) {
+    // fill gcv score with big number
+    gcv.fill(datum::inf);
+    for (uword k = 0; k < bwCand.n_rows; ++k)
+    {
+      bwTmp = bwCand.row(k).t();
+      est = locLinear2d(bwTmp, x, y, w, count, xout2, xout2, kernel);
+      if (is_finite(est))
+      {
+        // map the smoothed values onto x
+        new_est = interp2(xout2, xout2, est, xout, xout, interp2_method);
+        diff = y / count - new_est(mapIndx);
+        gcv(k) = dot(diff, diff) / gcv_param(k);
+        if (k > 0 && gcv(k) > gcv(k-1))
+        {
+          con = false;
+          break;
+        }
+      } else {
+        new_est.fill(datum::nan);
+      }
+    }
+
+    nonfiniteLoc = find_nonfinite(gcv);
+    if (nonfiniteLoc.n_elem == bwCand.n_rows)
+    {
+      // if bw are all too small, then re-compute or
+      // stop implementation if it has the same situation in second round
+      if (!secondRun && bwCand(bwCand.n_rows - 1, 0) < r)
+      {
+        bwOpt = bwCand.row(bwCand.n_rows - 1).t();
+        sparse = true;
+      } else
+      {
+        Rcpp::stop("The data is too sparse, no suitable bandwidth can be found! Try Gaussian kernel instead!\n");
+      }
+    } else
+    {
+      // select the optimal bandwidth with minimum gcv scores
+      uword min_gcv_idx = as_scalar(find(gcv == min(gcv), 1, "first"));
+      bwOpt = bwCand.row(min_gcv_idx).t();
+    }
+
+    if (bwOpt(0) == r)
+    {
+      // stop implementation if data is too sparse
+      con = false;
+      Rcpp::stop("The data is too sparse, optimal bandwidth includes all the data! You may want to change to Gaussian kernel!\n");
+    } else if (bwOpt(0) == bwCand(bwCand.n_rows - 1, 0) && !secondRun)
+    {
+      // re-compute with new bandwidth candidates
+      double minBW;
+      if (sparse || nonfiniteLoc.n_elem == bwCand.n_rows - 1)
+      {
+        RMessage("The data is too sparse, retry with larger bandwidths!");
+        minBW = bwCand(bwCand.n_rows - 1, 0) * 1.01;
+      } else
+      {
+        RMessage("Bandwidth candidates are too small, retry with larger choices now!");
+        minBW = bwCand(bwCand.n_rows - 2, 0);
+      }
+      vec newr = r * linspace<vec>(0.5, 1, bwCand.n_rows + 1);
+      uword min_idx = as_scalar(find(minBW < newr, 1, "first"));
+      double q = std::pow(newr(min_idx) / minBW, 1.0 / ((double) bwCand.n_rows - 1.0));
+      vec bwCandTmp = linspace<vec>(0, bwCand.n_rows - 1, bwCand.n_rows);
+      for (uword i = 0; i < bwCand.n_rows; ++i)
+        bwCandTmp(i) = std::pow(q, bwCandTmp(i)) * minBW;
+      bwCandTmp = sort(bwCandTmp);
+      mat bwCand = join_rows(bwCandTmp, bwCandTmp);
+
+      RMessage("New bwmu candidates: ");
+      std::stringstream bwCand_str;
+      bwCand.print(bwCand_str);
+      RMessage(bwCand_str.str());
+    } else if (bwOpt(0) < bwCand(bwCand.n_rows - 1, 0) || secondRun)
+    {
+      con = false;
+    }
+    secondRun = true;
+  }
+  Rcpp::NumericVector outBwOpt = Rcpp::wrap(bwOpt);
+  outBwOpt.attr("dim") = R_NilValue;
+  return outBwOpt;
 }
