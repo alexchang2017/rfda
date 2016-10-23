@@ -176,7 +176,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   validMFList <- !is.null(FPCA_opts$userMeanFunc) && is.data.table(FPCA_opts$userMeanFunc) &&
     all(c("timePnt", "value", "variable") %in% names(FPCA_opts$userMeanFunc)) &&
     all(!unlist(FPCA_opts$userMeanFunc[ , lapply(.SD, function(x) any(is.na(x) || is.infinite(x)))])) &&
-    all(unique(FPCA_opts$userMeanFunc) %in% varNameMapping)
+    all(unique(FPCA_opts$userMeanFunc$variable) %in% varNameMapping)
   # get smoothing mean functions
   if (validMFList) {
     message("Use the user-specified mean functions...")
