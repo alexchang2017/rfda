@@ -192,14 +192,14 @@ test_that("test - gcvlocPoly1d error handling", {
                  'The data is too sparse, retry with larger bandwidths!')
 })
 
-context("8. test - adjGcvBw1d")
-test_that("adjGcvBw1d", {
-  expect_equal(rfda:::adjGcvBw1d(0.789474, 2, "gauss", 0), 0.868421, tolerance = 1e-6)
-  expect_equal(rfda:::adjGcvBw1d(1.019959, 2, "epan", 0), 1.121955, tolerance = 1e-6)
-  expect_equal(rfda:::adjGcvBw1d(1.052632, 1, "gauss", 0), 1.157895, tolerance = 1e-6)
-  expect_equal(rfda:::adjGcvBw1d(1.052632, 1, "epan", 0), 1.157895, tolerance = 1e-6)
-  expect_equal(rfda:::adjGcvBw1d(0.434895, 0, "gauss", 0), 0.478385, tolerance = 1e-6)
-  expect_equal(rfda:::adjGcvBw1d(0.918469, 0, "epan", 0), 1.010316, tolerance = 1e-6)
+context("8. test - adjGcvBw")
+test_that("test - adjGcvBw", {
+  expect_equal(adjGcvBw(0.789474, 2, "gauss", 0), 0.868421, tolerance = 1e-6)
+  expect_equal(adjGcvBw(1.019959, 2, "epan", 0), 1.121955, tolerance = 1e-6)
+  expect_equal(adjGcvBw(1.052632, 1, "gauss", 0), 1.157895, tolerance = 1e-6)
+  expect_equal(adjGcvBw(1.052632, 1, "epan", 0), 1.157895, tolerance = 1e-6)
+  expect_equal(adjGcvBw(0.434895, 0, "gauss", 0), 0.478385, tolerance = 1e-6)
+  expect_equal(adjGcvBw(0.918469, 0, "epan", 0), 1.010316, tolerance = 1e-6)
 })
 
 context("9. test - locQuantPoly1d")

@@ -15,8 +15,7 @@ test_that("test get_FPCA_opts", {
 
 context("2. chk_FPCA_opts")
 default_FPCA_opts <- get_FPCA_opts(1)
-testFPCAOpts <- function(x) modifyList(default_FPCA_opts, x) %>>% (rfda:::chk_FPCA_opts(., 60))
-
+testFPCAOpts <- function(x) modifyList(default_FPCA_opts, x) %>>% (rfda:::chk_FPCA_opts(.))
 test_that("test get_FPCA_opts", {
   expect_warning(testFPCAOpts(list(numFPC = 54)), "Reset it to be numGrid-2 now!")
   expect_warning(testFPCAOpts(list(numFPC = "AIC", maxNumFPC  = 54)), "Reset it to be numGrid-2 now!")

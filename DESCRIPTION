@@ -40,7 +40,6 @@ Collate:
     'commFunc.R'
     'interp.R'
     'rbindTransList.R'
-    'adjGcvBw.R'
     'get_FPCA_opts.R'
     'FPCA.R'
 RoxygenNote: 5.0.1

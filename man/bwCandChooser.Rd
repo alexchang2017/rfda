@@ -3,11 +3,14 @@
 \name{bwCandChooser}
 \alias{bwCandChooser}
 \alias{bwCandChooser2}
-\title{Find the candidates of bandwidths for locPoly1d}
+\alias{bwCandChooser3}
+\title{Find the candidates of bandwidths for locPoly1d and locLinear2d}
 \usage{
 bwCandChooser(data, id.var, timeVarName, sparsity, kernel, degree)
 
 bwCandChooser2(dataAllGrid, sparsity, kernel, degree)
+
+bwCandChooser3(dataAllGrid, sparsity, kernel, degree)
 }
 \arguments{
 \item{data}{An data.frame or data.table containing the variables in model.}
@@ -18,39 +21,59 @@ bwCandChooser2(dataAllGrid, sparsity, kernel, degree)
 
 \item{sparsity}{The sparsity of data which is tested by \code{\link{checkSparsity}}.}
 
-\item{kernel}{The kernel function used in locPoly1d.}
+\item{kernel}{A string. It could be 'gauss', 'gaussvar', 'epan' or 'quar'.}
 
-\item{degree}{The degree of polyminal function used in locPoly1d.}
+\item{degree}{An integer, the degree of polynomial.}
 
 \item{dataAllGrid}{An data.table containing the grid of timepoints with
 naming \code{t1} and \code{t2} in model. (see examples.)}
 }
 \value{
 The candidates of bandwidths
-
-The candidates of bandwidths
 }
 \description{
-Find the candidates of bandwidths for locPoly1d
-
-Find the candidates of bandwidths for locLinear2d
+The difference between \code{bwCandChooser2} and \code{bwCandChooser3} is whether the
+candidates of bandwidths are the same on the x-axis and y-axis.
+In our application, \code{bwCandChooser2} is used in finding the candidates of bandwidth of covariance
+surface and \code{bwCandChooser3} is used in finding the candidates of bandwidth of cross-covariance surface.
 }
 \examples{
+## examples for bwCandChooser
 data("regularExData", package = 'rfda')
 bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
+
+## examples for bwCandChooser2
 require(data.table)
 require(pipeR)
 
 data("sparseExData", package = 'rfda')
 sparsity <- checkSparsity(sparseExData, "sampleID", "t")
 sparseExData \%>>\% data.table \%>>\% `[`( , .(t1 = rep(t, length(t)),
-  t2 = rep(t, each=length(t))), by = .(sampleID)) \%>>\%
+  t2 = rep(t, each = length(t))), by = .(sampleID)) \%>>\%
   bwCandChooser2(sparsity, "gauss", 1)
 
 data("regularExData", package = 'rfda')
 sparsity <- checkSparsity(regularExData, "sampleID", "t")
 regularExData \%>>\% data.table \%>>\% `[`( , .(t1 = rep(t, length(t)),
-  t2 = rep(t, each=length(t))), by = .(sampleID)) \%>>\%
+  t2 = rep(t, each = length(t))), by = .(sampleID)) \%>>\%
   bwCandChooser2(sparsity, "gauss", 1)
+
+## examples for bwCandChooser3
+# These examples are demo cases, we does not use this to find the candidates of
+# bandwidths for smoothing covariance surface.
+require(data.table)
+require(pipeR)
+
+data("sparseExData", package = 'rfda')
+sparsity <- checkSparsity(sparseExData, "sampleID", "t")
+sparseExData \%>>\% data.table \%>>\% `[`( , .(t1 = rep(t, length(t)),
+  t2 = rep(t, each = length(t))), by = .(sampleID)) \%>>\%
+  bwCandChooser3(sparsity, "gauss", 1)
+
+data("regularExData", package = 'rfda')
+sparsity <- checkSparsity(regularExData, "sampleID", "t")
+regularExData \%>>\% data.table \%>>\% `[`( , .(t1 = rep(t, length(t)),
+  t2 = rep(t, each = length(t))), by = .(sampleID)) \%>>\%
+  bwCandChooser3(sparsity, "gauss", 1)
 }
 

@@ -27,6 +27,16 @@ checkSparsity <- function(data, id.var, timeVarName){
   return(ifelse(propNonSparse == 1, 2, ifelse(propNonSparse > 0.75, 1, 0)))
 }
 
+#' Get the raw cross-covariance surface
+#'
+#' The usage of this function can be found in the example of \code{\link{gcvLocLinear2d}}.
+#'
+#' @param demeanDataDT A data.table with four columns \code{timePnt}, \code{value},
+#'   \code{variable} and \code{subId}. \code{value} is the observation minus smoothed mean.
+#'   \code{timePnt} is corresponding time points. \code{variable} is the name of observed variable.
+#'   \code{subId} is the id of subject.
+#' @return A expand grid of cross-covariance surface.
+#' @export
 #' @importFrom data.table setorder rbindlist .N
 getRawCrCov <- function(demeanDataDT){
   # geneerate the all combinations of t1,t2 and varaibles
@@ -68,9 +78,9 @@ getRawCrCov <- function(demeanDataDT){
 #' }
 #' @importFrom plyr is.formula
 #' @importFrom RcppParallel setThreadOptions
-#' @importFrom data.table data.table melt.data.table setnames is.data.table rbindlist .N .SD
+#' @importFrom data.table data.table melt.data.table setnames is.data.table rbindlist .N .SD setDT
 #' @importFrom stats median
-#' @importFrom utils modifyList
+#' @importFrom utils modifyList combn
 #' @export
 FPCA <- function(formula, id.var, data, options = list()){
   # library(plyr); library(data.table); library(pipeR); library(assertthat)
@@ -99,8 +109,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   # get the full options of FPCA and check
   default_FPCA_opts <- get_FPCA_opts(length(varName))
   optNamesUsed <- names(options) %in% names(default_FPCA_opts)
-  FPCA_opts <- modifyList(default_FPCA_opts, options[optNamesUsed]) %>>%
-    chk_FPCA_opts(nrow(data))
+  FPCA_opts <- modifyList(default_FPCA_opts, options[optNamesUsed]) %>>% chk_FPCA_opts
   message(ifelse(all(optNamesUsed), "All options are checked...",
                  paste(names(options)[!optNamesUsed], collapse = ", ") %>>%
                    sprintf(fmt = "Ignoring the non-found options %s.")))
@@ -128,19 +137,16 @@ FPCA <- function(formula, id.var, data, options = list()){
   dataDT <- dataDT[!subId %in% subIdInsuffSize]
 
   # binning data
-  if (FPCA_opts$numBins == -1 || FPCA_opts$numBins >= 10)
-  {
+  if (FPCA_opts$numBins == -1 || FPCA_opts$numBins >= 10) {
     # find the number of bins
-    if (FPCA_opts$numBins == -1){
+    if (FPCA_opts$numBins == -1) {
       numObv <- nrow(dataDT[variable == 1])
       numObvEach <- dataDT[variable == 1 , .(numObv = .N), by = timePnt] %>>% `$`(numObv)
       # find the number to decide whether to implement data binning
-      decNum <- ifelse(sparsity == 0, stats::median(numObvEach), max(numObvEach))
-      if (decNum > 400) {
-        FPCA_opts$numBin <- 400
-      } else if (numObv > 5000 && decNum > 20) {
-        FPCA_opts$numBin <- min(decNum, ceiling(max(20, (5000-numObv)*19/2250+400)))
-      }
+      criBinNum <- ifelse(sparsity == 0, median(numObvEach), max(numObvEach))
+      # minimun bin number
+      minBinNum <- min(criBinNum, ceiling(max(20, (5000 - numObv)*19/2250+400)))
+      FPCA_opts$numBin <- ifelse(criBinNum > 400, 400, ifelse(numObv > 5000 && criBinNum > 20, minBinNum, -1))
     }
 
     # binning data and re-find the sparsity
@@ -152,13 +158,11 @@ FPCA <- function(formula, id.var, data, options = list()){
   }
 
   # get weight
-  if (FPCA_opts$weight)
-  {
+  if (FPCA_opts$weight) {
     byVars <- switch(as.character(sparsity), "0" = c("variable", "subId"),
                      "1" = c("variable", "timePnt"), "2" = c("variable", "timePnt"))
     dataDT <- merge(dataDT, dataDT[ , .(weight = 1/.N), by = byVars], by = byVars)
-  } else
-  {
+  } else {
     dataDT[ , weight := 1]
   }
 
@@ -181,7 +185,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   if (validMFList) {
     message("Use the user-specified mean functions...")
     FPCA_opts$userMeanFunc[ , variable := match(variable, varNameMapping)]
-    MFRes <- c(list(data.table(variable = sort(unique(FPCA_opts$userMeanFunc$variable)), bwOpt = NA_real_)),
+    MFRes <- c(list(data.table(variable = 1:length(varName), value = NA_real_)),
       lapply(list(sampledTimePnts, allTimePnts), function(v){
       FPCA_opts$userMeanFunc %>>%
         `[`(j = .(timePnt = v, value = interp1(timePnt, value, v, "spline")),
@@ -189,27 +193,53 @@ FPCA <- function(formula, id.var, data, options = list()){
     }))
   } else {
     message("Get the smoothed mean functions...")
+    if (is.null(FPCA_opts$bwMean)) {
+      # use default
+      FPCA_opts$bwMean <- data.table(variable = 1:length(varName), value = -1)
+    } else {
+      assert_that(is.data.frame(FPCA_opts$bwMean), all(c("variable", "value") %in% names(FPCA_opts$bwMean)),
+                  all(FPCA_opts$bwMean$value > 0 || FPCA_opts$bwMean$value %in% c(-1, -2)),
+                  is.numeric(FPCA_opts$bwMean$value), all(!is.na(FPCA_opts$bwMean$value)),
+                  all(is.finite(FPCA_opts$bwMean$value)))
+      FPCA_opts$bwMean$variable <- as.character(FPCA_opts$bwMean$variable)
+      setDT(FPCA_opts$bwMean)
+      FPCA_opts$bwMean <- data.table(variable = varNameMapping) %>>%
+        merge(FPCA_opts$bwMean, by = "variable", all.x = TRUE) %>>%
+        `[`(j = `:=`(variable = match(variable, varNameMapping),
+                     value = ifelse(is.na(value), -1, value))) %>>%
+        setorder(variable)
+    }
+    message("The setting of bandwidth used in smoothing mean functions is ")
+    message("    ", paste0(varNameMapping, ": ", FPCA_opts$bwMean$value) %>>% paste0(collapse = ", "))
+
+    bwValues <- split(FPCA_opts$bwMean, FPCA_opts$bwMean$variable)
     # use gcv to get mean functions
-    MFRes <- lapply(dataList, function(dat){
-      # get the candidates of bandwidths
-      bwCand <- bwCandChooser(dat, "subId", "timePnt", sparsity, FPCA_opts$bwKernel, 1)
-      # get the optimal bandwidth with gcv
-      bwOptLocPoly1d <- gcvLocPoly1d(bwCand, dat$timePnt, dat$value, dat$weight, FPCA_opts$bwKernel, 0, 1)
-      # adjust the bandwidth
-      bwOptLocPoly1d <- adjGcvBw1d(bwOptLocPoly1d, sparsity, FPCA_opts$bwKernel, 0)
+    MFRes <- mapply(function(dat, bwDT){
+      if (bwDT$value > 0) {
+        bwOptLocPoly1d <- bwDT$value
+      } else {
+        # get the candidates of bandwidths
+        bwCand <- bwCandChooser(dat, "subId", "timePnt", sparsity, FPCA_opts$bwKernel, 1)
+        # get the optimal bandwidth with gcv
+        bwOptLocPoly1d <- gcvLocPoly1d(bwCand, dat$timePnt, dat$value, dat$weight, FPCA_opts$bwKernel, 0, 1)
+        # adjust the bandwidth
+        bwOptLocPoly1d <- adjGcvBw(bwOptLocPoly1d, sparsity, FPCA_opts$bwKernel, 0)
+      }
 
       # Geometric mean of the minimum bandwidth and the GCV bandwidth
-      if (FPCA_opts$bwMean == -1)
+      if (bwDT$value == -1)
         bwOptLocPoly1d <- sqrt(find_max_diff_f(dat[["timePnt"]], 2) * bwOptLocPoly1d)
 
       meanFunc <- locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
                             sampledTimePnts, FPCA_opts$bwKernel, 0, 1)
       meanFuncDense <- locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
                                  allTimePnts, FPCA_opts$bwKernel, 0, 1)
-      return(list(data.table(variable = dat$variable[1], bwOpt = bwOptLocPoly1d),
+      return(list(data.table(variable = dat$variable[1], value = bwOptLocPoly1d),
                   data.table(timePnt = sampledTimePnts, value = meanFunc, variable = unique(dat$variable)),
                   data.table(timePnt = allTimePnts, value = meanFuncDense, variable = unique(dat$variable))))
-    }) %>>% rbindTransList
+    }, dataList, bwValues, SIMPLIFY = FALSE) %>>% rbindTransList
+    message("The bandwidth of mean functions is \n    ",
+            paste0(varNameMapping, ": ", sprintf("%.6f", MFRes[[1]]$value)) %>>% paste0(collapse = ", "))
   }
 
   if (sapply(MFRes[2:3], function(dt) all(is.na(dt$value))) %>>% any)
@@ -222,8 +252,8 @@ FPCA <- function(formula, id.var, data, options = list()){
 
   # get raw covariance
   rawCov <- getRawCrCov(demeanDataDT)
-  if (FPCA_opts$weight){
-    if (sparsity == 0){
+  if (FPCA_opts$weight) {
+    if (sparsity == 0) {
       rawCov <- rawCov[ , weight := NULL] %>>%
         merge(dataDT[, .(weight = weight[which.max(subId)]), by = .(variable,timePnt)],
               by.x = c("variable1", "t1"), by.y = c("variable", "timePnt"))
@@ -232,7 +262,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     }
   }
 
-  if (FPCA_opts$methodNorm == "smoothCov"){
+  if (FPCA_opts$methodNorm == "smoothCov") {
     message("Start to normalize data with smoothed variances...")
     # get rawCov
 

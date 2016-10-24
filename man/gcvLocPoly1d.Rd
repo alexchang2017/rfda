@@ -32,5 +32,6 @@ data("regularExData", package = 'rfda')
 bwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
 w <- rep(1, nrow(regularExData))
 bwOpt <- gcvLocPoly1d(bwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
+bwOpt <- adjGcvBw(bwOpt, 2, "gauss", 0)
 }
 

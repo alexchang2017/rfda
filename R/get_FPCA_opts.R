@@ -3,23 +3,39 @@
 #' Allow the users to set and examine a variety of FPCA options which affect
 #' the way in which FPCA calculate its results.
 #'
-#' The options of FPCA: (The number of curve is denoted by n. The number of observations is denoted by N.)
+#' For convinient explianation, we denote the number of variables (functions) as \code{p},
+#' the number of curves of a variable (function) as \code{n}, the number of time points as \code{nt} and
+#' the number of observations is denoted by \code{N (=n*nt)}.
+#' The options of FPCA:
 #' \itemize{
-#' \item \code{bwMean}: A scalar.
+#' \item \code{bwMean}: A data.frame or data.table with two columns naming \code{variable} and \code{value}.
+#'   Default value is \code{NULL}. If \code{bwMean} is \code{NULL},
+#'   \code{bwMean = -1} will be used in all variables.
+#'   First column is the names of variables. Second column is the value of \code{bwMean}.
+#'   The \code{bwMean} for variables can be different. The value of \code{bwMean} can be following:
 #'   \itemize{
 #'     \item Any positive number: user-specified bandwidth.
 #'     \item \code{-1}: Geometric mean of the minimum bandwidth and the GCV bandwidth. [default]
-#'     \item \code{-2}: use generalized cross-validation to choose bandwidth automatically.
+#'     \item \code{-2}: Use generalized cross-validation to choose bandwidth automatically.
 #'   }
 #'   For Gaussian/Epanechnikov kernel, the optimal bandwidth from GCV would be adjusted.
-#' \item \code{bwCov}: A vector with 2 elements.
+#' \item \code{bwCov}: A data.frame or data.table with four columns naming \code{variable1}, \code{variable2},
+#'   \code{value1} and \code{value2}. Default value is \code{NULL}. If \code{bwCov} is \code{NULL},
+#'   \code{bwCov = c(-1, -1)} will be used in all variables.
+#'   First two columns is the names of variables. Last two column is the value of \code{bwCov}.
+#'   The \code{bwCov} for variables can be different. The value of \code{bwCov} can be following:
 #'   \itemize{
-#'     \item Any positive numbers: user-specified bandwidth. The elements in \code{bwCov} must be equal.
+#'     \item Any positive number: user-specified bandwidth.
 #'     \item \code{-1, -1}: Geometric mean of the minimum bandwidth and the GCV bandwidth.
-#'     \item \code{-2, -2}: use generalized cross-validation to choose bandwidth automatically. [default]
+#'     \item \code{-2, -2}: Use generalized cross-validation to choose bandwidth automatically.
+#'       [default for the cases \code{variable1} is equal to \code{variable2}]
+#'     \item \code{-3, -3}: Only used in choosing the bandwidth of Cross-Covariance. Use the bandwidths in
+#'       smoothing covariance surface. [default for the cases \code{variable1} is not equal to \code{variable2}]
 #'   }
+#'   If a row is \code{-1, -2}, we only take \code{-1}.
 #'   For Gaussian/Epanechnikov kernel, the optimal bandwidth from GCV would be adjusted.
-#' \item \code{bwNumGrid}: Default is 30. An integer is the number of support points of covariance surface. (for GCV)
+#' \item \code{bwNumGrid}: Default is \code{30}.
+#'    An integer is the number of support points of covariance surface. (for GCV)
 #'   A smaller \code{bwNumGrid} accelerate process at less accuracy.
 #' \item \code{bwKernel}: A character string to define the kernel to be used in the
 #'   smoothing procedures of mean and covariance surface.
@@ -129,42 +145,33 @@
 #'   The user-defined smoothed covariance function.
 #' }
 #'
-#' @param numFunc The number of functional data to fit.
+#' @param numVar The number of functional data to fit.
 #' @return An list of options to fit FPCA model used in \code{\link{FPCA}}.
 #' @export
-get_FPCA_opts <- function(numFunc){
+get_FPCA_opts <- function(numVar){
   return(list(
-    bwMean = -1, bwCov = c(-2, -2), bwNumGrid = 30, bwKernel = "gauss", numBins = 0,
+    bwMean = NULL, bwCov = NULL, bwNumGrid = 30, bwKernel = "gauss", numBins = 0,
     errTerm = TRUE, numGrid = 51, weight = FALSE, numFPC = "FVE", FVE_threshold = 0.85,
     maxNumFPC = 20, methodFPCS = "CE", shrink = FALSE, varErr = "cv", outPercent = 0,
-    methodNorm = ifelse(numFunc == 1, "no", "quantile"), ncpus = 0,
+    methodNorm = ifelse(numVar == 1, "no", "quantile"), ncpus = 0,
     userMeanFunc = NULL, userCovFunc = NULL
   ))
 }
 
-chk_FPCA_opts <- function(optns, dataSize){
-  # check input
-  assert_that(length(dataSize) == 1, is.numeric(dataSize), is.finite(dataSize), dataSize > 0)
+#' @importFrom utils combn
+chk_FPCA_opts <- function(optns){
 
   # check bwMean
-  assert_that(length(optns$bwMean) == 1, is.numeric(optns$bwMean), is.finite(optns$bwMean))
-  if (optns$bwMean <= 0)
-    assert_that(optns$bwMean %in% c(-1, -2))
-  else
-    assert_that(optns$bwMean > 0)
+  assert_that(is.null(optns$bwMean) || is.data.frame(optns$bwMean))
 
   # check bwCov
-  assert_that(length(optns$bwCov) == 2, is.numeric(optns$bwCov), all(is.finite(optns$bwCov)))
-  if (all(optns$bwCov <= 0))
-    assert_that(all(optns$bwCov %in% c(-1, -2)), diff(optns$bwCov) == 0)
-  else
-    assert_that(all(optns$bwCov > 0))
+  assert_that(is.null(optns$bwCov) || is.data.frame(optns$bwCov))
 
   # check bwNumGrid
   assert_that(length(optns$bwNumGrid) == 1, is.numeric(optns$bwNumGrid), is.finite(optns$bwNumGrid),
               optns$bwNumGrid > 0)
   # check bwKernel
-  assert_that(is.character(optns$bwKernel), optns$bwKernel %in% c("gauss", "epan", "gaussvar", "quar"))
+  assert_that(is.character(optns$bwKernel), optns$bwKernel %in% c("gauss", "gaussvar", "epan", "quar"))
 
   # check numBines
   if (!is.null(optns$numBins))
@@ -180,28 +187,22 @@ chk_FPCA_opts <- function(optns, dataSize){
 
   # check numFPC
   assert_that(length(optns$numFPC) == 1)
-  if (is.numeric(optns$numFPC))
-  {
+  if (is.numeric(optns$numFPC)) {
     assert_that(is.finite(optns$numFPC), optns$numFPC > 0, optns$numFPC - floor(optns$numFPC) < 1e-6)
-    if (optns$numFPC > optns$numGrid - 2)
-    {
+    if (optns$numFPC > optns$numGrid - 2) {
       warning(paste0("numFPC can only be less than or equal to numGrid-2!",
                      " Reset it to be numGrid-2 now!"))
       optns$numFPC <- optns$numGrid - 2
     }
-  } else
-  {
+  } else {
     assert_that(is.character(optns$numFPC), optns$numFPC %in% c("AIC", "BIC", "FVE", "AIC_R"))
-    if (optns$numFPC == "FVE")
-    {
+    if (optns$numFPC == "FVE") {
       assert_that(length(optns$FVE_threshold) == 1, is.numeric(optns$FVE_threshold),
                   optns$FVE_threshold > 0, optns$FVE_threshold <= 1)
-    } else if (optns$numFPC %in% c("AIC", "BIC"))
-    {
+    } else if (optns$numFPC %in% c("AIC", "BIC")) {
       assert_that(length(optns$maxNumFPC) == 1, optns$maxNumFPC > 0,
                   is.numeric(optns$maxNumFPC), is.finite(optns$maxNumFPC))
-      if (optns$maxNumFPC > optns$numGrid - 2)
-      {
+      if (optns$maxNumFPC > optns$numGrid - 2) {
         warning(paste0("maxNumFPC can only be less than or equal to numGrid-2!",
                        " Reset it to be numGrid-2 now!"))
         optns$maxNumFPC<- optns$numGrid - 2
@@ -214,8 +215,7 @@ chk_FPCA_opts <- function(optns, dataSize){
 
   # check shrink
   assert_that(length(optns$shrink) == 1, is.logical(optns$shrink), !is.na(optns$shrink))
-  if (optns$shrink && (!optns$errTerm || optns$methodFPCS != "IN"))
-  {
+  if (optns$shrink && (!optns$errTerm || optns$methodFPCS != "IN")) {
     warning(paste0("The shrinkage method only had effects when methodFPCS = \"IN\"",
                    " and errTerm = TRUE! Reset to shrink = FALSE now!"))
     optns$shrink <- FALSE
@@ -223,11 +223,9 @@ chk_FPCA_opts <- function(optns, dataSize){
 
   # check varErr
   assert_that(length(optns$varErr) == 1, is.numeric(optns$varErr) || is.character(optns$varErr))
-  if (is.numeric(optns$varErr))
-  {
+  if (is.numeric(optns$varErr)) {
     assert_that(optns$varErr > 0, is.finite(optns$varErr))
-  } else
-  {
+  } else {
     assert_that(is.character(optns$varErr), optns$varErr %in% c('cv', 'cv-random', 'no'))
   }
 
@@ -239,6 +237,5 @@ chk_FPCA_opts <- function(optns, dataSize){
   # check ncpus
   assert_that(length(optns$ncpus) == 1, optns$ncpus - floor(optns$ncpus) < 1e-6,
               is.finite(optns$ncpus), !is.na(optns$ncpus))
-
   return(optns)
 }

@@ -16,7 +16,7 @@ testDT_list <- suppressMessages(lapply(list(testDataRegular, testDataIrregular, 
   bwCand <- bwCandChooser(dt, "sampleID", "t", sparsity, "gauss", 1)
   w <- rep(1, nrow(dt))
   bwOpt <- gcvLocPoly1d(bwCand, dt$t, dt$y, w, "gauss", 0, 1)
-  bwOpt <- rfda:::adjGcvBw1d(bwOpt, sparsity, "gauss", 0)
+  bwOpt <- adjGcvBw(bwOpt, sparsity, "gauss", 0)
   xout <- sort(unique(dt$t))
   meanFunc <- locPoly1d(bwOpt, dt$t, dt$y, w, xout, "gauss", 0, 1)
 
@@ -31,7 +31,7 @@ compareCovResList <- lapply(list(rcov_case2, rcov_case1, rcov_case0), function(m
 })
 
 context("1. test - getCrCov")
-rawCovList <- lapply(testDT_list, rfda:::getRawCrCov)
+rawCovList <- lapply(testDT_list, getRawCrCov)
 test_that("test - bwCandChooser2", {
   expect_equal(rawCovList[[1]][ , .(t1,t2,sse)], compareCovResList[[1]] %>>% `[`(j = sse := sse * 4))
   expect_equal(rawCovList[[2]][ , .(t1,t2,sse)], compareCovResList[[2]])
@@ -168,13 +168,10 @@ test_that("test - gcvLocLinear2d", {
   expect_equal(gcvBws[ , 1], gcv_bw_case2, tolerance = 1e-6)
   expect_equal(gcvBws[ , 2], gcv_bw_case1, tolerance = 1e-6)
   expect_equal(gcvBws[ , 3], gcv_bw_case0, tolerance = 1e-6)
-  expect_equal(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
-                                                      weight, cnt, "gaussvar")),
+  expect_equal(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse, weight, cnt, "gaussvar")),
                c(0.5, 0.5), tolerance = 1e-6)
-  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
-                                                      weight, cnt, "epan")))
-  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse,
-                                                      weight, cnt, "quar")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse, weight, cnt, "epan")))
+  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse, weight, cnt, "quar")))
 })
 
 test_that("test - gcvLocLinear2d: validate inputs", {
@@ -230,3 +227,12 @@ test_that("test - gcvLocLinear2d: validate inputs", {
                                                       weight, cnt, "gauss", 2.5)))
 })
 
+context("6. test - adjGcvBw")
+test_that("test - adjGcvBw", {
+  expect_equal(adjGcvBw(c(0.5, 0.5), 2, "gauss", 0), c(0.55, 0.55), tolerance = 1e-6)
+  expect_equal(adjGcvBw(c(0.5, 0.5), 2, "epan", 0), c(0.55, 0.55), tolerance = 1e-6)
+  expect_equal(adjGcvBw(c(0.4, 0.4), 1, "gauss", 0), c(0.44, 0.44), tolerance = 1e-6)
+  expect_equal(adjGcvBw(c(0.4, 0.4), 1, "epan", 0), c(0.44, 0.44), tolerance = 1e-6)
+  expect_equal(adjGcvBw(c(0.9964559, 0.9964559), 0, "gauss", 0), c(1.096101, 1.096101), tolerance = 1e-6)
+  expect_equal(adjGcvBw(c(0.9964559, 0.9964559), 0, "epan", 0), c(1.096101, 1.096101), tolerance = 1e-6)
+})

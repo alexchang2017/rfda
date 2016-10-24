@@ -147,7 +147,7 @@ interp2 <- function(x, y, v, xi, yi, method) {
 #' bwCand <- bwCandChooser(regularExData, "sampleID", "t", sparsity, "gauss", 1)
 #' w <- rep(1, nrow(regularExData))
 #' bwOpt <- gcvLocPoly1d(bwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
-#' bwOpt <- rfda:::adjGcvBw1d(bwOpt, sparsity, "gauss", 0)
+#' bwOpt <- adjGcvBw(bwOpt, sparsity, "gauss", 0)
 #' xout <- sort(unique(regularExData$t))
 #' meanFunc <- locPoly1d(bwOpt, regularExData$t, regularExData$y, w, xout, "gauss", 0, 1)
 #' require(data.table)
@@ -155,7 +155,7 @@ interp2 <- function(x, y, v, xi, yi, method) {
 #' demeanDataDT <- merge(data.table(regularExData), data.table(mf = meanFunc, t = xout), by = "t") %>>%
 #'   `[`( , `:=`(y = y - mf, variable = "y")) %>>%
 #'   setnames(c("t", "y", "sampleID"), c("timePnt", "value", "subId"))
-#' RawCov <- rfda:::getRawCrCov(demeanDataDT)
+#' RawCov <- getRawCrCov(demeanDataDT)
 #'
 #' xout2 <- seq(min(regularExData$t), max(regularExData$t), len = 30)
 #' RawCovNoDiag <- RawCov[t1 != t2]
@@ -185,7 +185,7 @@ locLinear2d <- function(bandwidth, x, y, w, count, out1, out2, kernel) {
 #' bwCand <- bwCandChooser(regularExData, "sampleID", "t", sparsity, "gauss", 1)
 #' w <- rep(1, nrow(regularExData))
 #' bwOpt <- gcvLocPoly1d(bwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
-#' bwOpt <- rfda:::adjGcvBw1d(bwOpt, sparsity, "gauss", 0)
+#' bwOpt <- adjGcvBw(bwOpt, sparsity, "gauss", 0)
 #' xout <- sort(unique(regularExData$t))
 #' meanFunc <- locPoly1d(bwOpt, regularExData$t, regularExData$y, w, xout, "gauss", 0, 1)
 #' require(data.table)
@@ -193,12 +193,13 @@ locLinear2d <- function(bandwidth, x, y, w, count, out1, out2, kernel) {
 #' demeanDataDT <- merge(data.table(regularExData), data.table(mf = meanFunc, t = xout), by = "t") %>>%
 #'   `[`( , `:=`(y = y - mf, variable = "y")) %>>%
 #'   setnames(c("t", "y", "sampleID"), c("timePnt", "value", "subId"))
-#' RawCov <- rfda:::getRawCrCov(demeanDataDT)
+#' RawCov <- getRawCrCov(demeanDataDT)
 #'
 #' RawCovNoDiag <- RawCov[t1 != t2]
 #' bwCand <- bwCandChooser2(RawCovNoDiag, sparsity, "gauss", 1)
 #' bwOpt <- gcvLocLinear2d(bwCand, as.matrix(RawCovNoDiag[ , .(t1, t2)]), RawCovNoDiag$sse,
 #'   RawCovNoDiag$weight, RawCovNoDiag$cnt, "gauss", 30)
+#' bwOpt <- adjGcvBw(bwOpt, 2, "gauss", 0)
 #' @export
 gcvLocLinear2d <- function(bwCand, x, y, w, count, kernel, bwNumGrid = 30.0) {
     .Call('rfda_gcvLocLinear2d', PACKAGE = 'rfda', bwCand, x, y, w, count, kernel, bwNumGrid)
@@ -225,6 +226,7 @@ locPoly1d_cpp <- function(bandwidth, x, y, w, xout, kernel, drv, degree) {
 #' bwCand <- bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
 #' w <- rep(1, nrow(regularExData))
 #' bwOpt <- gcvLocPoly1d(bwCand, regularExData$t, regularExData$y, w, "gauss", 0, 1)
+#' bwOpt <- adjGcvBw(bwOpt, 2, "gauss", 0)
 #' @export
 gcvLocPoly1d <- function(bwCand, x, y, w, kernel, drv, degree) {
     .Call('rfda_gcvLocPoly1d', PACKAGE = 'rfda', bwCand, x, y, w, kernel, drv, degree)

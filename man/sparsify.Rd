@@ -4,16 +4,15 @@
 \alias{sparsify}
 \title{Find the candidates of bandwidths for locLinear2d}
 \usage{
-sparsify(data, subid, sparsity)
+sparsify(data, subid, sparsityRate)
 }
 \arguments{
 \item{data}{A data.frame containing sample id, observed time points and correponding observed values.}
 
 \item{subid}{The column name of the id of subjects.}
 
-\item{sparsity}{A numeric vector between 0 and 1. The proportion of data will be extracted.
-The length of sparsity must 1 or the number of observation.
-(The number of observation does not mean the number of rows of data, see examples.)}
+\item{sparsityRate}{A numeric vector between \code{0} and \code{1}. The proportion of data will be extracted.
+The length of sparsity must \code{1} or the number of curves (\code{n} in \code{\link{get_FPCA_opts}}).}
 }
 \value{
 A data.frame after sparsifying.

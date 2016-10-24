@@ -4,10 +4,10 @@
 \alias{get_FPCA_opts}
 \title{FPCA options settings}
 \usage{
-get_FPCA_opts(numFunc)
+get_FPCA_opts(numVar)
 }
 \arguments{
-\item{numFunc}{The number of functional data to fit.}
+\item{numVar}{The number of functional data to fit.}
 }
 \value{
 An list of options to fit FPCA model used in \code{\link{FPCA}}.
@@ -17,23 +17,39 @@ Allow the users to set and examine a variety of FPCA options which affect
 the way in which FPCA calculate its results.
 }
 \details{
-The options of FPCA: (The number of curve is denoted by n. The number of observations is denoted by N.)
+For convinient explianation, we denote the number of variables (functions) as \code{p},
+the number of curves of a variable (function) as \code{n}, the number of time points as \code{nt} and
+the number of observations is denoted by \code{N (=n*nt)}.
+The options of FPCA:
 \itemize{
-\item \code{bwMean}: A scalar.
+\item \code{bwMean}: A data.frame or data.table with two columns naming \code{variable} and \code{value}.
+  Default value is \code{NULL}. If \code{bwMean} is \code{NULL},
+  \code{bwMean = -1} will be used in all variables.
+  First column is the names of variables. Second column is the value of \code{bwMean}.
+  The \code{bwMean} for variables can be different. The value of \code{bwMean} can be following:
   \itemize{
     \item Any positive number: user-specified bandwidth.
     \item \code{-1}: Geometric mean of the minimum bandwidth and the GCV bandwidth. [default]
-    \item \code{-2}: use generalized cross-validation to choose bandwidth automatically.
+    \item \code{-2}: Use generalized cross-validation to choose bandwidth automatically.
   }
   For Gaussian/Epanechnikov kernel, the optimal bandwidth from GCV would be adjusted.
-\item \code{bwCov}: A vector with 2 elements.
+\item \code{bwCov}: A data.frame or data.table with four columns naming \code{variable1}, \code{variable2},
+  \code{value1} and \code{value2}. Default value is \code{NULL}. If \code{bwCov} is \code{NULL},
+  \code{bwCov = c(-1, -1)} will be used in all variables.
+  First two columns is the names of variables. Last two column is the value of \code{bwCov}.
+  The \code{bwCov} for variables can be different. The value of \code{bwCov} can be following:
   \itemize{
-    \item Any positive numbers: user-specified bandwidth. The elements in \code{bwCov} must be equal.
+    \item Any positive number: user-specified bandwidth.
     \item \code{-1, -1}: Geometric mean of the minimum bandwidth and the GCV bandwidth.
-    \item \code{-2, -2}: use generalized cross-validation to choose bandwidth automatically. [default]
+    \item \code{-2, -2}: Use generalized cross-validation to choose bandwidth automatically.
+      [default for the cases \code{variable1} is equal to \code{variable2}]
+    \item \code{-3, -3}: Only used in choosing the bandwidth of Cross-Covariance. Use the bandwidths in
+      smoothing covariance surface. [default for the cases \code{variable1} is not equal to \code{variable2}]
   }
+  If a row is \code{-1, -2}, we only take \code{-1}.
   For Gaussian/Epanechnikov kernel, the optimal bandwidth from GCV would be adjusted.
-\item \code{bwNumGrid}: Default is 30. An integer is the number of support points of covariance surface. (for GCV)
+\item \code{bwNumGrid}: Default is \code{30}.
+   An integer is the number of support points of covariance surface. (for GCV)
   A smaller \code{bwNumGrid} accelerate process at less accuracy.
 \item \code{bwKernel}: A character string to define the kernel to be used in the
   smoothing procedures of mean and covariance surface.

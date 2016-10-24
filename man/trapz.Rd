@@ -7,12 +7,12 @@
 trapz(x, y = NULL)
 }
 \arguments{
-\item{x}{A vector with n elements, \code{x[i]} is a support, \code{i = 1, ..., n}.
-If y is NULL, support is taken as \code{seq(1, length(x), by = 1)}.}
+\item{x}{A vector with \code{n} elements, \code{x[i]} is a support, \code{i = 1, ..., n}.
+If \code{y} is \code{NULL}, support is taken as \code{seq(1, length(x), by = 1)}.}
 
 \item{y}{\code{y[i, j]} is jth values on corresponding value of \code{x[i], i = 1, ..., n}.
-If y is vector, the length of y must be equal to the lenght of x.
-If y is matrix, the number of rows must be equal to the lenght of x.}
+If \code{y} is vector, the length of \code{y} must be equal to the lenght of \code{x}.
+If \code{y} is matrix, the number of rows must be equal to the lenght of \code{x}.}
 }
 \value{
 A value, the approximation of integral.
