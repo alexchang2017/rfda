@@ -276,7 +276,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   #   all(laply(FPCA_opts$userCovFunc, rownames) == laply(FPCA_opts$userCovFunc, colnames))
 
   # get smoothing covariance surface
-  if (validCFList) {
+  # if (validCFList) {
     # message("Use the user-specified covariance surface...")
     # userGrid <- llply(FPCA_opts$userCovFunc, function(m) as.numeric(rownames(m)))
     # outBwDT <- expand.grid(1:length(varName), 1:length(varName)) %>>% data.table %>>%
@@ -284,12 +284,12 @@ FPCA <- function(formula, id.var, data, options = list()){
     # CSRes <- c(list(outBwDT), mapply(function(m, grid){
     #   interp2(grid, grid, m, sampledTimePnts, sampledTimePnts, 'spline')
     #   }, FPCA_opts$userCovFunc, userGrid, SIMPLIFY = FALSE))
-  } else {
+  # } else {
     # split raw covariance and smooth separately
     # splitFactor <- paste(rawCov$variable1, rawCov$variable2, sep = "-")
     # dataList2 <- split(rawCov, splitFactor)
     # get smoothing mean functions
-  }
+  # }
 
   # if (any(!laply(CSRes[[2]], is.na)))
   #   stop(paste0("The bandwidth of covariance function is not appropriate!\n",
