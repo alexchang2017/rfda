@@ -7,8 +7,8 @@
 getRawCrCov(demeanDataDT)
 }
 \arguments{
-\item{demeanDataDT}{A data.table with four columns \code{timePnt}, \code{value},
-\code{variable} and \code{subId}. \code{value} is the observation minus smoothed mean.
+\item{demeanDataDT}{A data.table with five columns \code{timePnt}, \code{value}, \code{variable} and
+\code{subId}. \code{value} is the observation minus smoothed mean.
 \code{timePnt} is corresponding time points. \code{variable} is the name of observed variable.
 \code{subId} is the id of subject.}
 }

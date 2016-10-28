@@ -152,10 +152,14 @@ The options of FPCA:
     \item \code{0}: To use all threads in computation. [Default]
     \item Any positive integer: To use user-specified number of threads in computation.
   }
-\item \code{userMeanFunc}: Default is NULL. A list of vectors which size is \code{numGrid}.
-  The user-defined smoothed mean function.
-\item \code{userCovFunc}: Default is NULL. A list of vectors which size is \code{numGrid x numGrid}.
-  The user-defined smoothed covariance function.
+\item \code{userMeanFunc}: Default is NULL. A data.table with three columns \code{timePnt}, \code{value}
+  and \code{variable}. \code{value} is the mean function at specific time points.
+  \code{timePnt} is the corresponding time points. \code{variable} is the name of observed variable.
+  Please see the examples of \code{\link{FPCA}}.
+\item \code{userCovFunc}: Default is NULL. A list of matrices with names \code{variable1}-\code{variable2}.
+  The matrix is the cross-covariance surface of \code{variable1} and \code{variable2}.
+  The colnames and rownames are the grid values of cross-covariance surface.
+  Please see the examples of \code{\link{FPCA}}.
 }
 }
 

@@ -1,7 +1,6 @@
 #ifndef common_h
 #define common_h
 
-// [[Rcpp::plugins("cpp11")]]
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
 #include <string>

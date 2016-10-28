@@ -159,7 +159,8 @@ arma::vec locPoly1d_cpp(const double& bandwidth, const arma::vec& x, const arma:
     RcppParallel::parallelFor(0, xout.n_elem, locPoly1d_worker);
   }
   // return NaN if there is a interval with no data
-  vec errOut = {datum::nan};
+  vec errOut(1);
+  errOut(0) = datum::nan;
   if (any(flag == 1))
   {
     RMessage("Too many gaps, please increase bandwidth.");

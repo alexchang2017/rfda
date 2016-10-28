@@ -20,7 +20,8 @@ arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi
     Rcpp::stop("spline: requires at least 2 points.");
 
   mat a = y;
-  uvec szy = {y.n_rows, y.n_cols};
+  uvec szy;
+  szy << y.n_rows << y.n_cols << endr;
   if (szy(1) == n && szy(0) != n+2 && szy(0) != n && szy(0) >= 1)
     inplace_trans(a);
   if (szy(1) == n+2 && szy(0) != n+2 && szy(0) != n && szy(0) >= 1)
@@ -99,7 +100,7 @@ arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi
       cb = (au.row(1) - au.row(0)) * (xu(2) - xu(0)) /  ((xu(1) - xu(0)) * (xu(2) - xu(1))) +
         (au.row(0) - au.row(2)) * (xu(1) - xu(0)) /  ((xu(2) - xu(0)) * (xu(2) - xu(1)));
       ca = au.row(0);
-      xou = {min(x), max(x)};
+      xou << min(x) << max(x) << endr;
     } else {
       mat g = zeros<mat>(n-2, au.n_cols);
       g.row(0) = 3.0 / (h(0) + h(1)) *
@@ -121,8 +122,9 @@ arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi
         cc.rows(1, n-2) = solve(diagmat(ldg, -1) + diagmat(dg) + diagmat(udg, 1), g);
       } else {
         cc.zeros(n, au.n_cols);
-        mat tmp = {{h(0) + 2.0 * h(1), h(1) - h(0)},
-        {h(1) - h(2), 2.0 * h(1) + h(2)}};
+        mat tmp;
+        tmp << h(0) + 2.0 * h(1) << h(1) - h(0) << endr
+            << h(1) - h(2) << 2.0 * h(1) + h(2) << endr;
         cc.rows(1, 2) = solve(tmp, g);
       }
 
@@ -159,9 +161,9 @@ arma::mat interp1_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& x
   chk_mat(xi, "xi", "double");
 
   uword n = x.n_elem;
-
   mat a = y;
-  uvec szy = {y.n_rows, y.n_cols};
+  uvec szy;
+  szy << y.n_rows << y.n_cols << endr;
   if (szy(1) == n && szy(0) != n+2 && szy(0) != n && szy(0) != 1)
     inplace_trans(a);
   if (x.n_elem != a.n_rows)

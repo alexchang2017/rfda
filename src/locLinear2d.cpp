@@ -213,7 +213,8 @@ arma::mat locLinear2d(const arma::vec& bandwidth, const arma::mat& x, const arma
     RcppParallel::parallelFor(0, out2.n_elem, locLinear2d);
   }
   // return NaN if there is a interval with no data
-  mat errOut = {datum::nan};
+  mat errOut(1, 1);
+  errOut(0, 0) = datum::nan;
   if (any(any(flag == 1)))
   {
     RMessage("No enough points in local window, please increase bandwidth.");

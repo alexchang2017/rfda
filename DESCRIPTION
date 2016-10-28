@@ -30,7 +30,6 @@ Suggests:
     testthat
 LazyData: yes
 License: MIT + file LICENSE
-SystemRequirements: C++11
 Collate:
     'RcppExports.R'
     'data-sparseExData.R'

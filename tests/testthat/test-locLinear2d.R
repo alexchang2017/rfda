@@ -236,3 +236,52 @@ test_that("test - adjGcvBw", {
   expect_equal(adjGcvBw(c(0.9964559, 0.9964559), 0, "gauss", 0), c(1.096101, 1.096101), tolerance = 1e-6)
   expect_equal(adjGcvBw(c(0.9964559, 0.9964559), 0, "epan", 0), c(1.096101, 1.096101), tolerance = 1e-6)
 })
+
+context("7. test - bwCandChooser3")
+testDataRegularMulti <- data.table(y = c(seq(0.1, 0.9, 0.1), c(0.9,1,1)), t = rep(1:3, 4),
+                              sampleID = c(rep(1:4, each=3))) %>>%
+  `[`(j = `:=`(y2 = y * sin(t), y3 = y * cos(t)))
+testDataIrregularMulti <- data.table(y = seq(0.1, 1.3, 0.1), t = c(1:4,1,2,4,2:4,1,3,4),
+                                sampleID = c(rep(1, 4), rep(2:4, each=3))) %>>%
+  `[`(j = `:=`(y2 = y * sin(t), y3 = y * cos(t)))
+testDataSparseMulti <- data.table(y = seq(0.1, 1, 0.1), t = c(1,2,4,3,5,7,6,10,8,9),
+                             sampleID = c(rep(1:2, each=3), rep(3:4, each=2))) %>>%
+  `[`(j = `:=`(y2 = y * sin(t), y3 = y * cos(t)))
+
+testDT_list <- suppressMessages(lapply(list(testDataRegularMulti, testDataIrregularMulti,
+                                            testDataSparseMulti), function(dt){
+  varNames <- c("y", "y2", "y3")
+  sparsity <- checkSparsity(dt, "sampleID", "t")
+  bwCand <- bwCandChooser(dt, "sampleID", "t", sparsity, "gauss", 1)
+  w <- rep(1, nrow(dt))
+  meanFuncList <- lapply(varNames, function(var){
+    bwOpt <- gcvLocPoly1d(bwCand, dt$t, dt[[var]], w, "gauss", 0, 1)
+    bwOpt <- adjGcvBw(bwOpt, sparsity, "gauss", 0)
+    xout <- sort(unique(dt$t))
+    data.table(t = xout, meanFunc = locPoly1d(bwOpt, dt$t, dt[[var]], w, xout, "gauss", 0, 1)) %>>%
+      setnames("meanFunc", paste0("meanFunc_", var))
+  })
+
+  meanDT <- meanFuncList[[1]]
+  for (i in 2:length(meanFuncList))
+    meanDT <- merge(meanDT, meanFuncList[[i]], by = "t")
+
+  expr <- paste0(varNames, "=", varNames, "-meanFunc_", varNames) %>>%
+    paste0(collapse = ",") %>>% (paste0("`:=`(", ., ")"))
+  merge(dt, meanDT, by = "t") %>>% `[`(j = eval(parse(text = expr))) %>>% `[`(j = variable := "y") %>>%
+    melt.data.table(id.var = c("sampleID", "t"), measure.vars = varNames, variable.factor = FALSE) %>>%
+    setnames(c("t", "sampleID"), c("timePnt", "subId"))
+}))
+rawCovList <- lapply(testDT_list, getRawCrCov)
+testErrDt <- data.table(sampleID = rep(1:4, each=2), t = c(1,3,11,9,1,13,4,2), y = rnorm(8)) %>>%
+  `[`(j = .(t1 = rep(t, length(t)), t2 = rep(t, each=length(t))), by = .(sampleID))
+test_that("test - bwCandChooser2", {
+  expect_equal(unique(bwCandChooser3(rawCovList[[1]], 2, "gauss", 1)[ , 1]), 0.5, tolerance = 1e-6)
+  expect_equal(unique(bwCandChooser3(rawCovList[[2]], 2, "gauss", 1)[ , 1]),
+               c(0.6, 0.6344228, 0.6708204, 0.7093062, 0.75), tolerance = 1e-6)
+  expect_equal(unique(bwCandChooser3(rawCovList[[3]], 2, "gauss", 1)[ , 1]),
+               c(0.6, 0.8349473, 1.161895, 1.6168685, 2.25), tolerance = 1e-6)
+  expect_message(bwCandChooser3(testErrDt, 0, "gauss", 9), "Data is too sparse")
+  expect_error(bwCandChooser3(testErrDt, 0, "epan", 9), "Data is too sparse")
+})
+
