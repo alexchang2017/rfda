@@ -47,8 +47,10 @@ test_that("FPCA", {
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(methodNorm = "no")), 1)
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar,
                     list(bwMean = data.table(variable = c("y2", "y"), value = c(0.676065, -2)),
-                         bwCov = data.table(variable1 = c("y", "y2", "y2"), variable2 = c("y", "y2", "y3"),
-                                            value1 = c(-1, 0.5, -3), value2 = c(-1, 0.3, -3)))), 1)
+                         bwCov = data.table(variable1 = c("y", "y2", "y", "y", "y2"),
+                                            variable2 = c("y", "y2", "y2", "y3", "y3"),
+                                            value1 = c(-1, 0.5, -1, 0.7, -3),
+                                            value2 = c(-1, 0.5, -1, 0.9, -3)))), 1)
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar,
                     list(userCovFunc = udCF)), 1)
 })
