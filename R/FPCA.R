@@ -307,9 +307,13 @@ FPCA <- function(formula, id.var, data, options = list()){
       setDT(FPCA_opts$bwCov)
 
       FPCA_opts$bwCov <- FPCA_opts$bwCov[ , `:=`(variable1 = mapVarNames(as.character(variable1)),
-                                                 variable2 = mapVarNames(as.character(variable2)))] %>>%
-        merge(unique(rawCov, by = paste0("variable", 1:2))[ , .(variable1, variable2)],
-              by = paste0("variable", 1:2), all.y = TRUE) %>>%
+                                                 variable2 = mapVarNames(as.character(variable2)))]
+      if (any(FPCA_opts$bwCov$variable1 < FPCA_opts$bwCov$variable2))
+        FPCA_opts$bwCov[ , tmp := variable1][ , `:=`(variable1 = variable2, variable2 = tmp)][ , tmp := NULL]
+
+      FPCA_opts$bwCov <- merge(FPCA_opts$bwCov,
+                               unique(rawCov, by = paste0("variable", 1:2))[ , .(variable1, variable2)],
+                               by = paste0("variable", 1:2), all.y = TRUE) %>>%
         `[`(j = value1 := ifelse(is.na(value1), ifelse(variable1 == variable2, -2, -3), value1)) %>>%
         `[`(j = value2 := ifelse(is.na(value2), ifelse(variable1 == variable2, -2, -3), value2)) %>>%
         setorder(variable1, variable2)
