@@ -38,16 +38,16 @@ checkSparsity <- function(data, id.var, timeVarName){
 #' @return A expand grid of cross-covariance surface.
 #' @export
 #' @importFrom data.table setorder .N setDT setnames
-#' @importFrom plyr ddply
+#' @importFrom plyr dlply
 getRawCrCov <- function(demeanDataDT){
   # geneerate the all combinations of t1,t2 and varaibles
   baseDT <- demeanDataDT[ , .(t1 = rep(timePnt, length(timePnt)), t2 = rep(timePnt, each=length(timePnt)),
                               value.var1 = rep(value, length(timePnt))), by = .(variable, subId)]
   # calculation of raw cross-covariance
-  rawCrCovDT <- do.call("ddply", list(demeanDataDT, "variable", function(df){
+  rawCrCovDT <- do.call("dlply", list(demeanDataDT, "variable", function(df){
     merge(baseDT[variable >= df$variable[1]], df, suffixes = c("1", "2"),
           by.x = c("subId", "t2"), by.y = c("subId", "timePnt"))
-  })) %>>% setDT %>>% `[`(j = variable := NULL) %>>% setnames("value", "value.var2") %>>%
+  })) %>>% rbindlist %>>% setnames("value", "value.var2") %>>%
     `[`(j = .(sse = sum(value.var1 * value.var2), cnt = .N), by = .(variable1, variable2, t1, t2)) %>>%
     setorder(variable1, variable2, t1, t2) %>>% `[`(j = weight := 1)
   return(rawCrCovDT)
@@ -77,14 +77,14 @@ getRawCrCov <- function(demeanDataDT){
 #' # regular case
 #' data("regularExData", package = 'rfda')
 #' }
-#' @importFrom plyr is.formula llply laply dlply
+#' @importFrom plyr is.formula llply laply dlply mapvalues
 #' @importFrom RcppParallel setThreadOptions
-#' @importFrom data.table data.table melt.data.table setnames is.data.table .N .SD setDT
+#' @importFrom data.table data.table melt.data.table setnames is.data.table .N .SD setDT tstrsplit
 #' @importFrom stats median
-#' @importFrom utils modifyList combn
+#' @importFrom utils modifyList combn type.convert
 #' @export
 FPCA <- function(formula, id.var, data, options = list()){
-  # library(plyr); library(data.table); library(pipeR); library(assertthat)
+  # library(plyr); library(data.table); library(pipeR); library(assertthat); library(testthat)
   # formula = as.formula("y ~ t")
   # formula = as.formula("y + y2 ~ t")
   # formula = as.formula("y + y2 + y3 ~ t")
@@ -130,6 +130,9 @@ FPCA <- function(formula, id.var, data, options = list()){
     (~ varNameMapping <- levels(.$variable)) %>>%
     `[`(j = variable := as.integer(variable)) %>>% `[`(!is.na(value) & is.finite(value)) %>>%
     setnames(c(id.var, timeVarName) , c("subId", "timePnt"))
+  # function to map variable names to integers
+  mapVarNames <- function(x) as.integer(mapvalues(x, varNameMapping, 1L:length(varNameMapping),
+                                                  warn_missing = FALSE))
 
   # find the number of observations for each observed function
   subIdInsuffSize <- dataDT[, .(numObv = .N) ,by = .(subId, variable)][numObv <= 1] %>>%
@@ -182,7 +185,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   # get smoothing mean functions
   if (validMFList) {
     message("Use the user-specified mean functions...")
-    FPCA_opts$userMeanFunc[ , variable := match(variable, varNameMapping)]
+    FPCA_opts$userMeanFunc[ , variable := mapVarNames(variable)]
     MFRes <- c(list(data.table(variable = 1:length(varName), value = NA_real_)),
       llply(list(sampledTimePnts, allTimePnts), function(v){
       FPCA_opts$userMeanFunc %>>%
@@ -199,19 +202,15 @@ FPCA <- function(formula, id.var, data, options = list()){
                   all(FPCA_opts$bwMean$value > 0 || FPCA_opts$bwMean$value %in% c(-1, -2)),
                   is.numeric(FPCA_opts$bwMean$value), all(!is.na(FPCA_opts$bwMean$value)),
                   all(is.finite(FPCA_opts$bwMean$value)))
-      FPCA_opts$bwMean$variable <- as.character(FPCA_opts$bwMean$variable)
       setDT(FPCA_opts$bwMean)
-      FPCA_opts$bwMean <- data.table(variable = varNameMapping) %>>%
-        merge(FPCA_opts$bwMean, by = "variable", all.x = TRUE) %>>%
-        `[`(j = `:=`(variable = match(variable, varNameMapping),
-                     value = ifelse(is.na(value), -1, value))) %>>%
-        setorder(variable)
+      FPCA_opts$bwMean <- FPCA_opts$bwMean[ , variable := mapVarNames(as.character(variable))] %>>%
+        merge(data.table(variable = 1:length(varName)), by = "variable", all.y = TRUE) %>>%
+        `[`(j = `:=`(variable = variable, value = ifelse(is.na(value), -1, value))) %>>% setorder(variable)
     }
     message("The setting of bandwidth used in smoothing mean functions is ")
     message("    ", paste0(varNameMapping, ": ", FPCA_opts$bwMean$value) %>>% paste0(collapse = ", "))
 
-    bwValues <- split(FPCA_opts$bwMean, FPCA_opts$bwMean$variable)
-    # use gcv to get mean functions
+    # use gcv to get smoothed mean functions
     MFRes <- do.call("dlply", list(dataDT, "variable", function(dat){
       bwOpt <- FPCA_opts$bwMean[variable == dat$variable[1]]$value
       if (bwOpt > 0) {
@@ -220,19 +219,20 @@ FPCA <- function(formula, id.var, data, options = list()){
         # get the candidates of bandwidths
         bwCand <- bwCandChooser(dat, "subId", "timePnt", sparsity, FPCA_opts$bwKernel, 1)
         # get the optimal bandwidth with gcv
-        bwOptLocPoly1d <- gcvLocPoly1d(bwCand, dat$timePnt, dat$value, dat$weight, FPCA_opts$bwKernel, 0, 1)
+        bwOptLocPoly1d <- with(dat, gcvLocPoly1d(bwCand, timePnt, value, weight, FPCA_opts$bwKernel, 0, 1))
         # adjust the bandwidth
-        bwOptLocPoly1d <- adjGcvBw(bwOptLocPoly1d, sparsity, FPCA_opts$bwKernel, 0)
+        if (bwOpt ==  -1)
+          bwOptLocPoly1d <- adjGcvBw(bwOptLocPoly1d, sparsity, FPCA_opts$bwKernel, 0)
       }
 
       # Geometric mean of the minimum bandwidth and the GCV bandwidth
       if (bwOpt == -1)
         bwOptLocPoly1d <- sqrt(find_max_diff_f(dat[["timePnt"]], 2) * bwOptLocPoly1d)
 
-      meanFunc <- locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
-                            sampledTimePnts, FPCA_opts$bwKernel, 0, 1)
-      meanFuncDense <- locPoly1d(bwOptLocPoly1d, dat$timePnt, dat$value, dat$weight,
-                                 allTimePnts, FPCA_opts$bwKernel, 0, 1)
+      meanFunc <- with(dat, locPoly1d(bwOptLocPoly1d, timePnt, value, weight,
+                                      sampledTimePnts, FPCA_opts$bwKernel, 0, 1))
+      meanFuncDense <- with(dat, locPoly1d(bwOptLocPoly1d, timePnt, value, weight,
+                                           allTimePnts, FPCA_opts$bwKernel, 0, 1))
       return(list(data.table(variable = dat$variable[1], value = bwOptLocPoly1d),
                   data.table(timePnt = sampledTimePnts, value = meanFunc, variable = unique(dat$variable)),
                   data.table(timePnt = allTimePnts, value = meanFuncDense, variable = unique(dat$variable))))
@@ -262,38 +262,133 @@ FPCA <- function(formula, id.var, data, options = list()){
   }
 
   # validate the list of user-specified covariance surface
-  # if (length(varName) == 1) {
-  #   cfListNames <- paste(varName, varName, sep = "-")
-  # } else {
-  #   cfListNames <- combn(varName, 2) %>>% (paste(.[1,], .[2,], sep = "-"))
-  # }
-  # validCFList <- !is.null(FPCA_opts$userCovFunc) && is.list(FPCA_opts$userCovFunc) &&
-  #   !is.null(names(FPCA_opts$userCovFunc)) && all(names(FPCA_opts$userCovFunc) %in% cfListNames) &&
-  #   all(laply(FPCA_opts$userCovFunc, is.matrix)) && all(laply(FPCA_opts$userCovFunc, dim) == 2) &&
-  #   all(laply(FPCA_opts$userCovFunc, function(x) nrow(x) == ncol(x))) &&
-  #   all(!is.null(laply(FPCA_opts$userCovFunc, colnames))) &&
-  #   all(!is.null(laply(FPCA_opts$userCovFunc, rownames))) &&
-  #   all(laply(FPCA_opts$userCovFunc, rownames) == laply(FPCA_opts$userCovFunc, colnames))
+  cfListNames <- switch(as.integer(length(varName) == 1) + 1,
+                        {rbind(data.table(variable1 = varName, variable2 = varName),
+                               data.table(t(combn(varName, 2))) %>>% setnames(paste0("variable", 1:2))) %>>%
+                            setorder(variable1, variable2) %>>% with(paste(variable1, variable2, sep = "-"))},
+                        {paste(varName, varName, sep = "-")})
+
+  validCFList <- !is.null(FPCA_opts$userCovFunc) && is.list(FPCA_opts$userCovFunc) &&
+    !is.null(names(FPCA_opts$userCovFunc)) && all(cfListNames %in% names(FPCA_opts$userCovFunc)) &&
+    all(laply(FPCA_opts$userCovFunc, is.matrix)) &&
+    all(laply(FPCA_opts$userCovFunc, function(x) nrow(x) == ncol(x))) &&
+    all(!is.null(laply(FPCA_opts$userCovFunc, colnames))) &&
+    all(!is.null(laply(FPCA_opts$userCovFunc, rownames))) &&
+    all(laply(FPCA_opts$userCovFunc, function(m) colnames(m) == rownames(m))) &&
+    all(laply(FPCA_opts$userCovFunc, function(x) {
+      class(type.convert(colnames(x))) %in% c("integer", "numeric")
+    }))
 
   # get smoothing covariance surface
-  # if (validCFList) {
-    # message("Use the user-specified covariance surface...")
-    # userGrid <- llply(FPCA_opts$userCovFunc, function(m) as.numeric(rownames(m)))
-    # outBwDT <- expand.grid(1:length(varName), 1:length(varName)) %>>% data.table %>>%
-    #   setnames(paste0("variable", 1:2)) %>>% `[`(j = value := NA_real_)
-    # CSRes <- c(list(outBwDT), mapply(function(m, grid){
-    #   interp2(grid, grid, m, sampledTimePnts, sampledTimePnts, 'spline')
-    #   }, FPCA_opts$userCovFunc, userGrid, SIMPLIFY = FALSE))
-  # } else {
-    # split raw covariance and smooth separately
-    # splitFactor <- paste(rawCov$variable1, rawCov$variable2, sep = "-")
-    # dataList2 <- split(rawCov, splitFactor)
-    # get smoothing mean functions
-  # }
+  if (validCFList) {
+    message("Use the user-specified covariance surface...")
+    outBwDT <- data.table(V1 = names(FPCA_opts$userCovFunc)) %>>%
+      `[`(j = paste0("variable", 1:2) := tstrsplit(V1, "-")) %>>%
+      `[`(j = `:=`(V1 = NULL, value1 = NA_real_, value2 = NA_real_))
+    CFRes <- c(list(outBwDT), llply(FPCA_opts$userCovFunc, function(m){
+      grid <- as.numeric(rownames(m))
+      interp2(grid, grid, m, sampledTimePnts, sampledTimePnts, 'spline')
+    }))
+  } else {
+    message("Get the smoothed covariance surface...")
+    if (is.null(FPCA_opts$bwCov)) {
+      # use default
+      FPCA_opts$bwCov <- unique(rawCov, by = paste0("variable", 1:2)) %>>%
+        `[`(j = value1 := ifelse(variable1 == variable2, -2, -3)) %>>%
+        `[`(j = value2 := value1) %>>% `[`(j = .(variable1, variable2, value1, value2))
+    } else {
+      assert_that(is.data.frame(FPCA_opts$bwCov),
+                  all(c(paste0("variable", 1:2), paste0("value", 1:2)) %in% names(FPCA_opts$bwCov)),
+                  all(FPCA_opts$bwCov$value1 > 0 || FPCA_opts$bwCov$value1 %in% c(-1, -2, -3)),
+                  all(FPCA_opts$bwCov$value2 > 0 || FPCA_opts$bwCov$value2 %in% c(-1, -2, -3)),
+                  is.numeric(FPCA_opts$bwCov$value1), all(!is.na(FPCA_opts$bwCov$value1)),
+                  all(is.finite(FPCA_opts$bwCov$value1)), is.numeric(FPCA_opts$bwCov$value2),
+                  all(!is.na(FPCA_opts$bwCov$value2)), all(is.finite(FPCA_opts$bwCov$value2)))
+      setDT(FPCA_opts$bwCov)
 
-  # if (any(!laply(CSRes[[2]], is.na)))
-  #   stop(paste0("The bandwidth of covariance function is not appropriate!\n",
-  #               "If it is chosen automatically, please provide your own covariance surface."))
+      FPCA_opts$bwCov <- FPCA_opts$bwCov[ , `:=`(variable1 = mapVarNames(as.character(variable1)),
+                                                 variable2 = mapVarNames(as.character(variable2)))] %>>%
+        merge(unique(rawCov, by = paste0("variable", 1:2))[ , .(variable1, variable2)],
+              by = paste0("variable", 1:2), all.y = TRUE) %>>%
+        `[`(j = value1 := ifelse(is.na(value1), ifelse(variable1 == variable2, -2, -3), value1)) %>>%
+        `[`(j = value2 := ifelse(is.na(value2), ifelse(variable1 == variable2, -2, -3), value2)) %>>%
+        setorder(variable1, variable2)
+    }
+    message("The setting of bandwidth used in smoothing covariance functions is ")
+    message("    ", paste0(varNameMapping[FPCA_opts$bwCov$variable1], "-",
+            varNameMapping[FPCA_opts$bwCov$variable2], ": (", FPCA_opts$bwCov$value1, ",",
+            FPCA_opts$bwCov$value2, ")") %>>% paste0(collapse = ", "))
+
+    # smoothing diagonal covariance matrix
+    CFRes1 <- do.call("dlply", list(rawCov[variable1 == variable2],
+                                    c("variable1", "variable2"), function(dat){
+      setDT(dat)
+      dat <- dat[t1 != t2]
+      bwOpt <- FPCA_opts$bwCov[variable1 == dat$variable1[1] & variable2 == dat$variable2[1],
+                               .(value1, value2)] %>>% as.vector
+      if (all(bwOpt > 0)) {
+        bwOptLocLinear2d <- unlist(bwOpt)
+      } else {
+        # get the candidates of bandwidths
+        bwCand <- bwCandChooser2(dat, sparsity, FPCA_opts$bwKernel, 1)
+        # get the optimal bandwidth with gcv
+        bwOptLocLinear2d <- with(dat, gcvLocLinear2d(bwCand, cbind(t1, t2), sse, weight, cnt,
+                                                     FPCA_opts$bwKernel, FPCA_opts$bwNumGrid))
+        # adjust the bandwidth
+        if (all(bwOpt ==  -1))
+          bwOptLocLinear2d <- adjGcvBw(bwOptLocLinear2d, sparsity, FPCA_opts$bwKernel, 0)
+      }
+
+      list(data.table(variable1 = dat$variable1[1], variable2 = dat$variable2[1],
+                      value1 = bwOptLocLinear2d[1], value2 = bwOptLocLinear2d[2]),
+           with(dat, locLinear2d(bwOptLocLinear2d, cbind(t1, t2), sse, weight, cnt,
+                                 sampledTimePnts, sampledTimePnts, FPCA_opts$bwKernel)))
+    }))
+
+    # smoothing cross-covariance matrix
+    CFRes2 <- do.call("dlply", list(rawCov[variable1 != variable2],
+                                    c("variable1", "variable2"), function(dat){
+      setDT(dat)
+      bwOpt <- FPCA_opts$bwCov[variable1 == dat$variable1[1] & variable2 == dat$variable2[1],
+                               .(value1, value2)] %>>% as.vector
+      if (all(bwOpt > 0)) {
+        bwOptLocLinear2d <- unlist(bwOpt)
+      } else if (all(bwOpt == -3)) {
+        bwOptLocLinear2d <- c(CFRes1[[dat$variable1[1]]][[1]]$value1, CFRes1[[dat$variable2[1]]][[1]]$value2)
+      } else {
+        # get the candidates of bandwidths
+        bwCand <- bwCandChooser3(dat, sparsity, FPCA_opts$bwKernel, 1)
+        # get the optimal bandwidth with gcv
+        bwOptLocLinear2d <- with(dat, gcvLocLinear2d(bwCand, cbind(t1, t2), sse, weight, cnt,
+                                                     FPCA_opts$bwKernel, FPCA_opts$bwNumGrid))
+        # adjust the bandwidth
+        if (all(bwOpt ==  -1))
+          bwOptLocLinear2d <- adjGcvBw(bwOptLocLinear2d, sparsity, FPCA_opts$bwKernel, 0)
+      }
+
+      list(data.table(variable1 = dat$variable1[1], variable2 = dat$variable2[1],
+                      value1 = bwOptLocLinear2d[1], value2 = bwOptLocLinear2d[2]),
+           with(dat, locLinear2d(bwOptLocLinear2d, cbind(t1, t2), sse, weight, cnt,
+                                 sampledTimePnts, sampledTimePnts, FPCA_opts$bwKernel)))
+    }))
+
+    # combine the smoothing results
+    CFRes <- transCFRes(c(CFRes1, CFRes2), sampledTimePnts)
+    rm(CFRes1, CFRes2)
+    gc()
+
+    # set names for covariance function
+    names(CFRes[[2]]) <- names(CFRes[[2]]) %>>% strsplit("\\.") %>>%
+      laply(function(v) paste0(varNameMapping[as.integer(v)], collapse = "-"))
+    message("The bandwidth of covariance functions is \n    ",
+            paste0(varNameMapping[CFRes[[1]]$variable1], "-",
+                   varNameMapping[CFRes[[1]]$variable2], ": (", sprintf("%.6f", CFRes[[1]]$value1), ",",
+                   sprintf("%.6f", CFRes[[1]]$value2), ")") %>>% paste0(collapse = ", "))
+  }
+
+  if (any(laply(CFRes[[2]], is.na)))
+    stop(paste0("The bandwidth of covariance surface is not appropriate!\n",
+                "If it is chosen automatically, please provide your own covariance surface."))
 
   if (FPCA_opts$methodNorm == "smoothCov") {
     message("Start to normalize data with smoothed variances...")

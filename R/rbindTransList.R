@@ -7,7 +7,7 @@
 #'            list(data.frame(a = 4:6, b = 2:4), data.frame(a = 3:2, b = 6:7)))
 #' rbindTransList(ll)
 #' @importFrom data.table rbindlist
-#' @importFrom plyr laply ldply
+#' @importFrom plyr laply llply
 #' @export
 rbindTransList <- function(x){
   if (!is.list(x) || any(!laply(x, is.list)) || !all(laply(x, function(l) all(laply(l, is.data.frame)))))
@@ -17,6 +17,18 @@ rbindTransList <- function(x){
 
   y <- vector('list', length(x[[1]]))
   for (i in 1:length(x[[1]]))
-    y[[i]] <- ldply(x, `[[`, i) %>>% setDT
+    y[[i]] <- llply(x, `[[`, i) %>>% rbindlist
   return(y)
 }
+
+#' @importFrom plyr llply
+transCFRes <- function(x, cfDimnames){
+  assert_that(is.list(x), all(do.call(c, llply(x, is.list))), all(do.call(c, llply(x, length)) == 2L),
+              all(do.call(c, llply(x, function(x) is.data.frame(x[[1]]) && is.matrix(x[[2]])))))
+
+  y <- vector('list', 2L)
+  y[[1]] <- llply(x, `[[`, 1) %>>% rbindlist
+  y[[2]] <- llply(x, function(x) x[[2]] %>>% `dimnames<-`(list(cfDimnames, cfDimnames)))
+  return(y)
+}
+

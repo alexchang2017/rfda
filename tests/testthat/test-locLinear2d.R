@@ -275,7 +275,7 @@ testDT_list <- suppressMessages(lapply(list(testDataRegularMulti, testDataIrregu
 rawCovList <- lapply(testDT_list, getRawCrCov)
 testErrDt <- data.table(sampleID = rep(1:4, each=2), t = c(1,3,11,9,1,13,4,2), y = rnorm(8)) %>>%
   `[`(j = .(t1 = rep(t, length(t)), t2 = rep(t, each=length(t))), by = .(sampleID))
-test_that("test - bwCandChooser2", {
+test_that("test - bwCandChooser3", {
   expect_equal(unique(bwCandChooser3(rawCovList[[1]], 2, "gauss", 1)[ , 1]), 0.5, tolerance = 1e-6)
   expect_equal(unique(bwCandChooser3(rawCovList[[2]], 2, "gauss", 1)[ , 1]),
                c(0.6, 0.6344228, 0.6708204, 0.7093062, 0.75), tolerance = 1e-6)

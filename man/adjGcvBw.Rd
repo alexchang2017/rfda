@@ -4,7 +4,7 @@
 \alias{adjGcvBw}
 \title{Adjustment of optimal bandwidth choosed by gcv}
 \usage{
-adjGcvBw(bwOpt, sparsity, kernel, drv)
+adjGcvBw(bwOpt, sparsity, kernel, drv = 0)
 }
 \arguments{
 \item{bwOpt}{A numeric. The optimal bandwidth choosed by gcv.}

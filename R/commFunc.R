@@ -22,7 +22,7 @@
 trapz <- function(x, y = NULL){
   if (is.null(y)) {
     y <- x
-    x <- switch(as.integer(is.vector(x)) + 1, {1:nrow(x)}, {1:length(x)})
+    x <- switch(is.matrix(x) + 1, {1:length(x)}, {1:nrow(x)})
   }
   return(as.vector(trapz_cpp(x, as.matrix(y))))
 }
@@ -80,7 +80,7 @@ find_max_diff_f <- function(t, lag_n){
 #' bwCandChooser(regularExData, "sampleID", "t", 2, "gauss", 1)
 #' @rdname bwCandChooser
 #' @export
-bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
+bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree = 1){
   # check data
   assert_that(is.data.frame(data), is.character(id.var), is.character(timeVarName),
               !is.na(sparsity), is.finite(sparsity), sparsity %in% c(0, 1, 2),
@@ -135,7 +135,7 @@ bwCandChooser <- function(data, id.var, timeVarName, sparsity, kernel, degree){
 #' @rdname bwCandChooser
 #' @importFrom data.table data.table setorder is.data.table
 #' @export
-bwCandChooser2 <- function(dataAllGrid, sparsity, kernel, degree){
+bwCandChooser2 <- function(dataAllGrid, sparsity, kernel, degree = 1){
   # cehck data
   assert_that(is.data.table(dataAllGrid), !is.na(sparsity), is.finite(sparsity), sparsity %in% c(0, 1, 2),
               kernel %in% c("gauss", "epan", "gaussvar", "quar"), !is.na(degree), is.finite(degree),
@@ -196,7 +196,7 @@ bwCandChooser2 <- function(dataAllGrid, sparsity, kernel, degree){
 #' @rdname bwCandChooser
 #' @importFrom data.table data.table setorder is.data.table
 #' @export
-bwCandChooser3 <- function(dataAllGrid, sparsity, kernel, degree){
+bwCandChooser3 <- function(dataAllGrid, sparsity, kernel, degree = 1){
   # cehck data
   assert_that(is.data.table(dataAllGrid), !is.na(sparsity), is.finite(sparsity), sparsity %in% c(0, 1, 2),
               kernel %in% c("gauss", "epan", "gaussvar", "quar"), !is.na(degree), is.finite(degree),
@@ -246,7 +246,7 @@ bwCandChooser3 <- function(dataAllGrid, sparsity, kernel, degree){
 #' @param drv An integer, the order of derivative.
 #' @return An adjusted bandwidth.
 #' @export
-adjGcvBw <- function(bwOpt, sparsity, kernel, drv){
+adjGcvBw <- function(bwOpt, sparsity, kernel, drv = 0){
   if (kernel == "gauss") {
     bwAdjFac <- switch(as.integer(sparsity == 2) + 1, c(1.1, 1.2, 2), c(1.1, 0.8, 0.8))
   } else if (kernel == "epan") {

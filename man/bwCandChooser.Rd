@@ -6,11 +6,11 @@
 \alias{bwCandChooser3}
 \title{Find the candidates of bandwidths for locPoly1d and locLinear2d}
 \usage{
-bwCandChooser(data, id.var, timeVarName, sparsity, kernel, degree)
+bwCandChooser(data, id.var, timeVarName, sparsity, kernel, degree = 1)
 
-bwCandChooser2(dataAllGrid, sparsity, kernel, degree)
+bwCandChooser2(dataAllGrid, sparsity, kernel, degree = 1)
 
-bwCandChooser3(dataAllGrid, sparsity, kernel, degree)
+bwCandChooser3(dataAllGrid, sparsity, kernel, degree = 1)
 }
 \arguments{
 \item{data}{An data.frame or data.table containing the variables in model.}
