@@ -277,10 +277,10 @@ testErrDt <- data.table(sampleID = rep(1:4, each=2), t = c(1,3,11,9,1,13,4,2), y
   `[`(j = .(t1 = rep(t, length(t)), t2 = rep(t, each=length(t))), by = .(sampleID))
 test_that("test - bwCandChooser3", {
   expect_equal(unique(bwCandChooser3(rawCovList[[1]], 2, "gauss", 1)[ , 1]), 0.5, tolerance = 1e-6)
-  expect_equal(unique(bwCandChooser3(rawCovList[[2]], 2, "gauss", 1)[ , 1]),
-               c(0.6, 0.6344228, 0.6708204, 0.7093062, 0.75), tolerance = 1e-6)
-  expect_equal(unique(bwCandChooser3(rawCovList[[3]], 2, "gauss", 1)[ , 1]),
-               c(0.6, 0.8349473, 1.161895, 1.6168685, 2.25), tolerance = 1e-6)
+  expect_equal(unique(bwCandChooser3(rawCovList[[2]], 1, "gauss", 1)[ , 1]),
+               c(0.4, 0.4680695, 0.5477226, 0.6409305, 0.75), tolerance = 1e-6)
+  expect_equal(unique(bwCandChooser3(rawCovList[[3]], 0, "gauss", 1)[ , 1]),
+               c(0.9, 1.131690, 1.423025, 1.789359, 2.25), tolerance = 1e-6)
   expect_message(bwCandChooser3(testErrDt, 0, "gauss", 9), "Data is too sparse")
   expect_error(bwCandChooser3(testErrDt, 0, "epan", 9), "Data is too sparse")
 })

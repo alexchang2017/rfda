@@ -79,8 +79,8 @@ getRawCrCov <- function(demeanDataDT){
 #' }
 #' @importFrom plyr is.formula llply laply dlply mapvalues
 #' @importFrom RcppParallel setThreadOptions
-#' @importFrom data.table data.table melt.data.table setnames is.data.table .N .SD setDT tstrsplit
-#' @importFrom stats median
+#' @importFrom data.table data.table melt.data.table setnames is.data.table .N .SD setDT tstrsplit copy
+#' @importFrom stats median qnorm
 #' @importFrom utils modifyList combn type.convert
 #' @export
 FPCA <- function(formula, id.var, data, options = list()){
@@ -225,10 +225,6 @@ FPCA <- function(formula, id.var, data, options = list()){
           bwOptLocPoly1d <- adjGcvBw(bwOptLocPoly1d, sparsity, FPCA_opts$bwKernel, 0)
       }
 
-      # Geometric mean of the minimum bandwidth and the GCV bandwidth
-      if (bwOpt == -1)
-        bwOptLocPoly1d <- sqrt(find_max_diff_f(dat[["timePnt"]], 2) * bwOptLocPoly1d)
-
       meanFunc <- with(dat, locPoly1d(bwOptLocPoly1d, timePnt, value, weight,
                                       sampledTimePnts, FPCA_opts$bwKernel, 0, 1))
       meanFuncDense <- with(dat, locPoly1d(bwOptLocPoly1d, timePnt, value, weight,
@@ -282,9 +278,9 @@ FPCA <- function(formula, id.var, data, options = list()){
   # get smoothing covariance surface
   if (validCFList) {
     message("Use the user-specified covariance surface...")
-    outBwDT <- data.table(V1 = names(FPCA_opts$userCovFunc)) %>>%
-      `[`(j = paste0("variable", 1:2) := tstrsplit(V1, "-")) %>>%
-      `[`(j = `:=`(V1 = NULL, value1 = NA_real_, value2 = NA_real_))
+    outBwDT <- data.table(variable = names(FPCA_opts$userCovFunc)) %>>%
+      `[`(j = paste0("variable", 1:2) := tstrsplit(variable, "-")) %>>%
+      `[`(j = `:=`(variable = NULL, value1 = NA_real_, value2 = NA_real_))
     CFRes <- c(list(outBwDT), llply(FPCA_opts$userCovFunc, function(m){
       grid <- as.numeric(rownames(m))
       interp2(grid, grid, m, sampledTimePnts, sampledTimePnts, 'spline')
@@ -396,20 +392,44 @@ FPCA <- function(formula, id.var, data, options = list()){
 
   if (FPCA_opts$methodNorm == "smoothCov") {
     message("Start to normalize data with smoothed variances...")
-    # get rawCov
-
-    # get smoothed covariance
-
-    # normalization
-
+    # acquire names of smoothed variance
+    colNames <- names(CFRes[[2]][1:length(varName)]) %>>% strsplit("-") %>>% laply(`[`, 1)
+    # acquire smoothed variance
+    varMat <- laply(CFRes[[2]][1:length(varName)], diag)
+    if (length(varName) == 1) {
+      varMat <- as.matrix(varMat)
+    } else {
+      varMat <- t(varMat)
+    }
+    # let negative variance be the minimum positive smoothed variance
+    for (i in 1:ncol(varMat))
+      varMat[varMat[ , i] < 0, i] <- min(varMat[varMat[ , i] > 0, i])
+    # get smoothed variance data.table
+    smoothVarDT <- sqrt(varMat) %>>% `colnames<-`(colNames) %>>% data.table(keep.rownames = TRUE) %>>%
+      melt.data.table("rn") %>>% `[`(j = `:=`(variable = mapVarNames(variable),timePnt = as.numeric(rn))) %>>%
+      `[`(j = .(value = interp1(timePnt, value, allTimePnts, "spline"), timePnt = allTimePnts),
+          by = .(variable))
+    # get normalized data
+    newDataDT <- merge(demeanDataDT, smoothVarDT, by = c("timePnt", "variable"),
+                       suffixes = c(".demean", ".std"), all.x = TRUE) %>>%
+      `[`(j = value := (value.demean / value.std)) %>>% `[`(j = .(timePnt, variable, subId, value, weight))
   } else if (FPCA_opts$methodNorm == "quantile") {
     message("Start to normalize data with smoothed IQRs...")
-    # get IQR
-    ## diff(qnorm(probs))
-    # normalization
-
+    # acquire quantiles and convert it to variance estimator
+    quantDT <- do.call("dlply", list(dataDT, "variable", function(dat){
+      bwOpt <- MFRes[[1]][variable == dat$variable[1]]$value
+      quantFuncs <- with(dat, locQuantPoly1d(bwOpt, FPCA_opts$quantile_probs, timePnt, value,
+                                             weight, allTimePnts, FPCA_opts$bwKernel, 0, 1))
+      iqr <- (quantFuncs[ , 2] - quantFuncs[ , 1]) / diff(qnorm(FPCA_opts$quantile_probs))
+      return(data.table(timePnt = allTimePnts, value = iqr, variable = unique(dat$variable)))
+    })) %>>% rbindlist
+    # get normalized data
+    newDataDT <- merge(demeanDataDT, quantDT, by = c("timePnt", "variable"),
+                       suffixes = c(".demean", ".std"), all.x = TRUE) %>>%
+      `[`(j = value := (value.demean / value.std)) %>>% `[`(j = .(timePnt, variable, subId, value, weight))
   } else {
     message("Not perform the normalization...")
+    newDataDT <- copy(dataDT)
   }
 
   # decide the number of FPC

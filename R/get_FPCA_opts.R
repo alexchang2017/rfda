@@ -157,7 +157,7 @@ get_FPCA_opts <- function(numVar){
     bwMean = NULL, bwCov = NULL, bwNumGrid = 30, bwKernel = "gauss", numBins = 0,
     errTerm = TRUE, numGrid = 51, weight = FALSE, numFPC = "FVE", FVE_threshold = 0.85,
     maxNumFPC = 20, methodFPCS = "CE", shrink = FALSE, varErr = "cv", outPercent = 0,
-    methodNorm = ifelse(numVar == 1, "no", "quantile"), ncpus = 0,
+    methodNorm = ifelse(numVar == 1, "no", "quantile"), quantile_probs = c(0.25, 0.75), ncpus = 0,
     userMeanFunc = NULL, userCovFunc = NULL
   ))
 }
@@ -238,6 +238,10 @@ chk_FPCA_opts <- function(optns){
               is.numeric(optns$outPercent), optns$outPercent >= 0, optns$outPercent <= 1)
   # check methodNorm
   assert_that(length(optns$methodNorm) == 1, optns$methodNorm %in% c('no', 'quantile', 'smoothCov'))
+  # check quantile_probs
+  assert_that(length(optns$quantile_probs) == 2, all(is.finite(optns$quantile_probs)),
+              all(!is.na(optns$quantile_probs)), is.numeric(optns$quantile_probs),
+              all(optns$quantile_probs >= 0), all(optns$quantile_probs <= 1))
   # check ncpus
   assert_that(length(optns$ncpus) == 1, optns$ncpus - floor(optns$ncpus) < 1e-6,
               is.finite(optns$ncpus), !is.na(optns$ncpus))
