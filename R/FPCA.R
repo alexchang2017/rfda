@@ -80,7 +80,8 @@ getRawCrCov <- function(demeanDataDT){
 #' @importFrom plyr is.formula llply laply dlply mapvalues
 #' @importFrom RcppParallel setThreadOptions
 #' @importFrom data.table data.table melt.data.table setnames is.data.table .N .SD setDT tstrsplit copy
-#' @importFrom stats median qnorm
+#' @importFrom data.table as.data.table
+#' @importFrom stats median qnorm cov2cor
 #' @importFrom utils modifyList combn type.convert
 #' @export
 FPCA <- function(formula, id.var, data, options = list()){
@@ -281,10 +282,11 @@ FPCA <- function(formula, id.var, data, options = list()){
     outBwDT <- data.table(variable = names(FPCA_opts$userCovFunc)) %>>%
       `[`(j = paste0("variable", 1:2) := tstrsplit(variable, "-")) %>>%
       `[`(j = `:=`(variable = NULL, value1 = NA_real_, value2 = NA_real_))
-    CFRes <- c(list(outBwDT), llply(FPCA_opts$userCovFunc, function(m){
+    CFRes <- c(list(outBwDT), list(llply(FPCA_opts$userCovFunc, function(m){
       grid <- as.numeric(rownames(m))
-      interp2(grid, grid, m, sampledTimePnts, sampledTimePnts, 'spline')
-    }))
+      interp2(grid, grid, m, sampledTimePnts, sampledTimePnts, 'spline') %>>%
+        `colnames<-`(sampledTimePnts) %>>% `rownames<-`(sampledTimePnts)
+    })))
   } else {
     message("Get the smoothed covariance surface...")
     if (is.null(FPCA_opts$bwCov)) {
@@ -390,46 +392,77 @@ FPCA <- function(formula, id.var, data, options = list()){
     stop(paste0("The bandwidth of covariance surface is not appropriate!\n",
                 "If it is chosen automatically, please provide your own covariance surface."))
 
+  # binding the cross-covariance surface
+  CFMat <- matrix(0, FPCA_opts$numGrid * length(varName), FPCA_opts$numGrid * length(varName))
+  orderCFResDT <- tstrsplit(names(CFRes[[2]]), "-") %>>% as.data.table %>>%
+    setnames(paste0("variable", 1:2)) %>>% `[`(j = lapply(.SD, mapVarNames))
+  for (i in 1:nrow(orderCFResDT)) {
+    idxList <- llply(orderCFResDT[i, ], function(x){
+      seq((x-1)*FPCA_opts$numGrid+1, x*FPCA_opts$numGrid)
+    })
+    CFMat[idxList[[1]], idxList[[2]]] <- CFRes[[2]][[i]]
+  }
+  CFMat <- (CFMat + t(CFMat)) / 2
+
+  # start to normalize data and get the working cross-correlation matrix for find the FPC scores
   if (FPCA_opts$methodNorm == "smoothCov") {
-    message("Start to normalize data with smoothed variances...")
+    message("Normalize data with smoothed variances...")
     # acquire names of smoothed variance
     colNames <- names(CFRes[[2]][1:length(varName)]) %>>% strsplit("-") %>>% laply(`[`, 1)
     # acquire smoothed variance
-    varMat <- laply(CFRes[[2]][1:length(varName)], diag)
+    smoothVarMat <- laply(CFRes[[2]][1:length(varName)], diag)
     if (length(varName) == 1) {
-      varMat <- as.matrix(varMat)
+      smoothVarMat <- as.matrix(smoothVarMat)
     } else {
-      varMat <- t(varMat)
+      smoothVarMat <- t(smoothVarMat)
     }
     # let negative variance be the minimum positive smoothed variance
-    for (i in 1:ncol(varMat))
-      varMat[varMat[ , i] < 0, i] <- min(varMat[varMat[ , i] > 0, i])
-    # get smoothed variance data.table
-    smoothVarDT <- sqrt(varMat) %>>% `colnames<-`(colNames) %>>% data.table(keep.rownames = TRUE) %>>%
+    for (i in 1:ncol(smoothVarMat))
+      smoothVarMat[smoothVarMat[ , i] < 0, i] <- min(smoothVarMat[smoothVarMat[ , i] > 0, i])
+    smoothVarDT <- smoothVarMat %>>% `colnames<-`(colNames) %>>% data.table(keep.rownames = TRUE) %>>%
       melt.data.table("rn") %>>% `[`(j = `:=`(variable = mapVarNames(variable),timePnt = as.numeric(rn))) %>>%
-      `[`(j = .(value = interp1(timePnt, value, allTimePnts, "spline"), timePnt = allTimePnts),
-          by = .(variable))
+      setorder(variable, timePnt)
+    # get smoothed variance data.table
+    stdDT <- smoothVarDT %>>% `[`(j = .(value = interp1(timePnt, value, allTimePnts, "spline"),
+                                        timePnt = allTimePnts), by = .(variable)) %>>%
+      `[`(j = value := sqrt(value)) %>>% setorder(variable, timePnt)
     # get normalized data
-    newDataDT <- merge(demeanDataDT, smoothVarDT, by = c("timePnt", "variable"),
+    newDataDT <- merge(demeanDataDT, stdDT, by = c("timePnt", "variable"),
                        suffixes = c(".demean", ".std"), all.x = TRUE) %>>%
       `[`(j = value := (value.demean / value.std)) %>>% `[`(j = .(timePnt, variable, subId, value, weight))
+
+    # get the working cross-correlation matrix to find the FPC scores
+    message("Get the working cross-correlation surface to find the FPC scores...")
+    diag(CFMat) <- smoothVarDT$value
+    varMat <- cov2cor(CFMat)
   } else if (FPCA_opts$methodNorm == "quantile") {
-    message("Start to normalize data with smoothed IQRs...")
+    message("Normalize data with smoothed IQRs...")
     # acquire quantiles and convert it to variance estimator
-    quantDT <- do.call("dlply", list(dataDT, "variable", function(dat){
+    quantRes <- do.call("dlply", list(dataDT, "variable", function(dat){
       bwOpt <- MFRes[[1]][variable == dat$variable[1]]$value
       quantFuncs <- with(dat, locQuantPoly1d(bwOpt, FPCA_opts$quantile_probs, timePnt, value,
-                                             weight, allTimePnts, FPCA_opts$bwKernel, 0, 1))
+                                             weight, sampledTimePnts, FPCA_opts$bwKernel, 0, 1))
+      quantFuncsDense <- with(dat, locQuantPoly1d(bwOpt, FPCA_opts$quantile_probs, timePnt, value,
+                                                  weight, allTimePnts, FPCA_opts$bwKernel, 0, 1))
       iqr <- (quantFuncs[ , 2] - quantFuncs[ , 1]) / diff(qnorm(FPCA_opts$quantile_probs))
-      return(data.table(timePnt = allTimePnts, value = iqr, variable = unique(dat$variable)))
-    })) %>>% rbindlist
+      iqrDense <- (quantFuncsDense[ , 2] - quantFuncsDense[ , 1]) / diff(qnorm(FPCA_opts$quantile_probs))
+      return(list(data.table(timePnt = sampledTimePnts, value = iqr, variable = unique(dat$variable)),
+                  data.table(timePnt = allTimePnts, value = iqrDense, variable = unique(dat$variable))))
+    })) %>>% rbindTransList
     # get normalized data
-    newDataDT <- merge(demeanDataDT, quantDT, by = c("timePnt", "variable"),
+    newDataDT <- merge(demeanDataDT, quantRes[[2]], by = c("timePnt", "variable"),
                        suffixes = c(".demean", ".std"), all.x = TRUE) %>>%
       `[`(j = value := (value.demean / value.std)) %>>% `[`(j = .(timePnt, variable, subId, value, weight))
+
+    # get the working cross-correlation matrix to find the FPC scores
+    message("Get the working cross-correlation surface to find the FPC scores...")
+    diag(CFMat) <- quantRes[[1]]$value
+    varMat <- cov2cor(CFMat)
   } else {
     message("Not perform the normalization...")
     newDataDT <- copy(dataDT)
+    message("Use original cross-covariance surface to find the FPC scores...")
+    varMat <- CFMat
   }
 
   # decide the number of FPC
