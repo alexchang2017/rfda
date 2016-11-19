@@ -115,6 +115,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   message(ifelse(all(optNamesUsed), "All options are checked...",
                  paste(names(options)[!optNamesUsed], collapse = ", ") %>>%
                    sprintf(fmt = "Ignoring the non-found options %s.")))
+  rm(default_FPCA_opts, optNamesUsed)
 
   # set the number of thread be used
   if (FPCA_opts$ncpus != 0)
@@ -140,6 +141,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     `$`(subId) %>>% unique
   # remove the
   dataDT <- dataDT[!subId %in% subIdInsuffSize]
+  rm(subIdInsuffSize)
 
   # binning data
   if (FPCA_opts$numBins == -1 || FPCA_opts$numBins >= 10) {
@@ -152,6 +154,7 @@ FPCA <- function(formula, id.var, data, options = list()){
       # minimun bin number
       minBinNum <- min(criBinNum, ceiling(max(20, (5000 - numObv)*19/2250+400)))
       FPCA_opts$numBin <- ifelse(criBinNum > 400, 400, ifelse(numObv > 5000 && criBinNum > 20, minBinNum, -1))
+      rm(numObv, numObvEach, criBinNum, minBinNum)
     }
 
     # binning data and re-find the sparsity
@@ -275,6 +278,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     all(laply(FPCA_opts$userCovFunc, function(x) {
       class(type.convert(colnames(x))) %in% c("integer", "numeric")
     }))
+  rm(cfListNames)
 
   # get smoothing covariance surface
   if (validCFList) {
@@ -287,6 +291,7 @@ FPCA <- function(formula, id.var, data, options = list()){
       interp2(grid, grid, m, sampledTimePnts, sampledTimePnts, 'spline') %>>%
         `colnames<-`(sampledTimePnts) %>>% `rownames<-`(sampledTimePnts)
     })))
+    rm(outBwDT)
   } else {
     message("Get the smoothed covariance surface...")
     if (is.null(FPCA_opts$bwCov)) {
@@ -403,6 +408,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     CFMat[idxList[[1]], idxList[[2]]] <- CFRes[[2]][[i]]
   }
   CFMat <- (CFMat + t(CFMat)) / 2
+  rm(orderCFResDT, idxList)
 
   # start to normalize data and get the working cross-correlation matrix for find the FPC scores
   if (FPCA_opts$methodNorm == "smoothCov") {
@@ -422,6 +428,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     smoothVarDT <- smoothVarMat %>>% `colnames<-`(colNames) %>>% data.table(keep.rownames = TRUE) %>>%
       melt.data.table("rn") %>>% `[`(j = `:=`(variable = mapVarNames(variable),timePnt = as.numeric(rn))) %>>%
       setorder(variable, timePnt)
+
     # get smoothed variance data.table
     stdDT <- smoothVarDT %>>% `[`(j = .(value = interp1(timePnt, value, allTimePnts, "spline"),
                                         timePnt = allTimePnts), by = .(variable)) %>>%
@@ -435,6 +442,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     message("Get the working cross-correlation surface to find the FPC scores...")
     diag(CFMat) <- smoothVarDT$value
     varMat <- cov2cor(CFMat)
+    rm(smoothVarMat, smoothVarDT, stdDT)
   } else if (FPCA_opts$methodNorm == "quantile") {
     message("Normalize data with smoothed IQRs...")
     # acquire quantiles and convert it to variance estimator
@@ -458,16 +466,20 @@ FPCA <- function(formula, id.var, data, options = list()){
     message("Get the working cross-correlation surface to find the FPC scores...")
     diag(CFMat) <- quantRes[[1]]$value
     varMat <- cov2cor(CFMat)
+    rm(quantRes)
   } else {
     message("Not perform the normalization...")
-    newDataDT <- copy(dataDT)
+    newDataDT <- copy(demeanDataDT)
     message("Use original cross-covariance surface to find the FPC scores...")
     varMat <- CFMat
   }
+  rm(CFMat)
 
   # decide the number of FPC
+  # numFpc <- getNumFpc(varMat, FPCA_opts)
 
   # calculation of FPC scores
+  # getFpcScore(newDataDT, allTimePnts, FPCA_opts)
 
   return(1)
 }
