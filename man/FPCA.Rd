@@ -28,12 +28,15 @@ Return mean, covariance, eigen functions and fpc scores.
 \dontrun{
 # sparse case
 data("sparseExData", package = 'rfda')
+fpcaResSparse <- FPCA(y ~ t, "sampleID", sparseExData)
 
 # regular with missing values case
 data("irregularExData", package = 'rfda')
+fpcaResIrregular <- FPCA(y ~ t, "sampleID", irregularExData)
 
 # regular case
 data("regularExData", package = 'rfda')
+fpcaResRegular <- FPCA(y ~ t, "sampleID", regularExData)
 }
 }
 \seealso{

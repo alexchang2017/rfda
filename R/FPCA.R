@@ -73,12 +73,15 @@ getRawCrCov <- function(dataDT){
 #' \dontrun{
 #' # sparse case
 #' data("sparseExData", package = 'rfda')
+#' fpcaResSparse <- FPCA(y ~ t, "sampleID", sparseExData)
 #'
 #' # regular with missing values case
 #' data("irregularExData", package = 'rfda')
+#' fpcaResIrregular <- FPCA(y ~ t, "sampleID", irregularExData)
 #'
 #' # regular case
 #' data("regularExData", package = 'rfda')
+#' fpcaResRegular <- FPCA(y ~ t, "sampleID", regularExData)
 #' }
 #' @importFrom plyr is.formula llply mapvalues
 #' @importFrom RcppParallel setThreadOptions
@@ -145,11 +148,14 @@ FPCA <- function(formula, id.var, data, options = list()){
                                                   warn_missing = FALSE))
 
   # find the number of observations for each observed function
-  subIdInsuffSize <- dataDT[, .(numObv = .N) ,by = .(subId, variable)][numObv <= 1] %>>%
-    `$`(subId) %>>% unique
-  # remove the
-  dataDT <- dataDT[!subId %in% subIdInsuffSize]
-  rm(subIdInsuffSize)
+  numObvDT <- dataDT[, .(numObv = .N) ,by = .(subId, variable)]
+  if (any(numObvDT$numObv <= 1)) {
+    # remove the observations with insufficient data size
+    subIdInsuffSize <- numObvDT[numObv <= 1, .(subId)] %>>% unlist %>>% unique
+    warning("Remove the observation with ", id.var, " = ", paste0(subIdInsuffSize, collapse = ", "), ".")
+    dataDT <- dataDT[!subId %in% subIdInsuffSize]
+    rm(subIdInsuffSize)
+  }
 
   #### binning data ####
   if (FPCA_opts$numBins == -1 || FPCA_opts$numBins >= 10) {
@@ -400,7 +406,6 @@ FPCA <- function(formula, id.var, data, options = list()){
     # combine the smoothing results
     CFRes <- transCFRes(c(CFRes1, CFRes2), sampledTimePnts)
     rm(CFRes1, CFRes2)
-    gc()
 
     # set names for covariance function
     names(CFRes[[2]]) <- names(CFRes[[2]]) %>>% strsplit("\\.") %>>%
@@ -519,7 +524,12 @@ FPCA <- function(formula, id.var, data, options = list()){
   }
   rm(CFMat)
 
-  #### decide the number of FPC ####
+
+  #### estimate measurement error ####
+
+
+
+  #### calculate FVE, eigen funcations and eigenvalue ####
   # find the maximum of number of FPC
   maxNumEig <- (FPCA_opts$numGrid - 2L) * length(varName)
   # find the eigen functions and the corresponding eigenvalues
@@ -534,13 +544,13 @@ FPCA <- function(formula, id.var, data, options = list()){
   eigVals <- eigRes$values[idx]
   eigFuncs <- eigRes$vectors[ , idx]
   rm(eigRes, idx)
-  gc()
 
   # find the number of FPC with FVE criterion
   FVE <- eigVals %>>% (cumsum(.) / sum(.))
   numFPC_FVE <- Position(function(x) x > FPCA_opts$FVE_threshold, FVE)
   numFPC <- 1
 
+  #### decide the number of FPC ####
   if (is.character(FPCA_opts$numFPC) && FPCA_opts$numFPC != "AIC_R") {
     # find the number of FPC with AIC or BIC
     if (FPCA_opts$numFPC %in% c("AIC", "BIC")) {

@@ -308,7 +308,6 @@ sparsify <- function(data, subid, sparsityRate){
 #' # mixed numerics and characters
 #' DT2 <- unnest(data.table(V1 = list(c(1,3,5), c(1,7)), V2 = list(c("a","b","c"), c("d","e")),
 #'                          V3 = 1:2, V4 = c("z","y")))
-#'
 #' \dontrun{
 #' require(jsonlite)
 #' jsonDataFile <- system.file("extdata", "funcdata.json", package = "rfda")

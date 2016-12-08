@@ -3,6 +3,10 @@ context("FPCA")
 data("sparseExData", package = 'rfda')
 data("irregularExData", package = 'rfda')
 data("regularExData", package = 'rfda')
+regularExDataTestRemove <- data.table(regularExData)
+regularExDataTestRemove <- rbind(regularExDataTestRemove[sampleID == 1][1, ],
+                                 regularExDataTestRemove[sampleID == 2][1, ],
+                                 regularExDataTestRemove[!sampleID %in% c(1, 2)])
 
 context("1. checkSparsity")
 test_that("checkSparsity", {
@@ -28,10 +32,13 @@ udCF <- list(
   "y3-y3" = matrix(rnorm(121), 11, 11, FALSE, list(0:10, 0:10))
 )
 test_that("FPCA", {
-  expect_equal(FPCA(y ~ t, "sampleID", sparseExData), 1)
-  expect_equal(FPCA(y ~ t, "sampleID", sparseExData, list(weight = TRUE, ncpus = 1, numBins = 10)), 1)
+  expect_warning(FPCA(y ~ t, "sampleID", sparseExData), "Remove the observation with")
+  expect_equal(suppressWarnings(FPCA(y ~ t, "sampleID", sparseExData)), 1)
+  expect_equal(suppressWarnings(FPCA(y ~ t, "sampleID", sparseExData,
+                                     list(weight = TRUE, ncpus = 1, numBins = 10))), 1)
   expect_equal(FPCA(y ~ t, "sampleID", irregularExData), 1)
   expect_equal(FPCA(y ~ t, "sampleID", regularExData), 1)
+  expect_warning(FPCA(y ~ t, "sampleID", regularExDataTestRemove), "Remove the observation with")
   expect_equal(FPCA(y ~ t, "sampleID", regularExData,
                     list(bwMean = data.table(variable = "y", value = 0.676065))), 1)
   expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(bwMean = data.table(variable = "y", value = -2),
