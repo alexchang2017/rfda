@@ -6,11 +6,11 @@ data("irregularExData", package = "rfda")
 data("sparseExData", package = "rfda")
 
 testDataRegular <- data.table(y = c(seq(0.1, 0.9, 0.1), c(0.9,1,1)), t = rep(1:3, 4),
-                              sampleID = c(rep(1:4, each=3)))
+                              sampleID = c(rep(1:4, each=3)), key = "t")
 testDataIrregular <- data.table(y = seq(0.1, 1.3, 0.1), t = c(1:4,1,2,4,2:4,1,3,4),
-                                sampleID = c(rep(1, 4), rep(2:4, each=3)))
+                                sampleID = c(rep(1, 4), rep(2:4, each=3)), key = "t")
 testDataSparse <- data.table(y = seq(0.1, 1, 0.1), t = c(1,2,4,3,5,7,6,10,8,9),
-                             sampleID = c(rep(1:2, each=3), rep(3:4, each=2)))
+                             sampleID = c(rep(1:2, each=3), rep(3:4, each=2)), key = "t")
 testDT_list <- suppressMessages(lapply(list(testDataRegular, testDataIrregular, testDataSparse), function(dt){
   sparsity <- checkSparsity(dt, "sampleID", "t")
   bwCand <- bwCandChooser(dt, "sampleID", "t", sparsity, "gauss", 1)
@@ -20,9 +20,9 @@ testDT_list <- suppressMessages(lapply(list(testDataRegular, testDataIrregular, 
   xout <- sort(unique(dt$t))
   meanFunc <- locPoly1d(bwOpt, dt$t, dt$y, w, xout, "gauss", 0, 1)
 
-  merge(dt, data.table(mf = meanFunc, t = xout), by = "t") %>>%
+  merge(dt, data.table(mf = meanFunc, t = xout, key = "t"), by = "t") %>>%
     `[`(j = `:=`(y = y - mf, variable = "y")) %>>%
-    setnames(c("t", "y", "sampleID"), c("timePnt", "value", "subId")) %>>%
+    setnames(c("t", "y", "sampleID"), c("timePnt", "value.demean", "subId")) %>>%
     `[`(j = mf := NULL)
 }))
 
@@ -239,13 +239,13 @@ test_that("test - adjGcvBw", {
 
 context("7. test - bwCandChooser3")
 testDataRegularMulti <- data.table(y = c(seq(0.1, 0.9, 0.1), c(0.9,1,1)), t = rep(1:3, 4),
-                              sampleID = c(rep(1:4, each=3))) %>>%
+                                   sampleID = c(rep(1:4, each=3)), key = "t") %>>%
   `[`(j = `:=`(y2 = y * sin(t), y3 = y * cos(t)))
 testDataIrregularMulti <- data.table(y = seq(0.1, 1.3, 0.1), t = c(1:4,1,2,4,2:4,1,3,4),
-                                sampleID = c(rep(1, 4), rep(2:4, each=3))) %>>%
+                                     sampleID = c(rep(1, 4), rep(2:4, each=3)), key = "t") %>>%
   `[`(j = `:=`(y2 = y * sin(t), y3 = y * cos(t)))
 testDataSparseMulti <- data.table(y = seq(0.1, 1, 0.1), t = c(1,2,4,3,5,7,6,10,8,9),
-                             sampleID = c(rep(1:2, each=3), rep(3:4, each=2))) %>>%
+                                  sampleID = c(rep(1:2, each=3), rep(3:4, each=2)), key = "t") %>>%
   `[`(j = `:=`(y2 = y * sin(t), y3 = y * cos(t)))
 
 testDT_list <- suppressMessages(lapply(list(testDataRegularMulti, testDataIrregularMulti,
@@ -258,7 +258,7 @@ testDT_list <- suppressMessages(lapply(list(testDataRegularMulti, testDataIrregu
     bwOpt <- gcvLocPoly1d(bwCand, dt$t, dt[[var]], w, "gauss", 0, 1)
     bwOpt <- adjGcvBw(bwOpt, sparsity, "gauss", 0)
     xout <- sort(unique(dt$t))
-    data.table(t = xout, meanFunc = locPoly1d(bwOpt, dt$t, dt[[var]], w, xout, "gauss", 0, 1)) %>>%
+    data.table(t = xout, meanFunc = locPoly1d(bwOpt, dt$t, dt[[var]], w, xout, "gauss", 0, 1), key = "t") %>>%
       setnames("meanFunc", paste0("meanFunc_", var))
   })
 
@@ -269,7 +269,7 @@ testDT_list <- suppressMessages(lapply(list(testDataRegularMulti, testDataIrregu
   expr <- paste0(varNames, "=", varNames, "-meanFunc_", varNames) %>>%
     paste0(collapse = ",") %>>% (paste0("`:=`(", ., ")"))
   merge(dt, meanDT, by = "t") %>>% `[`(j = eval(parse(text = expr))) %>>% `[`(j = variable := "y") %>>%
-    melt.data.table(id.var = c("sampleID", "t"), measure.vars = varNames, variable.factor = FALSE) %>>%
+    melt.data.table(id.var = c("sampleID", "t"), measure.vars = varNames, variable.factor = FALSE, value.name = "value.demean") %>>%
     setnames(c("t", "sampleID"), c("timePnt", "subId"))
 }))
 rawCovList <- lapply(testDT_list, getRawCrCov)

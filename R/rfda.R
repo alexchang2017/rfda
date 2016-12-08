@@ -52,8 +52,8 @@
 utils::globalVariables(c(".", "%>>%", ":=", "~<-"))
 # variables used in data.table
 utils::globalVariables(c("cnt", "idx_agg", "subId", "t1", "t2", "timePnt", "value", "value.mean",
-                         "value.ori", "value.var1", "value.var2", "variable", "variable1", "variable2",
-                         "weight", "value1", "value2", "value.demean", "value.std", "rn", "tmp"))
+                         "value.var1", "value.var2", "variable", "variable1", "variable2", "weight",
+                         "value1", "value2", "value.demean", "value.var", "rn", "tmp"))
 
 # Copyright (c) 2015, Hans-Georg Mueller and Jane-Ling Wang
 # All rights reserved.

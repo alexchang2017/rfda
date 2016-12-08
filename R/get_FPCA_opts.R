@@ -154,10 +154,10 @@
 #' @export
 get_FPCA_opts <- function(numVar){
   return(list(
-    bwMean = NULL, bwCov = NULL, bwNumGrid = 30, bwKernel = "gauss", numBins = 0,
-    errTerm = TRUE, numGrid = 51, weight = FALSE, numFPC = "FVE", FVE_threshold = 0.85,
-    maxNumFPC = 20, methodFPCS = "CE", shrink = FALSE, varErr = "cv", outPercent = 0,
-    methodNorm = ifelse(numVar == 1, "no", "quantile"), quantile_probs = c(0.25, 0.75), ncpus = 0,
+    bwMean = NULL, bwCov = NULL, bwNumGrid = 30L, bwKernel = "gauss", numBins = 0L,
+    errTerm = TRUE, numGrid = 51L, weight = FALSE, numFPC = "FVE", FVE_threshold = 0.85,
+    maxNumFPC = 20L, methodFPCS = "CE", shrink = FALSE, varErr = "cv", outPercent = 0,
+    methodNorm = ifelse(numVar == 1L, "no", "quantile"), quantile_probs = c(0.25, 0.75), ncpus = 0L,
     userMeanFunc = NULL, userCovFunc = NULL
   ))
 }

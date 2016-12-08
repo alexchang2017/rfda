@@ -161,10 +161,11 @@ struct Worker_locLinear2d_nongauss: public RcppParallel::Worker {
 //' meanFunc <- locPoly1d(bwOpt, regularExData$t, regularExData$y, w, xout, "gauss", 0, 1)
 //' require(data.table)
 //' require(pipeR)
-//' demeanDataDT <- merge(data.table(regularExData), data.table(mf = meanFunc, t = xout), by = "t") %>>%
+//' setDT(regularExData, key = "t")
+//' dataDT <- merge(regularExData, data.table(mf = meanFunc, t = xout, key = "t"), by = "t") %>>%
 //'   `[`( , `:=`(y = y - mf, variable = "y")) %>>%
-//'   setnames(c("t", "y", "sampleID"), c("timePnt", "value", "subId"))
-//' RawCov <- getRawCrCov(demeanDataDT)
+//'   setnames(c("t", "y", "sampleID"), c("timePnt", "value.demean", "subId"))
+//' RawCov <- getRawCrCov(dataDT)
 //'
 //' xout2 <- seq(min(regularExData$t), max(regularExData$t), len = 30)
 //' RawCovNoDiag <- RawCov[t1 != t2]
@@ -247,10 +248,11 @@ arma::mat locLinear2d(const arma::vec& bandwidth, const arma::mat& x, const arma
 //' meanFunc <- locPoly1d(bwOpt, regularExData$t, regularExData$y, w, xout, "gauss", 0, 1)
 //' require(data.table)
 //' require(pipeR)
-//' demeanDataDT <- merge(data.table(regularExData), data.table(mf = meanFunc, t = xout), by = "t") %>>%
+//' setDT(regularExData, key = "t")
+//' dataDT <- merge(regularExData, data.table(mf = meanFunc, t = xout, key = "t"), by = "t") %>>%
 //'   `[`( , `:=`(y = y - mf, variable = "y")) %>>%
-//'   setnames(c("t", "y", "sampleID"), c("timePnt", "value", "subId"))
-//' RawCov <- getRawCrCov(demeanDataDT)
+//'   setnames(c("t", "y", "sampleID"), c("timePnt", "value.demean", "subId"))
+//' RawCov <- getRawCrCov(dataDT)
 //'
 //' RawCovNoDiag <- RawCov[t1 != t2]
 //' bwCand <- bwCandChooser2(RawCovNoDiag, sparsity, "gauss", 1)

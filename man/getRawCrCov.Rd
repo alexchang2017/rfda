@@ -4,10 +4,10 @@
 \alias{getRawCrCov}
 \title{Get the raw cross-covariance surface}
 \usage{
-getRawCrCov(demeanDataDT)
+getRawCrCov(dataDT)
 }
 \arguments{
-\item{demeanDataDT}{A data.table with five columns \code{timePnt}, \code{value}, \code{variable} and
+\item{dataDT}{A data.table with five columns \code{timePnt}, \code{value}, \code{variable} and
 \code{subId}. \code{value} is the observation minus smoothed mean.
 \code{timePnt} is corresponding time points. \code{variable} is the name of observed variable.
 \code{subId} is the id of subject.}

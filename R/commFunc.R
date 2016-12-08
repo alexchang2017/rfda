@@ -275,11 +275,10 @@ adjGcvBw <- function(bwOpt, sparsity, kernel, drv = 0){
 #' sparseDT2 <- sparsify(DT, "sampleID", runif(no))
 #' ggplot(sparseDT2, aes(x = t, y = y, color = factor(sampleID))) +
 #'   geom_line() + geom_point() + labs(color = "Sample ID")
-#' @importFrom data.table between
 #' @export
 sparsify <- function(data, subid, sparsityRate){
   # cehck data
-  assert_that(is.data.frame(data), subid %in% names(data), all(between(sparsityRate, 0, 1, FALSE)))
+  assert_that(is.data.frame(data), subid %in% names(data), all(sparsityRate > 0 & sparsityRate < 1))
 
   # convert data to data.table with copy (not change the data)
   data <- data.table(data)
@@ -313,12 +312,11 @@ sparsify <- function(data, subid, sparsityRate){
 #'   DT <- unnest(data.table(fromJSON(jsonDataFile)))
 #' }
 #' @importFrom data.table .SD
-#' @importFrom plyr laply
 #' @export
 unnest <- function(DT, unnestCols = NULL){
   # check the columns to unnest
   if (is.null(unnestCols)) {
-    unnestCols <- names(DT)[laply(DT, function(x) any(class(x) %in% "list"))]
+    unnestCols <- names(DT)[sapply(DT, function(x) any(class(x) %in% "list"))]
     message("Automatically recognize the nested columns: ", paste0(unnestCols, collapse = ", "))
   }
   # check unnestCols is in the DT
@@ -330,7 +328,7 @@ unnest <- function(DT, unnestCols = NULL){
   # generate the expression to remove group by variable
   chkExpr <- paste0(groupbyVar, "=NULL", collapse = ",") %>>% (paste0("`:=`(", ., ")"))
   # check the lengths of each cell in list-column are all the same
-  chkLenAllEqual <- DT[ , lapply(.SD, function(x) laply(x, length)), by = groupbyVar] %>>%
+  chkLenAllEqual <- DT[ , lapply(.SD, function(x) sapply(x, length)), by = groupbyVar] %>>%
     `[`(j = eval(parse(text = chkExpr))) %>>% as.matrix %>>% apply(1, diff) %>>% `==`(0) %>>% all
   if (!chkLenAllEqual)
     stop("The length in each cell is not equal.")
