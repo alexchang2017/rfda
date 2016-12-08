@@ -85,7 +85,7 @@ getRawCrCov <- function(dataDT){
 #' @importFrom data.table data.table is.data.table as.data.table
 #' @importFrom data.table melt.data.table setnames setDT setkey setkeyv
 #' @importFrom data.table CJ tstrsplit .N .SD
-#' @importFrom stats median qnorm cov2cor
+#' @importFrom stats median qnorm cov2cor quantile
 #' @importFrom utils modifyList combn type.convert
 #' @export
 FPCA <- function(formula, id.var, data, options = list()){
@@ -417,39 +417,33 @@ FPCA <- function(formula, id.var, data, options = list()){
                 "If it is chosen automatically, please provide your own covariance surface."))
 
   #### Leaving out the data in the boundary ####
+  isOut <- FPCA_opts$outPercent > 0
+  if (FPCA_opts$outPercent > 0) {
+    # reset outPercent to 25% if it exceeds 25%
+    if (FPCA_opts$outPercent > 0.25)
+      warning("Leaving out ", sprintf("%2.2f", FPCA_opts$outPercent * 100),
+              " percent of the data in the boundary is too much, ",
+              "Reset 'outPercent' to 25 percent!")
+    FPCA_opts$outPercent <- min(FPCA_opts$outPercent, 0.25)
 
-
-  # isOut <- FALSE
-  # if (!is.null(FPCA_opts$get('out_percent')))
-  # {
-  #   if (FPCA_opts$get('out_percent') > 0.25)
-  #   {
-  #     warning(sprintf(paste0("Leaving out %2.2f percent of the data in the boundary is too much,",
-  #                            " Reset 'out_percent' to 25 percent!"), FPCA_opts$get('out_percent')*100))
-  #     FPCA_opts$set(out_percent = 0.25)
-  #   }
-  #   userrange <- stats::quantile(c(tt, FPCA_opts$get('newdata')),
-  #                                c(FPCA_opts$get('out_percent')/2, 1-FPCA_opts$get('out_percent')/2))
-  #   inrange <- purrr::map(t, ~ (. <= userrange[2]) & (. >= userrange[1]))
-  #   t <- purrr::map2(t, inrange, ~.x[.y])
-  #   t <- t[purrr::map(t, length) > 0]
-  #   y <- purrr::map2(y, inrange, ~.x[.y])
-  #   y <- y[purrr::map(y, length) > 0]
-  #   w <- purrr::map2(w, inrange, ~.x[.y])
-  #   w <- w[purrr::map(w, length) > 0]
-  #   out1old <- out1
-  #   out21old <- out21
-  #   tt <- unlist(t)
-  #   out1 <- sort(unique(c(tt, FPCA_opts$get('newdata'))))
-  #   out21 <- seq(min(out1), max(out1), length.out = FPCA_opts$get('numGrid'))
-  #   mu <- interp1(out1old, as.matrix(mu), out1, 'linear')
-  #   muDense <- interp1(out21old, as.matrix(muDense), out21, 'linear')
-  #   xcov <- interp2(out21old, out21old, xcov, out21, out21, 'linear')
-  #   xcov <- (xcov + t(xcov)) / 2
-  #   isOut <- TRUE
-  # }
-  # res_FPCA$set(bwMean = bw_mu, meanFunc = mu, meanFuncDense = muDense,
-  #              bwCov = bw_cov, covFunc = xcov)
+    # get the range to keep data
+    userRange <- quantile(c(dataDT$timePnt, FPCA_opts$newdata), FPCA_opts$outPercent %>>% (c(./2, 1-./2)))
+    # leave outPersent data
+    dataDT <- dataDT[timePnt >= userRange[1] & timePnt <= userRange[2]]
+    # get the new time points
+    allTimePntsOld <- allTimePnts
+    sampledTimePntsOld <- sampledTimePnts
+    allTimePnts <- sort(unique(c(dataDT$timePnt, FPCA_opts$newdata)))
+    sampledTimePnts <- seq(min(allTimePnts), max(allTimePnts), length.out = FPCA_opts$numGrid)
+    MFRes[[2]] <- MFRes[[2]][ , .(value = interp1(sampledTimePntsOld, value, sampledTimePnts, "linear"),
+                                  timePnt = sampledTimePnts), by = .(variable)]
+    MFRes[[3]] <- MFRes[[3]][ , .(value = interp1(allTimePntsOld, value, allTimePnts, "linear"),
+                                  timePnt = allTimePnts), by = .(variable)]
+    CFRes[[2]] <- llply(CFRes[[2]], function(mat){
+      interp2(sampledTimePntsOld, sampledTimePntsOld, mat, sampledTimePnts, sampledTimePnts, "linear") %>>%
+        ((. + t(.)) / 2) %>>% `dimnames<-`(list(sampledTimePnts, sampledTimePnts))
+    })
+  }
 
   #### get the cross-covariance surface ####
   CFMat <- matrix(0, FPCA_opts$numGrid * length(varName), FPCA_opts$numGrid * length(varName))
@@ -496,12 +490,12 @@ FPCA <- function(formula, id.var, data, options = list()){
     # acquire quantiles and convert it to variance estimator
     quantRes <- split(dataDT, by = "variable") %>>% llply(function(dat){
       bwOpt <- MFRes[[1]][variable == dat$variable[1]]$value
-      quantFuncs <- with(dat, locQuantPoly1d(bwOpt, FPCA_opts$quantile_probs, timePnt, value,
+      quantFuncs <- with(dat, locQuantPoly1d(bwOpt, FPCA_opts$quantileProbs, timePnt, value,
                                              weight, sampledTimePnts, FPCA_opts$bwKernel, 0, 1))
-      quantFuncsDense <- with(dat, locQuantPoly1d(bwOpt, FPCA_opts$quantile_probs, timePnt, value,
+      quantFuncsDense <- with(dat, locQuantPoly1d(bwOpt, FPCA_opts$quantileProbs, timePnt, value,
                                                   weight, allTimePnts, FPCA_opts$bwKernel, 0, 1))
-      iqr <- (quantFuncs[ , 2] - quantFuncs[ , 1]) / diff(qnorm(FPCA_opts$quantile_probs))
-      iqrDense <- (quantFuncsDense[ , 2] - quantFuncsDense[ , 1]) / diff(qnorm(FPCA_opts$quantile_probs))
+      iqr <- (quantFuncs[ , 2] - quantFuncs[ , 1]) / diff(qnorm(FPCA_opts$quantileProbs))
+      iqrDense <- (quantFuncsDense[ , 2] - quantFuncsDense[ , 1]) / diff(qnorm(FPCA_opts$quantileProbs))
       return(list(data.table(timePnt = sampledTimePnts, value = iqr**2, variable = unique(dat$variable),
                              key = c("timePnt", "variable")),
                   data.table(timePnt = allTimePnts, value = iqrDense**2,

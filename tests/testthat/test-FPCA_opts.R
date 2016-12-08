@@ -5,7 +5,7 @@ FPCA_opts_uni <- get_FPCA_opts(1)
 FPCA_opts_mul <- get_FPCA_opts(2)
 allOptNames <- c("bwMean", "bwCov", "bwNumGrid", "bwKernel", "numBins", "errTerm", "numGrid", "weight",
                  "numFPC", "FVE_threshold", "maxNumFPC", "methodFPCS", "shrink", "varErr", "outPercent",
-                 "methodNorm", "quantile_probs", "ncpus", "userMeanFunc", "userCovFunc")
+                 "methodNorm", "quantileProbs", "newdata", "ncpus", "userMeanFunc", "userCovFunc")
 test_that("test get_FPCA_opts", {
   expect_equal(names(FPCA_opts_uni), allOptNames)
   expect_equal(names(FPCA_opts_mul), allOptNames)

@@ -102,6 +102,7 @@ The options of FPCA:
   principal components that explain at least \code{FVE_threshold} of total variation.
   [Default is 0.85.]
 \item \code{maxNumFPC}: Default is 20. An integer, the maximum number of functional principal components.
+  (This setting is for univariate functional data, multivariate functional data will use \code{maxNumFPC * numVar} in program.)
   If using automatic methods to choose K, i.e., 'AIC' or 'BIC' defined by \code{numFPC}.
   Note: when \code{numFPC} = 'FVE' or 'AIC_R', \code{maxNumFPC} is ignored.
 \item \code{methodFPCS}: A string, 'CE', 'IN', 'LS' or 'WLS'. The method to estimate fpc scores.
@@ -143,10 +144,15 @@ The options of FPCA:
       deviding by the variance of smoothed covariance surface. (Take the minimum positive value as threshold.).
       Please refer Chiou, Chen and Yang. (2014) in \code{\link{rfda}}.
   }
-\item \code{quantile_probs}: A positive numeric vector is between 0 and 1.
+\item \code{quantileProbs}: A positive numeric vector is between 0 and 1.
   It is the probabilities for quantiles to approximate the variances.
   It is used with the option \code{methodNorm} = 'quantile' to choose the quantiles.
   [Default is (0.25, 0.75).]
+\item \code{newdata}: A row vector of user-defined output time grids for all curves.
+  This corresponds to "allTimePnts" in the output argument. If newdata is NULL,
+  then "allTimePnts" corresponds to the set of distinct time points from the pooled data.
+  newdata is supposed to be a vector in ascending order on the domain of the functions.
+  The default is NULL.
 \item \code{ncpus}: The number of threads used in computation.
   \itemize{
     \item \code{0}: To use all threads in computation. [Default]

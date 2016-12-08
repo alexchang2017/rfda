@@ -88,6 +88,7 @@
 #'   principal components that explain at least \code{FVE_threshold} of total variation.
 #'   [Default is 0.85.]
 #' \item \code{maxNumFPC}: Default is 20. An integer, the maximum number of functional principal components.
+#'   (This setting is for univariate functional data, multivariate functional data will use \code{maxNumFPC * numVar} in program.)
 #'   If using automatic methods to choose K, i.e., 'AIC' or 'BIC' defined by \code{numFPC}.
 #'   Note: when \code{numFPC} = 'FVE' or 'AIC_R', \code{maxNumFPC} is ignored.
 #' \item \code{methodFPCS}: A string, 'CE', 'IN', 'LS' or 'WLS'. The method to estimate fpc scores.
@@ -130,10 +131,15 @@
 #'       deviding by the variance of smoothed covariance surface. (Take the minimum positive value as threshold.).
 #'       Please refer Chiou, Chen and Yang. (2014) in \code{\link{rfda}}.
 #'   }
-#' \item \code{quantile_probs}: A positive numeric vector is between 0 and 1.
+#' \item \code{quantileProbs}: A positive numeric vector is between 0 and 1.
 #'   It is the probabilities for quantiles to approximate the variances.
 #'   It is used with the option \code{methodNorm} = 'quantile' to choose the quantiles.
 #'   [Default is (0.25, 0.75).]
+#' \item \code{newdata}: A row vector of user-defined output time grids for all curves.
+#'   This corresponds to "allTimePnts" in the output argument. If newdata is NULL,
+#'   then "allTimePnts" corresponds to the set of distinct time points from the pooled data.
+#'   newdata is supposed to be a vector in ascending order on the domain of the functions.
+#'   The default is NULL.
 #' \item \code{ncpus}: The number of threads used in computation.
 #'   \itemize{
 #'     \item \code{0}: To use all threads in computation. [Default]
@@ -157,8 +163,8 @@ get_FPCA_opts <- function(numVar){
     bwMean = NULL, bwCov = NULL, bwNumGrid = 30L, bwKernel = "gauss", numBins = 0L,
     errTerm = TRUE, numGrid = 51L, weight = FALSE, numFPC = "FVE", FVE_threshold = 0.85,
     maxNumFPC = 20L, methodFPCS = "CE", shrink = FALSE, varErr = "cv", outPercent = 0,
-    methodNorm = ifelse(numVar == 1L, "no", "quantile"), quantile_probs = c(0.25, 0.75), ncpus = 0L,
-    userMeanFunc = NULL, userCovFunc = NULL
+    methodNorm = ifelse(numVar == 1L, "no", "quantile"), quantileProbs = c(0.25, 0.75),
+    newdata = NULL, ncpus = 0L, userMeanFunc = NULL, userCovFunc = NULL
   ))
 }
 
@@ -238,10 +244,12 @@ chk_FPCA_opts <- function(optns){
               is.numeric(optns$outPercent), optns$outPercent >= 0, optns$outPercent <= 1)
   # check methodNorm
   assert_that(length(optns$methodNorm) == 1, optns$methodNorm %in% c('no', 'quantile', 'smoothCov'))
-  # check quantile_probs
-  assert_that(length(optns$quantile_probs) == 2, all(is.finite(optns$quantile_probs)),
-              all(!is.na(optns$quantile_probs)), is.numeric(optns$quantile_probs),
-              all(optns$quantile_probs >= 0), all(optns$quantile_probs <= 1))
+  # check quantileProbs
+  assert_that(length(optns$quantileProbs) == 2, all(is.finite(optns$quantileProbs)),
+              all(!is.na(optns$quantileProbs)), is.numeric(optns$quantileProbs),
+              all(optns$quantileProbs >= 0), all(optns$quantileProbs <= 1))
+  # check newdata
+  assert_that(is.null(optns$newdata) || is.vector(optns$newdata))
   # check ncpus
   assert_that(length(optns$ncpus) == 1, optns$ncpus - floor(optns$ncpus) < 1e-6,
               is.finite(optns$ncpus), !is.na(optns$ncpus))

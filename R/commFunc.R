@@ -303,13 +303,17 @@ sparsify <- function(data, subid, sparsityRate){
 #' @return A unnested data.table.
 #' @examples
 #' require(data.table)
+#' # all numerics
 #' DT <- unnest(data.table(V1 = list(c(1,3,5), c(1,7)), V2 = list(c(2,5,3), c(4,6)), V3 = 1:2))
+#' # mixed numerics and characters
+#' DT2 <- unnest(data.table(V1 = list(c(1,3,5), c(1,7)), V2 = list(c("a","b","c"), c("d","e")),
+#'                          V3 = 1:2, V4 = c("z","y")))
 #'
+#' \dontrun{
 #' require(jsonlite)
 #' jsonDataFile <- system.file("extdata", "funcdata.json", package = "rfda")
 #' # Following line may have a parse error with message "premature EOF has occured".
-#' \dontrun{
-#'   DT <- unnest(data.table(fromJSON(jsonDataFile)))
+#' DT <- unnest(data.table(fromJSON(jsonDataFile)))
 #' }
 #' @importFrom data.table .SD
 #' @export
