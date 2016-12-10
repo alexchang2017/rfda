@@ -8,3 +8,4 @@ inst/doc
 *.Rds
 vignettes/*.R
 .Rproj.user
+*.asv
