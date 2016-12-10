@@ -17,6 +17,8 @@ xi = linspace(0.1, 0.8, 5);
 sprintf('%.7f, ', interp1(x, y, xi))
 sprintf('%.7f, ', interp1(x, y, xi, 'spline'))
 sprintf('%.7f, ', interp1([0.1, 0.9], [0.3, 0.8], [0.1, 0.5, 0.9], 'spline'))
+sprintf('%.7f, ', interp1(x, [y; y]', xi))
+sprintf('%.7f, ', interp1(x, [y; y]', xi, 'spline'))
 
 x = [0.8, 0.3, 0.1, 0.6, 0.9, 0.5, 0.2, 0.0, 0.7, 1.0, 0.4];
 y = x .^ 2;
@@ -82,6 +84,7 @@ sprintf('%.6f, ', est)
 x = 0:0.1:1;
 [x1, x2] = meshgrid(x, x);
 x = [x1(:), x2(:)];
+idx = x(:,1) > x(:,2);
 x = x(x(:,1) ~= x(:,2), :);
 y = x .^ 2 .* 2 + 3 .* x + 3;
 y = y(:,1) .* (y(:,2) .* 0.5 - 1);
@@ -112,6 +115,8 @@ sprintf('%.6f, ', est)
 [~, est] = rotate_mlwls([1, 1], 'epan', x', y ./ cnt2', w, outMat, 1);
 sprintf('%.6f, ', est)
 [~, est] = rotate_mlwls([1, 1], 'epan', x', y, w2, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([0.075, 0.075], 'epan', x(idx, :)', y(idx), w(idx), outMat, 1);
 sprintf('%.6f, ', est)
 
 %% regular

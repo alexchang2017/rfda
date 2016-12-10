@@ -30,8 +30,17 @@ test_that("interp1 - test duplicated data", {
                  "The values of y for duplicated values of x will be averaged.")
 })
 
+context("4. test interp1 - input y is matrix")
+resMat1 <- matrix(c(0.01, 0.08, 0.225, 0.395, 0.64), 5, 2)
+resMat2 <- matrix(c(0.0100000, 0.075625, 0.2025, 0.390625, 0.64), 5, 2)
+test_that("interp1 - input y is matrix", {
+  expect_equal(interp1(xs, rbind(ys, ys), xi, 'linear'), interp1(xs, cbind(ys, ys), xi, 'linear'))
+  expect_equal(interp1(xs, rbind(ys, ys), xi, 'linear'), resMat1)
+  expect_equal(interp1(xs, rbind(ys, ys), xi, 'spline'), interp1(xs, cbind(ys, ys), xi, 'spline'))
+  expect_equal(interp1(xs, rbind(ys, ys), xi, 'spline'), resMat2)
+})
 
-context("4. test spline_f")
+context("5. test spline_f")
 test_that("interp1 - spline_f - case 1", {
   expect_equal(spline_f(xs, t(ys), xi),
                spline_f(xs, ys, xi), tolerance = 1e-6)
@@ -48,7 +57,7 @@ test_that("interp1 - spline_f - case 1", {
   expect_message(as.vector(spline_f(x, as.matrix(y), xi)), "x will be sorted.")
 })
 
-context("5. test interp1 - input validation")
+context("6. test interp1 - input validation")
 test_that("interp1 - test input error - case 1", {
   expect_error(interp1(c(0, xs), c(NA, ys), xi, 'spline'))
   expect_error(interp1(c(0, xs), c(NaN, ys), xi, 'spline'))
@@ -77,7 +86,7 @@ test_that("interp1 - test input error - case 1", {
   expect_error(spline_f(c(0, xs), ys, xi))
 })
 
-context("6. test interp1 - case 2")
+context("7. test interp1 - case 2")
 x <- c(0.8, 0.3, 0.1, 0.6, 0.9, 0.5, 0.2, 0.0, 0.7, 1.0, 0.4)
 y <- x**2
 ys <- y[order(x)]
@@ -94,7 +103,7 @@ test_that("interp1 - find the 1D interpolation - case 2", {
                tolerance = 1e-6)
 })
 
-context("7. test interp1 - case 3")
+context("8. test interp1 - case 3")
 x <- seq(0, 2*pi, pi/4)
 y <- sin(x)
 xi <- seq(0, 2*pi, pi/16)

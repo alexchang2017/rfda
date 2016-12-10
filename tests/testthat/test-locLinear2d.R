@@ -287,6 +287,7 @@ test_that("test - bwCandChooser3", {
 
 context("8. test - locLinearRotate2d")
 x <- CJ(seq(0, 1, 0.1), seq(0, 1, 0.1)) %>>% `[`(V1 != V2) %>>% as.matrix
+idx <- x[,1] > x[,2]
 f <- function(x) x ** 2 *2 + 3 * x + 3
 y <- f(x[,1]) * (f(x[,2]) * 0.5 - 1)
 w <- rep(1, length(y))
@@ -319,6 +320,8 @@ test_that("test - locLinearRotate2d", {
                c(1.371086, 3.091233, 4.673803, 6.314644, 8.002719, 9.938969), tolerance = 1e-6)
   expect_equal(rfda:::locLinearRotate2d(c(1, 1), x, y, w2, count, outMat, "epan"),
                c(0.229353, 2.833910, 6.571697, 10.847529, 15.587139, 21.489738), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(0.075, 0.075), x[idx, ], y[idx], w[idx], count[idx], outMat, "epan"),
+               c(1.660000, 2.927927, 5.500262, 9.490163, 15.377616, 21.280000), tolerance = 1e-6)
 })
 
 test_that("test - locLinearRotate2d: validate inputs", {
@@ -346,6 +349,7 @@ test_that("test - locLinearRotate2d: validate inputs", {
   expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(1, y), c(1, 2), c(NA, count), outMat, "gauss"))
   expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(1, y), c(1, 2), c(NaN, count), outMat, "gauss"))
   expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(1, y), c(1, 2), c(Inf, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), x, y, w, count, cbind(1, outMat), "gauss"))
   expect_error(rfda:::locLinearRotate2d(c(3, 3), x, y, w, count, rbind(c(1, NA), outMat), "gauss"))
   expect_error(rfda:::locLinearRotate2d(c(3, 3), x, y, w, count, rbind(c(1, NaN), outMat), "gauss"))
   expect_error(rfda:::locLinearRotate2d(c(3, 3), x, y, w, count, rbind(c(1, Inf), outMat), "gauss"))
