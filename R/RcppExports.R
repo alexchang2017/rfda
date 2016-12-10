@@ -207,6 +207,10 @@ gcvLocLinear2d <- function(bwCand, x, y, w, count, kernel, bwNumGrid = 30.0) {
     .Call('rfda_gcvLocLinear2d', PACKAGE = 'rfda', bwCand, x, y, w, count, kernel, bwNumGrid)
 }
 
+locLinearRotate2d_cpp <- function(bandwidth, x, y, w, count, outMat, kernel) {
+    .Call('rfda_locLinearRotate2d_cpp', PACKAGE = 'rfda', bandwidth, x, y, w, count, outMat, kernel)
+}
+
 locPoly1d_cpp <- function(bandwidth, x, y, w, xout, kernel, drv, degree) {
     .Call('rfda_locPoly1d_cpp', PACKAGE = 'rfda', bandwidth, x, y, w, xout, kernel, drv, degree)
 }

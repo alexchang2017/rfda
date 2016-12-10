@@ -130,3 +130,7 @@ interp1 <- function(x, y, xi, method){
 locPoly1d <- function(bandwidth, x, y, w, xout, kernel, drv, degree){
   return(as.vector(locPoly1d_cpp(bandwidth, x, y, w, xout, kernel, drv, degree)))
 }
+
+locLinearRotate2d <- function(bandwidth, x, y, w, count, outMat, kernel){
+  return(as.vector(locLinearRotate2d_cpp(bandwidth, x, y, w, count, outMat, kernel)))
+}

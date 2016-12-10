@@ -23,13 +23,14 @@ rbindTransList <- function(x){
 
 #' @importFrom data.table rbindlist
 #' @importFrom plyr llply
-transCFRes <- function(x, cfDimnames){
+transCFRes <- function(x, cfDimnames, cfResNames){
   assert_that(is.list(x), all(do.call(c, llply(x, is.list))), all(do.call(c, llply(x, length)) == 2L),
               all(do.call(c, llply(x, function(x) is.data.frame(x[[1]]) && is.matrix(x[[2]])))))
 
-  y <- vector('list', 2L)
+  y <- vector("list", 2L)
   y[[1]] <- llply(x, `[[`, 1) %>>% rbindlist
-  y[[2]] <- llply(x, function(x) x[[2]] %>>% `dimnames<-`(list(cfDimnames, cfDimnames)))
+  y[[2]] <- llply(x, function(x) x[[2]] %>>% `dimnames<-`(list(cfDimnames, cfDimnames))) %>>%
+    `names<-`(cfResNames)
   return(y)
 }
 

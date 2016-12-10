@@ -40,5 +40,8 @@ Collate:
     'interp.R'
     'rbindTransList.R'
     'get_FPCA_opts.R'
+    'getRawCrCov.R'
+    'getMeasErr.R'
+    'getNumFpcByIC.R'
     'FPCA.R'
 RoxygenNote: 5.0.1.9000

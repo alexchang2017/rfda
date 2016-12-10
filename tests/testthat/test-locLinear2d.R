@@ -248,7 +248,7 @@ testDataSparseMulti <- data.table(y = seq(0.1, 1, 0.1), t = c(1,2,4,3,5,7,6,10,8
                                   sampleID = c(rep(1:2, each=3), rep(3:4, each=2)), key = "t") %>>%
   `[`(j = `:=`(y2 = y * sin(t), y3 = y * cos(t)))
 
-testDT_list <- suppressMessages(lapply(list(testDataRegularMulti, testDataIrregularMulti,
+testDT_list2 <- suppressMessages(lapply(list(testDataRegularMulti, testDataIrregularMulti,
                                             testDataSparseMulti), function(dt){
   varNames <- c("y", "y2", "y3")
   sparsity <- checkSparsity(dt, "sampleID", "t")
@@ -272,16 +272,82 @@ testDT_list <- suppressMessages(lapply(list(testDataRegularMulti, testDataIrregu
     melt.data.table(id.var = c("sampleID", "t"), measure.vars = varNames, variable.factor = FALSE, value.name = "value.demean") %>>%
     setnames(c("t", "sampleID"), c("timePnt", "subId"))
 }))
-rawCovList <- lapply(testDT_list, getRawCrCov)
+rawCovList2 <- lapply(testDT_list2, getRawCrCov)
 testErrDt <- data.table(sampleID = rep(1:4, each=2), t = c(1,3,11,9,1,13,4,2), y = rnorm(8)) %>>%
   `[`(j = .(t1 = rep(t, length(t)), t2 = rep(t, each=length(t))), by = .(sampleID))
 test_that("test - bwCandChooser3", {
-  expect_equal(unique(bwCandChooser3(rawCovList[[1]], 2, "gauss", 1)[ , 1]), 0.5, tolerance = 1e-6)
-  expect_equal(unique(bwCandChooser3(rawCovList[[2]], 1, "gauss", 1)[ , 1]),
+  expect_equal(unique(bwCandChooser3(rawCovList2[[1]], 2, "gauss", 1)[ , 1]), 0.5, tolerance = 1e-6)
+  expect_equal(unique(bwCandChooser3(rawCovList2[[2]], 1, "gauss", 1)[ , 1]),
                c(0.4, 0.4680695, 0.5477226, 0.6409305, 0.75), tolerance = 1e-6)
-  expect_equal(unique(bwCandChooser3(rawCovList[[3]], 0, "gauss", 1)[ , 1]),
+  expect_equal(unique(bwCandChooser3(rawCovList2[[3]], 0, "gauss", 1)[ , 1]),
                c(0.9, 1.131690, 1.423025, 1.789359, 2.25), tolerance = 1e-6)
   expect_message(bwCandChooser3(testErrDt, 0, "gauss", 9), "Data is too sparse")
   expect_error(bwCandChooser3(testErrDt, 0, "epan", 9), "Data is too sparse")
 })
 
+context("8. test - locLinearRotate2d")
+x <- CJ(seq(0, 1, 0.1), seq(0, 1, 0.1)) %>>% `[`(V1 != V2) %>>% as.matrix
+f <- function(x) x ** 2 *2 + 3 * x + 3
+y <- f(x[,1]) * (f(x[,2]) * 0.5 - 1)
+w <- rep(1, length(y))
+w2 <- rep(1:2, each = length(y) / 2)
+count <- rep(1, length(y))
+count2 <- rep(1:2, each = length(y) / 2)
+outMat <- cbind(seq(0, 1, 0.2), seq(0, 1, 0.2))
+test_that("test - locLinearRotate2d", {
+  expect_equal(rfda:::locLinearRotate2d(c(1, 1), x, y, w, count, outMat, "gauss"),
+               c(-1.125232, 2.734192, 6.745392, 10.910800, 15.233159, 19.715540), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(2, 2), x, y, w, count, outMat, "gauss"),
+               c(-1.431382, 2.653423, 6.778417, 10.943776, 15.149684, 19.396329), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(1, 1), x, y, w, count, outMat, "gaussvar"),
+               c(-0.798469, 2.804388, 6.710836, 10.875476, 15.303718, 20.053595), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(2, 2), x, y, w, count, outMat, "gaussvar"),
+               c(-1.356083, 2.672359, 6.770155, 10.935285, 15.168108, 19.471385), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(1, 1), x, y, w, count, outMat, "epan"),
+               c(0.247116, 2.962383, 6.675713, 10.845262, 15.455296, 21.215358), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(2, 2), x, y, w, count, outMat, "epan"),
+               c(-1.274003, 2.687789, 6.766201, 10.931756, 15.183759, 19.549635), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(1, 1), x, y, w, count, outMat, "quar"),
+               c(0.568979, 3.077283, 6.569519, 10.740611, 15.612548, 21.772818), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(2, 2), x, y, w, count, outMat, "quar"),
+               c(-1.032552, 2.745381, 6.742974, 10.908719, 15.243003, 19.799011), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(1, 1), x, y, w, count2, outMat, "gauss"),
+               c(1.369461, 3.021149, 4.679596, 6.351233, 8.043005, 9.762371), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(1, 1), x, y, w2, count, outMat, "gauss"),
+               c(-1.516499, 2.466812, 6.613778, 10.929288, 15.418294, 20.085685), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(1, 1), x, y, w, count2, outMat, "epan"),
+               c(1.371086, 3.091233, 4.673803, 6.314644, 8.002719, 9.938969), tolerance = 1e-6)
+  expect_equal(rfda:::locLinearRotate2d(c(1, 1), x, y, w2, count, outMat, "epan"),
+               c(0.229353, 2.833910, 6.571697, 10.847529, 15.587139, 21.489738), tolerance = 1e-6)
+})
+
+test_that("test - locLinearRotate2d: validate inputs", {
+  expect_true(is.na(rfda:::locLinearRotate2d(c(0.05, 0.05), x, y, w, count, outMat, "epan")))
+  expect_error(rfda:::locLinearRotate2d(c(3, -2), x, y, w, count, outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, NA), x, y, w, count, outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, NaN), x, y, w, count, outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, Inf), x, y, w, count, outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3, 3), x, y, w, count, outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3, 3), x, y, w, count, outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), cbind(1, x), y, w, count, outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), y, w, count, outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, NA), x), c(1, y), c(1, 2), c(1, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, NaN), x), c(1, y), c(1, 2), c(1, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, Inf), x), c(1, y), c(1, 2), c(1, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), x, c(1, y), w, count, outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(NA, y), c(1, 2), c(1, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(NaN, y), c(1, 2), c(1, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(Inf, y), c(1, 2), c(1, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), x, y, c(1, w), count, outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(NA, y), c(1, 2), c(1, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(NaN, y), c(1, 2), c(1, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(Inf, y), c(1, 2), c(1, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), x, y, w, c(1, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(1, y), c(1, 2), c(NA, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(1, y), c(1, 2), c(NaN, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), rbind(c(1, 1), x), c(1, y), c(1, 2), c(Inf, count), outMat, "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), x, y, w, count, rbind(c(1, NA), outMat), "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), x, y, w, count, rbind(c(1, NaN), outMat), "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), x, y, w, count, rbind(c(1, Inf), outMat), "gauss"))
+  expect_error(rfda:::locLinearRotate2d(c(3, 3), x, y, w, count, outMat, "guass"))
+})

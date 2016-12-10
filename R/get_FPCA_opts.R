@@ -87,10 +87,30 @@
 #'   It is used with the option \code{numFPC} = 'FVE' to select the number of functional
 #'   principal components that explain at least \code{FVE_threshold} of total variation.
 #'   [Default is 0.85.]
-#' \item \code{maxNumFPC}: Default is 20. An integer, the maximum number of functional principal components.
+#' \item \code{maxNumFPC}: Default is min(20, n-1). An integer, the maximum number of functional principal components.
 #'   (This setting is for univariate functional data, multivariate functional data will use \code{maxNumFPC * numVar} in program.)
 #'   If using automatic methods to choose K, i.e., 'AIC' or 'BIC' defined by \code{numFPC}.
 #'   Note: when \code{numFPC} = 'FVE' or 'AIC_R', \code{maxNumFPC} is ignored.
+#' \item \code{outPercent}: Default is \code{0}. A positive number is between \code{0} and \code{0.5}.
+#'   This indicates that we will leave out \code{outPercent} data in the boundary.
+#'   When performing local linear smoothing for mean functions and cross-covariance surface,
+#'   all the data are used, but the output grid will be restricted within the reduced range.
+#'   This option is used to alleviate the boundary effect.
+#' \item \code{minMeasErr}: Default is \code{1e-6}. A numeric, the minimum of the measurement error variance.
+#' \item \code{measErrOut}: Default is \code{0.5}. A positive number is between \code{0} and \code{0.5}.
+#'   This indicates that we will leave out \code{measErrOut} data in the boundary for
+#'   estimating the measurement error variance.
+#' \item \code{measErr}: A truncation threshold for the measurement error variance.
+#'   \itemize{
+#'     \item \code{'cv'}: To use a fixed rule to split the training data and validation data to
+#'       find the optimal value of truncation threshold with cross-validation.
+#'       (The results can be reproduced.) [Default]
+#'     \item \code{'cv-random'}: To randomly split the training data and validation data to
+#'       find the optimal value of truncation threshold with cross-validation.
+#'       (The results can not be reproduced.)
+#'     \item \code{'no'}: The truncation threshold will not be used.
+#'     \item Any positive number: user-specified the measurement error variance.
+#'   }
 #' \item \code{methodFPCS}: A string, 'CE', 'IN', 'LS' or 'WLS'. The method to estimate fpc scores.
 #'   \itemize{
 #'     \item \code{CE}: The conditional expectation method is applied. [Default]
@@ -105,22 +125,6 @@
 #'     \item \code{FALSE}: shrinkage when method = 'CE' or error = 0 [Default]
 #'     \item \code{TRUE}: shrinkage when method = 'IN' and error = 1, otherwise, this will be re-set to 0.
 #'   }
-#' \item \code{varErr}: A truncation threshold for the measurement error variance.
-#'   \itemize{
-#'     \item \code{'cv'}: To use a fixed rule to split the training data and validation data to
-#'       find the optimal value of truncation threshold with cross-validation.
-#'       (The results can be reproduced.) [Default]
-#'     \item \code{'cv-random'}: To randomly split the training data and validation data to
-#'       find the optimal value of truncation threshold with cross-validation.
-#'       (The results can not be reproduced.)
-#'     \item \code{'no'}: The truncation threshold will not be used.
-#'     \item Any positive number: user-specified the measurement error variance.
-#'   }
-#' \item \code{outPercent}: Default is 0. A positive number is between 0 and 1. This indicates that
-#'   we will leave out \code{outPercent} data in the boundary. If \code{outPercent} > 0.25, reset to 0.25.
-#'   When performing local linear smoothing for mean function and covariance surface, all the data are used,
-#'   but the output grid will be restricted within the reduced range.
-#'   This option is used to alleviate the boundary effect.
 #' \item \code{methodNorm}: The method to normalize the data. This default varies for different data input.
 #'   The default for univariate functional data is 'no'. The default for multivariate functional data is 'quantile'.
 #'   \itemize{
@@ -134,37 +138,40 @@
 #' \item \code{quantileProbs}: A positive numeric vector is between 0 and 1.
 #'   It is the probabilities for quantiles to approximate the variances.
 #'   It is used with the option \code{methodNorm} = 'quantile' to choose the quantiles.
-#'   [Default is (0.25, 0.75).]
+#'   [Default is \code{(0.25, 0.75)}.]
 #' \item \code{newdata}: A row vector of user-defined output time grids for all curves.
-#'   This corresponds to "allTimePnts" in the output argument. If newdata is NULL,
+#'   This corresponds to "allTimePnts" in the output argument. If newdata is \code{NULL},
 #'   then "allTimePnts" corresponds to the set of distinct time points from the pooled data.
 #'   newdata is supposed to be a vector in ascending order on the domain of the functions.
-#'   The default is NULL.
+#'   The default is \code{NULL}.
 #' \item \code{ncpus}: The number of threads used in computation.
 #'   \itemize{
 #'     \item \code{0}: To use all threads in computation. [Default]
 #'     \item Any positive integer: To use user-specified number of threads in computation.
 #'   }
-#' \item \code{userMeanFunc}: Default is NULL. A data.table with three columns \code{timePnt}, \code{value}
+#' \item \code{userMeanFunc}: Default is \code{NULL}. A data.table with three columns \code{timePnt}, \code{value}
 #'   and \code{variable}. \code{value} is the mean function at specific time points.
 #'   \code{timePnt} is the corresponding time points. \code{variable} is the name of observed variable.
 #'   Please see the examples of \code{\link{FPCA}}.
-#' \item \code{userCovFunc}: Default is NULL. A list of matrices with names \code{variable1}-\code{variable2}.
+#' \item \code{userCovFunc}: Default is \code{NULL}. A list of matrices with names \code{variable1}-\code{variable2}.
 #'   The matrix is the cross-covariance surface of \code{variable1} and \code{variable2}.
 #'   The colnames and rownames are the grid values of cross-covariance surface.
 #'   Please see the examples of \code{\link{FPCA}}.
 #' }
 #'
 #' @param numVar The number of functional data to fit.
+#' @param numCurves The number of curves of a variable.
 #' @return An list of options to fit FPCA model used in \code{\link{FPCA}}.
 #' @export
-get_FPCA_opts <- function(numVar){
+get_FPCA_opts <- function(numVar, numCurves){
+  assert_that(length(numVar) == 1, is.numeric(numVar), is.finite(numVar), numVar > 0)
+  assert_that(length(numCurves) == 1, is.numeric(numCurves), is.finite(numCurves), numCurves > 0)
   return(list(
     bwMean = NULL, bwCov = NULL, bwNumGrid = 30L, bwKernel = "gauss", numBins = 0L,
     errTerm = TRUE, numGrid = 51L, weight = FALSE, numFPC = "FVE", FVE_threshold = 0.85,
-    maxNumFPC = 20L, methodFPCS = "CE", shrink = FALSE, varErr = "cv", outPercent = 0,
-    methodNorm = ifelse(numVar == 1L, "no", "quantile"), quantileProbs = c(0.25, 0.75),
-    newdata = NULL, ncpus = 0L, userMeanFunc = NULL, userCovFunc = NULL
+    maxNumFPC = min(20L, numCurves - 1L), outPercent = 0, minMeasErr = 1e-6, measErrOut = 0.5, measErr = "cv",
+    methodFPCS = "CE", shrink = FALSE, methodNorm = ifelse(numVar == 1L, "no", "quantile"),
+    quantileProbs = c(0.25, 0.75), newdata = NULL, ncpus = 0L, userMeanFunc = NULL, userCovFunc = NULL
   ))
 }
 
@@ -220,8 +227,12 @@ chk_FPCA_opts <- function(optns){
     }
   }
 
-  # check methodFPCS
-  assert_that(length(optns$methodFPCS) == 1, optns$methodFPCS %in% c("IN", "CE", "LS", "WLS"))
+  # check minMeasErr
+  assert_that(length(optns$minMeasErr) == 1, is.finite(optns$minMeasErr), !is.na(optns$minMeasErr),
+              is.numeric(optns$minMeasErr), optns$minMeasErr >= 0)
+  # check measErrOut
+  assert_that(length(optns$measErrOut) == 1, is.finite(optns$measErrOut), !is.na(optns$measErrOut),
+              is.numeric(optns$measErrOut), optns$measErrOut >= 0, optns$measErrOut <= 0.5)
 
   # check shrink
   assert_that(length(optns$shrink) == 1, is.logical(optns$shrink), !is.na(optns$shrink))
@@ -231,19 +242,23 @@ chk_FPCA_opts <- function(optns){
     optns$shrink <- FALSE
   }
 
-  # check varErr
-  assert_that(length(optns$varErr) == 1, is.numeric(optns$varErr) || is.character(optns$varErr))
-  if (is.numeric(optns$varErr)) {
-    assert_that(optns$varErr > 0, is.finite(optns$varErr))
+  # check outPercent
+  assert_that(length(optns$outPercent) == 1, is.finite(optns$outPercent), !is.na(optns$outPercent),
+              is.numeric(optns$outPercent), optns$outPercent >= 0, optns$outPercent <= 0.5)
+
+  # check measErr
+  assert_that(length(optns$measErr) == 1, is.numeric(optns$measErr) || is.character(optns$measErr))
+  if (is.numeric(optns$measErr)) {
+    assert_that(optns$measErr > 0, is.finite(optns$measErr))
   } else {
-    assert_that(is.character(optns$varErr), optns$varErr %in% c('cv', 'cv-random', 'no'))
+    assert_that(is.character(optns$measErr), optns$measErr %in% c("cv", "cv-random", "no"))
   }
 
   # check outPercent
   assert_that(length(optns$outPercent) == 1, is.finite(optns$outPercent), !is.na(optns$outPercent),
-              is.numeric(optns$outPercent), optns$outPercent >= 0, optns$outPercent <= 1)
+              is.numeric(optns$outPercent), optns$outPercent >= 0, optns$outPercent <= 0.5)
   # check methodNorm
-  assert_that(length(optns$methodNorm) == 1, optns$methodNorm %in% c('no', 'quantile', 'smoothCov'))
+  assert_that(length(optns$methodNorm) == 1, optns$methodNorm %in% c("no", "quantile", "smoothCov"))
   # check quantileProbs
   assert_that(length(optns$quantileProbs) == 2, all(is.finite(optns$quantileProbs)),
               all(!is.na(optns$quantileProbs)), is.numeric(optns$quantileProbs),

@@ -151,6 +151,23 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// locLinearRotate2d_cpp
+arma::vec locLinearRotate2d_cpp(const arma::vec& bandwidth, const arma::mat& x, const arma::vec& y, const arma::vec& w, const arma::vec& count, const arma::mat outMat, const std::string& kernel);
+RcppExport SEXP rfda_locLinearRotate2d_cpp(SEXP bandwidthSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP countSEXP, SEXP outMatSEXP, SEXP kernelSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const arma::vec& >::type bandwidth(bandwidthSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type outMat(outMatSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type kernel(kernelSEXP);
+    __result = Rcpp::wrap(locLinearRotate2d_cpp(bandwidth, x, y, w, count, outMat, kernel));
+    return __result;
+END_RCPP
+}
 // locPoly1d_cpp
 arma::vec locPoly1d_cpp(const double& bandwidth, const arma::vec& x, const arma::vec& y, const arma::vec& w, const arma::vec& xout, const std::string& kernel, const double& drv, const double& degree);
 RcppExport SEXP rfda_locPoly1d_cpp(SEXP bandwidthSEXP, SEXP xSEXP, SEXP ySEXP, SEXP wSEXP, SEXP xoutSEXP, SEXP kernelSEXP, SEXP drvSEXP, SEXP degreeSEXP) {

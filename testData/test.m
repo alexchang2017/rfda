@@ -78,6 +78,42 @@ sprintf('%.6f, ', est)
 [~, est] = lwls(0.25, 'gausvar', 1, 1, 0, x, y', w, x);
 sprintf('%.6f, ', est) 
 
+% locLinearRotate2d
+x = 0:0.1:1;
+[x1, x2] = meshgrid(x, x);
+x = [x1(:), x2(:)];
+x = x(x(:,1) ~= x(:,2), :);
+y = x .^ 2 .* 2 + 3 .* x + 3;
+y = y(:,1) .* (y(:,2) .* 0.5 - 1);
+outMat = [0:0.2:1; 0:0.2:1];
+cnt2 = [ones(1, 55), ones(1, 55) * 2];
+w = ones(1,length(y));
+w2 = [ones(1, 55), ones(1, 55) * 2];
+[~, est] = rotate_mlwls([1, 1], 'gauss', x', y, w, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([2, 2], 'gauss', x', y, w, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([1, 1], 'gausvar', x', y, w, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([2, 2], 'gausvar', x', y, w, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([1, 1], 'epan', x', y, w, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([2, 2], 'epan', x', y, w, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([1, 1], 'quar', x', y, w, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([2, 2], 'quar', x', y, w, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([1, 1], 'gauss', x', y ./ cnt2', w, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([1, 1], 'gauss', x', y, w2, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([1, 1], 'epan', x', y ./ cnt2', w, outMat, 1);
+sprintf('%.6f, ', est)
+[~, est] = rotate_mlwls([1, 1], 'epan', x', y, w2, outMat, 1);
+sprintf('%.6f, ', est)
+
 %% regular
 load('exData\regularExData.mat')
 regular = 2;
@@ -199,7 +235,7 @@ for example_case = 0:2
   % save(['testMat/rawCov_res_', exampleName], 'rawCov1', 'rawCov2') 
 end
 
-%% test for getRawCov and locLinear2d
+%% test for getRawCov and locLinear2d / locLinearRotate2d
 ngrid = 30;
 for example_case = 0:2
   switch example_case
