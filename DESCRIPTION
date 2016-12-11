@@ -54,6 +54,7 @@ Collate:
     'get_FPCA_opts.R'
     'getRawCrCov.R'
     'getMeasErr.R'
+    'getFpcScore.R'
     'getNumFpcByIC.R'
     'FPCA.R'
 RoxygenNote: 5.0.1.9000

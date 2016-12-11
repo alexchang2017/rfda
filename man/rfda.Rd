@@ -7,19 +7,25 @@
 \title{rfda: a tool of functional data analysis}
 \description{
 This package provides the tools to perform the functional data analysis.
+Especially the FPCA method via PACE algorithm. Please see Details.
+}
+\details{
+This package provides the tools to perform the functional data analysis.
 The core of this package is functional principal componet analysis (FPCA) based on
 the principal analysis by conditional estimation (PACE) algorithm mainly developed by
 H.G. Muller. The multivariate part with normalization are done primarily by J.M. Chiou, Y.F Yang,
 and Y.T. Chen (See References). In addition, this package provides the another normalization
-approach (with quantiles) in multivariate FPCA. \cr
+approach (with quantiles) in multivariate FPCA.
+
 This package is mostly based on the MatLab package, PACE, released at \url{http://www.stat.ucdavis.edu/PACE/}.
 Besides, some ideas are borrowed from the R package, fdapace. This package, rfda, provides R approach for FPCA
 based on PACE 2.17 and use the C++ linear algebra library, Armadillo, and the C++ multi-threaded
-implementation with RcppArmadillo and RcppParallel. \cr
+implementation with RcppArmadillo and RcppParallel.
+
 Note: Since the BLAS used by RcppArmadillo is based on what BLAS R links to,
 so this package will be more efficient if a powerful BLAS used by R.
 }
-\section{copyright}{
+\section{Copyrights}{
 
 \itemize{
   \item Copyright (c) 2017, Ching-Chuan Chen (This package)
@@ -32,24 +38,18 @@ so this package will be more efficient if a powerful BLAS used by R.
   \item Yao, F., Muller, H.G., Clifford, A.J., Dueker, S.R., Follett, J., Lin, Y., Buchholz, B., Vogel, J.S. (2003). Shrinkage estimation for functional principal component scores, with application to the population kinetics of plasma folate. Biometrics 59, 676-685.
   \item Yao, F., Muller, H.G., Wang, J.L. (2005). Functional data analysis for sparse longitudinal data. J. American Statistical Association 100, 577-590.
   \item Yao, F., Muller, H.G., Wang, J.L. (2005). Functional Linear Regression Analysis for Longitudinal Data. Annals of Statistics 33, 2873-2903.
-  \item Muller, H.G. (2005). Functional modeling and classification of longitudinal data. Scandinavian J. Statistics 32, 223-240.
-  \item Muller, H.G., Stadtmuller, U., Yao, F. (2006). Functional variance processes. Journal of the American Statistical Association 101, 1007-1018.
-  \item Leng, X., Muller, H.G. (2006). Classification using functional data analysis for temporal gene expression data. Bioinformatics 22, 68-76.
-  \item Leng, X., Muller, H.G. (2006). Time ordering of gene co-expression. Biostatistics 7, 569-584.
   \item Chiou, J., Muller, H.G. (2007). Diagnostics for functional regression via residual processes. Computational Statistics & Data Analysis 51, 4849-4863.
   \item Muller, H.G. (2009). Functional modeling of longitudinal data. In: Longitudinal Data Analysis (Handbooks of Modern Statistical Methods), Ed. Fitzmaurice, G., Davidian, M., Verbeke, G., Molenberghs, G., Wiley, New York, 223--252.
   \item Hall, P., Muller, H.G., Yao, F. (2008). Modeling sparse generalized longitudinal observations via latent Gaussian processes. Journal of the Royal Statistical Society B 70, 703-723.
-  \item Muller, H.G., Chiou, J.M., Leng, X. (2008). Inferring gene expression dynamics via functional regression analysis. BMC Bioinformatics 9:60.
   \item Chiou, J.M., Muller, H.G., Wang, J.L. (2004). Functional response models. Statistica Sinica 14, 675-693.
-  \item Chen, K., Muller, H.G. (2011). Conditional quantile analysis when covariates are functions, with application to growth data. J. Royal Statistical Society B 74, 67?9.
-  \item Muller, H.G., Sen, R., Stadtmuller, U. (2011). Functional Data Analysis for Volatility. J. Econometrics 165, 233-245.
   \item Jiang, C.R. and Wang, J.L. (2010): Covariate Adjusted Functional Principal Components Analysis for Longitudinal Data, The Annals of Statistics, 38, 1194-1226.
   \item Jiang, C.R. and Wang, J.L. (2011): Functional Single Index Model for Longitudinal Data, The Annals of Statistics, 39, 362-388.
   \item Chen, K. and Muller, H.G. (2012). Modeling Repeated Functional Observations, Journal of the American Statistical Association, 107, 1599-1609.
   \item Gottlieb, A. and Muller, H.G. (2012). A Stickiness Coefficient for Longitudinal Data, Computational Stat. and Data Analysis, i56, 4000-4010.
   \item Chiou, J.M. and Li, P.L. (2007). Functional clustering and identifying substructures of longitudinal data[J]. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 69, 679-699.
   \item Chiou, J.M., Chen, Y.T. and Yang, Y.F. (2014), Multivariate Functional Principal Component Analysis: A Normalization Approach. Statistica Sinica, 24, 1571-1596.
-  \item Chiou, J.M., Yang, Y.F and Chen, Y.T.. (2016), Multivariate functional linear regression and prediction. Journal of Multivariate Analysis, 146, 301-312
+  \item Chiou, J.M., Yang, Y.F and Chen, Y.T.. (2016), Multivariate functional linear regression and prediction. Journal of Multivariate Analysis, 146, 301-312.
+  \item Anat Sakov, Ilan Golani, Dina Lipkind, Yoav Benjamini (2010) High throughput data analysis in behavioral genetics. The Annals of Applied Statistics Vol. 4, No. 2 (June 2010), pp. 743-763.
 }
 }
 

@@ -27,7 +27,12 @@ udCF <- list(
   "y2-y3" = matrix(rnorm(121), 11, 11, FALSE, list(0:10, 0:10)),
   "y3-y3" = matrix(rnorm(121), 11, 11, FALSE, list(0:10, 0:10))
 )
+sparseExDataTestError1 <- subset(sparseExData, sparseExData$sampleID == 1)
+sparseExDataTestError2 <- subset(sparseExData, sparseExData$sampleID %in% c(1, 3))
 test_that("FPCA", {
+  expect_error(FPCA(y ~ t, "sampleID", sparseExDataTestError1), "The number of curves cannot be less than 2!")
+  expect_error(suppressWarnings(FPCA(y ~ t, "sampleID", sparseExDataTestError2)),
+               "The number of curves cannot be less than 2!")
   expect_warning(FPCA(y ~ t, "sampleID", sparseExData), "Remove the observation with")
   expect_equal(suppressWarnings(FPCA(y ~ t, "sampleID", sparseExData)), 1)
   expect_equal(suppressWarnings(FPCA(y ~ t, "sampleID", sparseExData,
@@ -39,7 +44,10 @@ test_that("FPCA", {
   expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(bwMean = data.table(variable = "y", value = -2),
                                                            bwCov = data.table(variable1 = "y", variable2 = "y",
                                                                               value1 = -1, value2 = -1))), 1)
-  expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(userMeanFunc = udMF, userCovFunc = udCF[1])), 1)
+  expect_error(FPCA(y ~ t, "sampleID", regularExData, list(userMeanFunc = udMF, userCovFunc = udCF[1])))
+  expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(userMeanFunc = udMF, userCovFunc = udCF[1],
+                                                           bwCov = data.table(variable1 = "y", variable2 = "y",
+                                                                              value1 = 0.5, value2 = 0.5))), 1)
   expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(weight = TRUE, ncpus = 1, numBins = 10)), 1)
   expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(numBins = -1)), 1)
   expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(methodNorm = "smoothCov")), 1)
@@ -67,6 +75,13 @@ test_that("FPCA", {
                                             variable2 = c("y", "y2", "y2", "y3", "y3"),
                                             value1 = c(-1, 0.5, -1, 0.7, -3),
                                             value2 = c(-1, 0.5, -1, 0.9, -3)))), 1)
+  expect_error(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar,
+                    list(userCovFunc = udCF,
+                         bwCov = data.table(variable1 = c("y", "y2"), variable2 = c("y", "y2"),
+                                            value1 = c(0.5, 0.5), value2 = c(0.5, 0.5)))),
+               "The bandwidths of covariance function")
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar,
-                    list(userCovFunc = udCF)), 1)
+                    list(userCovFunc = udCF,
+                         bwCov = data.table(variable1 = c("y", "y2", "y3"), variable2 = c("y", "y2", "y3"),
+                                            value1 = c(0.5, 0.5, 0.5), value2 = c(0.5, 0.5, 0.5)))), 1)
 })

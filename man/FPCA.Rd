@@ -18,11 +18,11 @@ Notice that the names of variables must be a-z, A-Z or _.}
 \item{options}{An list containing the options to fit FPCA model.}
 }
 \value{
-An list containing mean, covariance, eigen functions,
+An list containing mean, cross-covariance, eigen functions,
   functional principal components scores, etc. Please see "Details" for more details.
 }
 \description{
-Return mean, covariance, eigen functions and fpc scores.
+Return mean, cross-covariance, eigen functions and fpc scores.
 }
 \examples{
 \dontrun{

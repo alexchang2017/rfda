@@ -29,7 +29,7 @@ checkSparsity <- function(data, id.var, timeVarName){
 
 #' Calculating the functional principal components
 #'
-#' Return mean, covariance, eigen functions and fpc scores.
+#' Return mean, cross-covariance, eigen functions and fpc scores.
 #'
 #' @param formula An object of class "formula", a description of FPCA model.
 #' The RHS of `~` is the responses and LHS is time variables.
@@ -37,7 +37,7 @@ checkSparsity <- function(data, id.var, timeVarName){
 #' @param id.var An character to indicate the subject id of data.
 #' @param data An data.frame or data.table containing the variables in model.
 #' @param options An list containing the options to fit FPCA model.
-#' @return An list containing mean, covariance, eigen functions,
+#' @return An list containing mean, cross-covariance, eigen functions,
 #'   functional principal components scores, etc. Please see "Details" for more details.
 #' @seealso \code{\link{get_FPCA_opts}} for input options.
 #' @examples
@@ -59,7 +59,7 @@ checkSparsity <- function(data, id.var, timeVarName){
 #' @importFrom data.table data.table is.data.table as.data.table
 #' @importFrom data.table melt.data.table setnames setDT setkey setkeyv
 #' @importFrom data.table CJ tstrsplit .N .SD
-#' @importFrom stats median qnorm cov2cor quantile
+#' @importFrom stats median qnorm cov cov2cor quantile
 #' @importFrom utils modifyList combn type.convert
 #' @export
 FPCA <- function(formula, id.var, data, options = list()){
@@ -81,6 +81,9 @@ FPCA <- function(formula, id.var, data, options = list()){
   chkFormla <- chkFmLHS || chkFmRHS
   message("Checking the formula...", appendLF = FALSE)
   message(ifelse(chkFormla, " Pass...", " Failed... Stop Now!"))
+  numCurves <- length(unique(data[[id.var]]))
+  if (numCurves < 2)
+    stop("The number of curves cannot be less than 2!")
 
   # find the names of variables and name of variable indicating time points
   timeVarName <- as.character(formula[[3]])
@@ -121,10 +124,15 @@ FPCA <- function(formula, id.var, data, options = list()){
   # find the number of observations for each observed function
   numObvDT <- dataDT[, .(numObv = .N) ,by = .(subId, variable)]
   if (any(numObvDT$numObv <= 1)) {
+    message("The number of points of some cuvres is less than 2, now remove them!")
     # remove the observations with insufficient data size
     subIdInsuffSize <- numObvDT[numObv <= 1, .(subId)] %>>% unlist %>>% unique
     warning("Remove the observation with ", id.var, " = ", paste0(subIdInsuffSize, collapse = ", "), ".")
     dataDT <- dataDT[!subId %in% subIdInsuffSize]
+    numCurves <- length(unique(dataDT$subId))
+    if (numCurves < 2)
+      stop("The number of curves cannot be less than 2!")
+    FPCA_opts$maxNumFPC <- min(FPCA_opts$maxNumFPC, numCurves - 2)
     rm(subIdInsuffSize)
   }
 
@@ -151,16 +159,17 @@ FPCA <- function(formula, id.var, data, options = list()){
   }
 
   #### get weight ####
+  dataDtKeys <- c("timePnt", "variable")
   if (FPCA_opts$weight) {
     byVars <- switch(as.character(sparsity), "0" = c("variable", "subId"),
-                     "1" = c("variable", "timePnt"), "2" = c("variable", "timePnt"))
+                     "1" = dataDtKeys, "2" = dataDtKeys)
     setkeyv(dataDT, byVars)
     dataDT <- merge(dataDT, dataDT[ , .(weight = 1/.N), by = byVars], by = byVars)
   } else {
     dataDT[ , weight := 1]
   }
   # change the keys of dataDT
-  setkeyv(dataDT, c("timePnt", "variable"))
+  setkeyv(dataDT, dataDtKeys)
 
   #### get time points ####
   # Initializing allTimePnts is based on the unique time points of the pooled data + the unique
@@ -228,9 +237,9 @@ FPCA <- function(formula, id.var, data, options = list()){
                                            allTimePnts, FPCA_opts$bwKernel, 0, 1))
       return(list(data.table(variable = dat$variable[1], value = bwOptLocPoly1d),
                   data.table(timePnt = workTimePnts, value = meanFunc,
-                             variable = unique(dat$variable), key = c("timePnt", "variable")),
+                             variable = unique(dat$variable), key = dataDtKeys),
                   data.table(timePnt = allTimePnts, value = meanFuncDense,
-                             variable = unique(dat$variable), key = c("timePnt", "variable"))))
+                             variable = unique(dat$variable), key = dataDtKeys)))
     }) %>>% rbindTransList
     message("The bandwidth of mean functions is \n    ",
             paste0(varNameMapping, ": ", sprintf("%.6f", MFRes[[1]]$value)) %>>% paste0(collapse = ", "))
@@ -242,27 +251,28 @@ FPCA <- function(formula, id.var, data, options = list()){
                 "If it is chosen automatically, please provide your own mean functions."))
 
   #### get demeaned values ####
-  dataDT <- merge(dataDT, MFRes[[3]], by = c("timePnt", "variable"), suffixes = c("", ".mean")) %>>%
+  dataDT <- merge(dataDT, MFRes[[3]], by = dataDtKeys, suffixes = c("", ".mean")) %>>%
     `[`(j = value.demean := (value - value.mean))
 
-  #### get raw covariance ####
+  #### get raw cross-covariance ####
   rawCov <- getRawCrCov(dataDT)
   if (FPCA_opts$weight) {
     if (sparsity == 0) {
       rawCov <- rawCov[ , weight := NULL] %>>%
         merge(dataDT[, .(weight = weight[which.max(subId)]), by = .(variable,timePnt)],
-              by.x = c("variable1", "t1"), by.y = c("variable", "timePnt"))
+              by.x = c("t1", "variable1"), by.y = dataDtKeys)
     } else {
       rawCov[ , weight := 1/cnt]
     }
   }
-  setkeyv(rawCov, paste0("variable", 1:2))
+  rawCovKeys <- paste0("variable", 1:2)
+  setkeyv(rawCov, rawCovKeys)
 
-  #### get covariance functions ####
-  # validate the list of user-specified covariance surface
+  #### get cross-covariance functions ####
+  # validate the list of user-specified cross-covariance functions
   cfListNames <- switch(as.integer(length(varName) == 1) + 1,
                         {rbind(data.table(variable1 = varName, variable2 = varName),
-                               data.table(t(combn(varName, 2))) %>>% setnames(paste0("variable", 1:2))) %>>%
+                               data.table(t(combn(varName, 2))) %>>% setnames(rawCovKeys)) %>>%
                             setorder(variable1, variable2) %>>% with(paste(variable1, variable2, sep = "-"))},
                         {paste(varName, varName, sep = "-")})
 
@@ -279,36 +289,46 @@ FPCA <- function(formula, id.var, data, options = list()){
     }))
   rm(cfListNames)
 
-  # get smoothing covariance surface
+  # get smoothing cross-covariance functions
   if (validCFList) {
-    #### use input covariance functions ####
-    message("Use the user-specified covariance surface...")
-    outBwDT <- data.table(variable = names(FPCA_opts$userCovFunc)) %>>%
-      `[`(j = paste0("variable", 1:2) := tstrsplit(variable, "-")) %>>%
-      `[`(j = `:=`(variable = NULL, value1 = NA_real_, value2 = NA_real_))
-    CFRes <- c(list(outBwDT), list(llply(FPCA_opts$userCovFunc, function(m){
+    #### use input cross-covariance functions ####
+    message("Use the user-specified cross-covariance functions...")
+    message("Check the bwCov is given correctly...")
+    assert_that(is.data.frame(FPCA_opts$bwCov),
+                all(c(rawCovKeys, paste0("value", 1:2)) %in% names(FPCA_opts$bwCov)),
+                is.numeric(FPCA_opts$bwCov$value1), all(!is.na(FPCA_opts$bwCov$value1)),
+                all(is.finite(FPCA_opts$bwCov$value1)), is.numeric(FPCA_opts$bwCov$value2),
+                all(!is.na(FPCA_opts$bwCov$value2)), all(is.finite(FPCA_opts$bwCov$value2)),
+                all(FPCA_opts$bwCov$value1 > 0), all(FPCA_opts$bwCov$value2 > 0))
+    setDT(FPCA_opts$bwCov, key = rawCovKeys)
+    FPCA_opts$bwCov <- FPCA_opts$bwCov[variable1 == variable2] %>>%
+      `[`(j = `:=`(variable1 = mapVarNames(as.character(variable1)),
+                   variable2 = mapVarNames(as.character(variable2))))
+    if (nrow(FPCA_opts$bwCov) != length(varName))
+      stop("The bandwidths of covariance function (variable1 = variable2) must be ",
+           "assigned with real positive values.")
+    CFRes <- c(list(FPCA_opts$bwCov), list(llply(FPCA_opts$userCovFunc, function(m){
       grid <- as.numeric(rownames(m))
       interp2(grid, grid, m, workTimePnts, workTimePnts, 'spline') %>>%
         `colnames<-`(workTimePnts) %>>% `rownames<-`(workTimePnts)
     })))
-    rm(outBwDT)
   } else {
-    #### calculate covariance functions ####
-    message("Get the smoothed covariance surface...")
+    #### calculate cross-covariance functions ####
+    message("Get the smoothed cross-covariance functions...")
     if (is.null(FPCA_opts$bwCov)) {
       # use default
-      FPCA_opts$bwCov <- unique(rawCov, by = paste0("variable", 1:2)) %>>%
+      FPCA_opts$bwCov <- unique(rawCov, by = rawCovKeys) %>>%
         `[`(j = value1 := ifelse(variable1 == variable2, -2, -3)) %>>%
         `[`(j = value2 := value1) %>>% `[`(j = .(variable1, variable2, value1, value2))
     } else {
       assert_that(is.data.frame(FPCA_opts$bwCov),
-                  all(c(paste0("variable", 1:2), paste0("value", 1:2)) %in% names(FPCA_opts$bwCov)),
-                  all(FPCA_opts$bwCov$value1 > 0 || FPCA_opts$bwCov$value1 %in% c(-1, -2, -3)),
-                  all(FPCA_opts$bwCov$value2 > 0 || FPCA_opts$bwCov$value2 %in% c(-1, -2, -3)),
+                  all(c(rawCovKeys, paste0("value", 1:2)) %in% names(FPCA_opts$bwCov)),
                   is.numeric(FPCA_opts$bwCov$value1), all(!is.na(FPCA_opts$bwCov$value1)),
                   all(is.finite(FPCA_opts$bwCov$value1)), is.numeric(FPCA_opts$bwCov$value2),
-                  all(!is.na(FPCA_opts$bwCov$value2)), all(is.finite(FPCA_opts$bwCov$value2)))
-      setDT(FPCA_opts$bwCov, key = paste0("variable", 1:2))
+                  all(!is.na(FPCA_opts$bwCov$value2)), all(is.finite(FPCA_opts$bwCov$value2)),
+                  all(FPCA_opts$bwCov$value1 > 0 || FPCA_opts$bwCov$value1 %in% c(-1, -2, -3)),
+                  all(FPCA_opts$bwCov$value2 > 0 || FPCA_opts$bwCov$value2 %in% c(-1, -2, -3)))
+      setDT(FPCA_opts$bwCov, key = rawCovKeys)
 
       FPCA_opts$bwCov <- FPCA_opts$bwCov[ , `:=`(variable1 = mapVarNames(as.character(variable1)),
                                                  variable2 = mapVarNames(as.character(variable2)))]
@@ -316,19 +336,19 @@ FPCA <- function(formula, id.var, data, options = list()){
         FPCA_opts$bwCov[ , tmp := variable1][ , `:=`(variable1 = variable2, variable2 = tmp)][ , tmp := NULL]
 
       FPCA_opts$bwCov <- merge(with(rawCov, CJ(variable1 = variable1, variable2 = variable2, unique = TRUE)),
-                               FPCA_opts$bwCov, by = paste0("variable", 1:2), all.x = TRUE) %>>%
+                               FPCA_opts$bwCov, by = rawCovKeys, all.x = TRUE) %>>%
         `[`(j = value1 := ifelse(is.na(value1), ifelse(variable1 == variable2, -2, -3), value1)) %>>%
         `[`(j = value2 := ifelse(is.na(value2), ifelse(variable1 == variable2, -2, -3), value2)) %>>%
         setorder(variable1, variable2)
     }
     CFSettings <- with(FPCA_opts$bwCov, paste0(varNameMapping[variable1], "-", varNameMapping[variable2],
                                                ": (", value1, ",", value2, ")"))
-    message("The setting of bandwidth used in smoothing covariance functions is ")
+    message("The setting of bandwidth used in smoothing cross-covariance functions is ")
     message("    ", paste0(CFSettings, collapse = ", "))
     rm(CFSettings)
 
-    # smoothing diagonal covariance matrix
-    CFRes1 <- split(rawCov[variable1 == variable2], by = paste0("variable", 1:2)) %>>% llply(function(dat){
+    # smoothing diagonal cross-covariance matrix
+    CFRes1 <- split(rawCov[variable1 == variable2], by = rawCovKeys) %>>% llply(function(dat){
       dat <- dat[t1 != t2]
       covBwOpt <- FPCA_opts$bwCov[variable1 == dat$variable1[1] & variable2 == dat$variable2[1],
                                   .(value1, value2)] %>>% unlist
@@ -352,7 +372,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     })
 
     # smoothing cross-covariance matrix
-    CFRes2 <- split(rawCov[variable1 != variable2], by = paste0("variable", 1:2)) %>>% llply(function(dat){
+    CFRes2 <- split(rawCov[variable1 != variable2], by = rawCovKeys) %>>% llply(function(dat){
       covBwOpt <- FPCA_opts$bwCov[variable1 == dat$variable1[1] & variable2 == dat$variable2[1],
                                   .(value1, value2)] %>>% unlist
       if (all(covBwOpt > 0)) {
@@ -383,23 +403,30 @@ FPCA <- function(formula, id.var, data, options = list()){
     rm(CFRes1, CFRes2)
 
     CFResBwValues <- with(CFRes[[1]], paste(sprintf("%.4f", value1), sprintf("%.4f", value2), sep = ","))
-    message("The bandwidth of covariance functions is \n    ",
+    message("The bandwidth of cross-covariance functions is \n    ",
             paste0(CFResNames, ": (", CFResBwValues, ")") %>>% paste0(collapse = ", "))
     rm(CFResBwValues)
   }
 
   #### check cross-covariance functions ####
   if (any(sapply(CFRes[[2]], is.na)))
-    stop("The bandwidth of covariance surface is not appropriate!\n",
-         "       If it is chosen automatically, please provide your own covariance surface.")
+    stop("The bandwidth of cross-covariance functions is not appropriate!\n",
+         "       If it is chosen automatically, please provide your own cross-covariance functions.")
 
   #### estimate measurement error ####
-  # measErrVar <- getMeasErr(rawCov, CFRes[[1]], sparsity, FPCA_opts)
+  measErrVarDT <- getMeasErr(rawCov, CFRes[[1]], sparsity, FPCA_opts) %>>%
+    (ifelse(is.na(.), FPCA_opts$minMeasErr, .)) %>>%
+    (data.table(variable = as.integer(names(.)), value = .))
+  message("Get the variance of measurement error: ",
+          paste0(sprintf("%s: %.4f", varNameMapping[measErrVarDT$variable], measErrVarDT$value),
+                 collapse = ", "))
 
   #### Leaving out the data in the boundary ####
   if (FPCA_opts$outPercent > 0) {
+    message("Leave out ", sprintf("%.2f%%", FPCA_opts$outPercent * 100), " data in the boundary...")
     # get the range to keep data
-    userRange <- quantile(c(dataDT$timePnt, FPCA_opts$newdata), FPCA_opts$outPercent %>>% (c(./2, 1-./2)))
+    userRange <- quantile(c(dataDT$timePnt, FPCA_opts$newdata), FPCA_opts$outPercent %>>%
+                            (c(./2, 1-./2)))
     # leave outPersent data
     dataDT <- dataDT[timePnt >= userRange[1] & timePnt <= userRange[2]]
     # get the new time points
@@ -407,20 +434,26 @@ FPCA <- function(formula, id.var, data, options = list()){
     workTimePntsOld <- workTimePnts
     allTimePnts <- sort(unique(c(dataDT$timePnt, FPCA_opts$newdata)))
     workTimePnts <- seq(min(allTimePnts), max(allTimePnts), length.out = FPCA_opts$numGrid)
+    # get the new mean functions
     MFRes[[2]] <- MFRes[[2]][ , .(value = interp1(workTimePntsOld, value, workTimePnts, "linear"),
                                   timePnt = workTimePnts), by = .(variable)]
     MFRes[[3]] <- MFRes[[3]][ , .(value = interp1(allTimePntsOld, value, allTimePnts, "linear"),
                                   timePnt = allTimePnts), by = .(variable)]
+    # get the new cross-covariance functions
     CFRes[[2]] <- llply(CFRes[[2]], function(mat){
       interp2(workTimePntsOld, workTimePntsOld, mat, workTimePnts, workTimePnts, "linear") %>>%
         ((. + t(.)) / 2) %>>% `dimnames<-`(list(workTimePnts, workTimePnts))
     })
   }
 
-  #### get the cross-covariance surface ####
+  #### get the cross-covariance functions ####
+  message("Get the cross-covariance functions...")
+  # initialize cross-covariance function matrix
   CFMat <- matrix(0, FPCA_opts$numGrid * length(varName), FPCA_opts$numGrid * length(varName))
+  # find the corresponding variables in the list of cross-covariance functions
   orderCFResDT <- tstrsplit(names(CFRes[[2]]), "-") %>>% as.data.table %>>%
-    setnames(paste0("variable", 1:2)) %>>% `[`(j = lapply(.SD, mapVarNames))
+    setnames(rawCovKeys) %>>% `[`(j = lapply(.SD, mapVarNames))
+  # fill the cross-covariance function matrix
   for (i in 1:nrow(orderCFResDT)) {
     idxList <- llply(orderCFResDT[i, ], function(x){
       seq((x-1)*FPCA_opts$numGrid+1, x*FPCA_opts$numGrid)
@@ -443,19 +476,20 @@ FPCA <- function(formula, id.var, data, options = list()){
     smoothVarDT <- smoothVarMat %>>% `colnames<-`(smoothVarNames) %>>% data.table(keep.rownames = TRUE) %>>%
       melt.data.table("rn") %>>% `[`(j = `:=`(variable = mapVarNames(variable), timePnt = as.numeric(rn))) %>>%
       `[`(j = value2 := ifelse(value < 0, min(value[value > 0]), value), by = .(variable)) %>>%
-      setkeyv(c("timePnt", "variable")) %>>% setorder(variable, timePnt)
+      setkeyv(dataDtKeys) %>>% setorder(variable, timePnt)
 
     # get the working cross-correlation matrix to find the FPC scores
-    message("Get the working cross-correlation surface to find the FPC scores...")
+    message("Get the working cross-correlation functions...")
     diag(CFMat) <- smoothVarDT$value2
-    varMat <- cov2cor(CFMat)
+    varDT <- smoothVarDT[ , .(timePnt, variable, value = value2)] %>>% setkey(variable, timePnt)
+    CFMat2 <- cov2cor(CFMat)
 
     # get new dataDT with normalized values
     smoothVarDT2 <- smoothVarDT[ , .(value = interp1(timePnt, value, allTimePnts, "spline"),
                                      timePnt = allTimePnts), by = .(variable)] %>>%
       `[`(j = value := ifelse(value < 0, min(value[value > 0]), value), by = .(variable)) %>>%
-      setkeyv(c("timePnt", "variable")) %>>% setorder(variable, timePnt)
-    dataDT <- merge(dataDT, smoothVarDT2, by = c("timePnt", "variable"), suffixes = c("", ".var"),
+      setkeyv(dataDtKeys) %>>% setorder(variable, timePnt)
+    dataDT <- merge(dataDT, smoothVarDT2, by = dataDtKeys, suffixes = c("", ".var"),
                     all.x = TRUE) %>>% `[`(j = value := (value.demean / sqrt(value.var)))
     rm(smoothVarNames, smoothVarMat, smoothVarDT, smoothVarDT2)
   } else if (FPCA_opts$methodNorm == "quantile") {
@@ -470,71 +504,97 @@ FPCA <- function(formula, id.var, data, options = list()){
       iqr <- (quantFuncs[ , 2] - quantFuncs[ , 1]) / diff(qnorm(FPCA_opts$quantileProbs))
       iqrDense <- (quantFuncsDense[ , 2] - quantFuncsDense[ , 1]) / diff(qnorm(FPCA_opts$quantileProbs))
       return(list(data.table(timePnt = workTimePnts, value = iqr**2, variable = unique(dat$variable),
-                             key = c("timePnt", "variable")),
+                             key = dataDtKeys),
                   data.table(timePnt = allTimePnts, value = iqrDense**2,
-                             variable = unique(dat$variable), key = c("timePnt", "variable"))))
+                             variable = unique(dat$variable), key = dataDtKeys)))
     }) %>>% rbindTransList %>>% llply(function(DT) setorder(DT, variable, timePnt))
 
     # get the working cross-correlation matrix to find the FPC scores
-    message("Get the working cross-correlation surface to find the FPC scores...")
+    message("Get the working cross-correlation functions...")
     diag(CFMat) <- quantRes[[1]]$value
-    varMat <- cov2cor(CFMat)
+    varDT <- quantRes[[1]] %>>% setkey(variable, timePnt)
+    CFMat2 <- cov2cor(CFMat)
 
     # get new dataDT with normalized values
-    dataDT <- merge(dataDT, quantRes[[2]], by = c("timePnt", "variable"), suffixes = c("", ".var"),
+    dataDT <- merge(dataDT, quantRes[[2]], by = dataDtKeys, suffixes = c("", ".var"),
                     all.x = TRUE) %>>% `[`(j = value := (value.demean / sqrt(value.var)))
     rm(quantRes)
   } else {
     message("Not perform the normalization...")
     dataDT[ , value.var := 1]
-    message("Use original cross-covariance surface to find the FPC scores...")
-    varMat <- CFMat
+    message("Use original cross-covariance functions...")
+    varDT <- CJ(timePnt = workTimePnts, variable = 1:length(varName), value = 1) %>>%
+      setkey(variable, timePnt)
+    CFMat2 <- CFMat
   }
-  rm(CFMat)
 
   #### find the eigen functions and the corresponding eigenvalues ####
-  # from cross-covariance/cross-correlation surface
+  message("Get the eigen functions and the corresponding eigenvalues...")
   # find the maximum of number of FPC
   maxNumEig <- (FPCA_opts$numGrid - 2L) * length(varName)
   # find the eigen functions and the corresponding eigenvalues
-  eigRes <- eigen(varMat, TRUE)
+  eigRes <- eigen(CFMat2, TRUE)
 
   # find the location complex or nonpositive eigenvalues
   idx <- setdiff(1L:maxNumEig, c(which(sapply(eigRes$values, is.complex)), which(eigRes$values <= 0)))
   message("There are ", length(idx), " real positive eigenvalues.")
-  message("If there is no real positive eigenvalues, this program will give error!")
+  message("Note: If there is no real positive eigenvalues, this program will give error!")
   stopifnot(length(idx) > 0)
   if (length(idx) < maxNumEig)
     message("There are ", maxNumEig - length(idx), " eigenvalues are removed because it is complex or nonpositive.")
 
   # remove the complex or nonpositive eigenvalues and the corresponding eigen functions
   eigVals <- eigRes$values[idx]
-  eigFuncs <- eigRes$vectors[ , idx]
-  rm(eigRes, idx)
+  eigFuncsWork <- eigRes$vectors[ , idx]
 
-  # normalize the eigenfunctions and eigenvalues
+  message("Normalize the eigen functions and the corresponding eigenvalues...")
+  # split eigen functions
+  groupVecWork <- rep(1:length(varName), each = FPCA_opts$numGrid)
+  # normalize the working eigenfunctions
+  normValsWork <- lapply(seq_along(varName), function(i){
+    trapz(workTimePnts, eigFuncsWork[groupVecWork == i, ]**2)
+  }) %>>% do.call(what = rbind) %>>% colSums
+  eigFuncsWork <- sweep(eigFuncsWork, 2, sqrt(normValsWork), "/") %>>%
+    sweep(2, cov(., MFRes[[2]]$value) %>>% sign %>>% as.vector, "*")
 
-  # gridSize <- regGrid[2] - regGrid[1]
-  # phi <- apply(eigenV, 2, function(x) {
-  #   x <- x / sqrt(trapzRcpp(regGrid, x^2))
-  #   if ( 0 <= cov(x, muWork) )
-  #     return(x)
-  #   else
-  #     return(-x)
-  # })
-  # lambda <- gridSize * d
+  # get eigen functions based on allTimePnts
+  eigFuncs <- lapply(seq_along(varName), function(i){
+    interp1(workTimePnts, eigFuncsWork[groupVecWork == i, ], allTimePnts, "spline")
+  }) %>>% do.call(what = rbind)
+  # normalize the eigenfunctions
+  groupVec <- rep(1:length(varName), each = length(allTimePnts))
+  normVals <- lapply(seq_along(varName), function(i){
+    trapz(allTimePnts, eigFuncs[groupVec == i, ]**2)
+  }) %>>% do.call(what = rbind) %>>% colSums
+  eigFuncs <- sweep(eigFuncs, 2, sqrt(normVals), "/")
 
-  # get fitted cross-covariance/cross-correlation surface
+  # normalize eigenvalues
+  tpAvgDiff <- diff(range(allTimePnts)) / (length(allTimePnts) - 1)
+  eigVals <- eigVals * tpAvgDiff
+  # remove unused variables
+  rm(eigRes, idx, groupVecWork, normValsWork, groupVec, normVals, tpAvgDiff)
 
-  # fittedCov <- phi %*% diag(x=lambda, nrow = length(lambda)) %*% t(phi)
+  #### get fitted cross-covariance/cross-correlation functions ####
+  message("Get the fitted cross-covariance functions...")
+  fittedCFMat2 <- eigFuncsWork %*% diag(eigVals) %*% t(eigFuncsWork)
+  fittedCFMat <- sweep(fittedCFMat2, 1, sqrt(varDT$value), "*") %>>% sweep(2, sqrt(varDT$value), "*")
+
+  #### calculate FPC scores ####
+  message("Get the functional principal component scores...")
+  # getFpcScore(dataDT, , FPCA_opts)
 
   #### calculate FVE ####
   FVE <- eigVals %>>% (cumsum(.) / sum(.))
   # find the number of FPC with FVE criterion
   numFPC_FVE <- Position(function(x) x > FPCA_opts$FVE_threshold, FVE)
+  message("The number of FPC decided by FVE is ", numFPC_FVE, " with threshold ",
+          sprintf("%.2f%%", FPCA_opts$FVE_threshold * 100), "...")
 
   #### decide the number of FPC ####
-  numFPC <- numFPC_FVE
+  if (is.character(FPCA_opts$numFPC))
+    message("The criteria to decide the number of FPC is ", FPCA_opts$numFPC, "...")
+  if (is.numeric(FPCA_opts$numFPC))
+    message("The the number of FPC is assigned by user with value ", FPCA_opts$numFPC, "...")
   if (is.character(FPCA_opts$numFPC) && FPCA_opts$numFPC != "AIC_R") {
     # find the number of FPC with AIC or BIC
     if (FPCA_opts$numFPC %in% c("AIC", "BIC")) {
@@ -543,6 +603,7 @@ FPCA <- function(formula, id.var, data, options = list()){
       # numFPC <- resNumFPC_IC$numFPC
     }
 
+    numFPC <- numFPC_FVE
     # reset numFPC if it is NA
     if (is.na(numFPC)) {
       FPCA_opts$numFPC <- "FVE"
@@ -555,9 +616,5 @@ FPCA <- function(formula, id.var, data, options = list()){
               numFPC, ", so reset numFPC to ", length(eigVals), ".")
     numFPC <- min(length(eigVals), numFPC)
   }
-
-  #### calculation of FPC scores ####
-  # getFpcScore(newDataDT, allTimePnts, FPCA_opts)
-
   return(1)
 }

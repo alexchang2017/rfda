@@ -171,6 +171,8 @@ The options of FPCA:
 \item \code{userCovFunc}: Default is \code{NULL}. A list of matrices with names \code{variable1}-\code{variable2}.
   The matrix is the cross-covariance surface of \code{variable1} and \code{variable2}.
   The colnames and rownames are the grid values of cross-covariance surface.
+  If \code{userCovFunc} is given, \code{bwCov} must be given with real positive values of
+  \code{value1} and \code{value2}.
   Please see the examples of \code{\link{FPCA}}.
 }
 }

@@ -1,15 +1,20 @@
 #' rfda: a tool of functional data analysis
 #'
 #' This package provides the tools to perform the functional data analysis.
+#' Especially the FPCA method via PACE algorithm. Please see Details.
+#'
+#' This package provides the tools to perform the functional data analysis.
 #' The core of this package is functional principal componet analysis (FPCA) based on
 #' the principal analysis by conditional estimation (PACE) algorithm mainly developed by
 #' H.G. Muller. The multivariate part with normalization are done primarily by J.M. Chiou, Y.F Yang,
 #' and Y.T. Chen (See References). In addition, this package provides the another normalization
-#' approach (with quantiles) in multivariate FPCA. \cr
+#' approach (with quantiles) in multivariate FPCA.
+#'
 #' This package is mostly based on the MatLab package, PACE, released at \url{http://www.stat.ucdavis.edu/PACE/}.
 #' Besides, some ideas are borrowed from the R package, fdapace. This package, rfda, provides R approach for FPCA
 #' based on PACE 2.17 and use the C++ linear algebra library, Armadillo, and the C++ multi-threaded
-#' implementation with RcppArmadillo and RcppParallel. \cr
+#' implementation with RcppArmadillo and RcppParallel.
+#'
 #' Note: Since the BLAS used by RcppArmadillo is based on what BLAS R links to,
 #' so this package will be more efficient if a powerful BLAS used by R.
 #'
@@ -32,7 +37,7 @@
 #'   \item Anat Sakov, Ilan Golani, Dina Lipkind, Yoav Benjamini (2010) High throughput data analysis in behavioral genetics. The Annals of Applied Statistics Vol. 4, No. 2 (June 2010), pp. 743-763.
 #' }
 #'
-#' @section copyright:
+#' @section Copyrights:
 #' \itemize{
 #'   \item Copyright (c) 2017, Ching-Chuan Chen (This package)
 #'   \item Copyright (c) 2016, Xiongtao Dai, Pantelis Z. Hadjipantelis, Hao Ji, Hans-Georg Mueller, Jane-Ling Wang (fdapace)
