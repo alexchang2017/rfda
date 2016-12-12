@@ -1,6 +1,6 @@
 context("common functions")
 
-context("1. factorial_f")
+context("1. test - factorial_f")
 test_that("factorial_f", {
   expect_equal(rfda:::factorial_f(0L), factorial(0))
   expect_equal(rfda:::factorial_f(1L), factorial(1))
@@ -12,7 +12,7 @@ test_that("factorial_f", {
   expect_error(rfda:::factorial_f(2.5))
 })
 
-context("2. unique_rows")
+context("2. test - unique_rows")
 M <- matrix(c(1,1,2,2,3,3,1,1,1,1,4,5), 6, 2)
 resM <- matrix(c(1,2,3,3,1,1,4,5), 4, 2)
 M2 <- matrix(sample(1:10, 120, TRUE), 20, 6)
@@ -28,7 +28,7 @@ test_that("unique_rows", {
   expect_error(unique_rows(rbind(M, c(1, Inf))))
 })
 
-context("3. trapz")
+context("3. test - trapz")
 xi <- 1:5
 x <- c(1, 4, 9, 16, 25)
 x2 <- matrix(c(1,4,9,16,25,1,8,27,64,125), 5)
@@ -51,7 +51,7 @@ test_that("trapz", {
   expect_error(trapz(c(Inf, xi), c(0, x)))
 })
 
-context("4. binning data")
+context("4. test - binning data")
 data2bin <- data.table(subId = rep(1:5, each = 5), timePnt = rep(1:5, 5),
                        variable = "y", value = 1:25)
 binnedValue <- do.call(c, lapply(1:5, function(x) (x-1)*5 + seq(1.5, 4.5, 1.5)))
@@ -66,7 +66,7 @@ test_that("binning data", {
   expect_error(rfda:::binData(data2bin, Inf))
 })
 
-context("5. quantile")
+context("5. test - quantile")
 x <- c(1, 4, 3, 7, 9 ,11, 15, 8, 2, 4, 8, 6)
 x2 <- rnorm(100)
 x3 <- sample(1:100, 100, TRUE)
@@ -78,7 +78,7 @@ test_that("binning data", {
   expect_error(rfda:::quantileCpp(x3, -1))
 })
 
-context("6. unnest")
+context("6. test - unnest")
 tp <- seq(1, 10, len = 101)
 DT <- funcDataGen(100, tp, function(x) sin(x), function(x) rep(1, length(x)), "BesselJ")
 sparseDT <- sparsify(DT, "sampleID", 0.85)
@@ -88,4 +88,18 @@ test_that("unnest", {
   expect_equal(sparseDT, unnest(nestSparseDT, c("t", "y")))
   expect_error(unnest(nestSparseDT, c("t1", "y1")))
   expect_error(unnest(data.table(V1 = list(c(1,3,5), c(1,7)), V2 = list(c(2,5,3), c(4,6,7)), V3 = 1:2)))
+})
+
+context("7. test - splitMat")
+mat <- matrix(rnorm(36), 6, 6) %>>% ((. + t(.)) / 2)
+splitVar <- rep(1:2, 3)
+test_that("splitMat", {
+  expect_equal(splitMat(mat, 1, splitVar), lapply(split(mat, splitVar), matrix, ncol = ncol(mat)),
+               check.attributes = FALSE)
+  expect_equal(splitMat(mat, 2, splitVar), lapply(split(t(mat), splitVar), matrix, nrow = nrow(mat), byrow = TRUE),
+               check.attributes = FALSE)
+  expect_error(splitMat(mat, 0.5, splitVar))
+  expect_error(splitMat(mat, 3, splitVar))
+  expect_error(splitMat(mat, 1, c(1, splitVar)))
+  expect_error(splitMat(mat, 2, c(1, splitVar)))
 })

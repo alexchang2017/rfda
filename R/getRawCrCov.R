@@ -10,7 +10,10 @@
 #' @export
 #' @importFrom data.table setorder setnames setkey .N
 #' @importFrom plyr llply
+#' @importFrom stats na.omit
 getRawCrCov <- function(dataDT){
+  assert_that(all(c("timePnt", "value.demean", "variable", "subId") %in% names(dataDT)),
+              nrow(dataDT) == nrow(na.omit(dataDT)))
   # geneerate the all combinations of t1,t2 and varaibles
   baseDT <- dataDT[ , .(t1 = rep(timePnt, length(timePnt)), t2 = rep(timePnt, each=length(timePnt)),
                         value.var1 = rep(value.demean, length(timePnt))), by = .(variable, subId)]

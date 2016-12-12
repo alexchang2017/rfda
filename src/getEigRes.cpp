@@ -12,9 +12,10 @@ Rcpp::List getEigRes(const arma::mat& CFMat2, const arma::vec& variable, const a
   chk_mat(allTimePnts, "allTimePnts", "double");
 
   vec uniVars = sort(unique(variable));
-  if (CFMat2.n_rows != variable.n_elem || CFMat2.n_cols != variable.n_elem ||
-      meanFuncsWork.n_elem != variable.n_elem)
-    Rcpp::stop("The lengths of variable and meanFuncsWork must be eqaul to the number of rows and columns of CFMat2!");
+  if (!CFMat2.is_square())
+    Rcpp::stop("CFMat2 must be square matrix!");
+  if (CFMat2.n_rows != variable.n_elem || meanFuncsWork.n_elem != variable.n_elem)
+    Rcpp::stop("The lengths of variable and meanFuncsWork must be eqaul to the number of rows of CFMat2!");
   if (uniVars.n_elem * workTimePnts.n_elem != meanFuncsWork.n_elem)
     Rcpp::stop("The length of meanFuncsWork must equal to the length of workTimePnts multiply the number of unique variable!");
 

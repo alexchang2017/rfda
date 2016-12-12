@@ -99,6 +99,9 @@ FPCA <- function(formula, id.var, data, options = list()){
   message(ifelse(all(optNamesUsed), "All options are checked...",
                  paste(names(options)[!optNamesUsed], collapse = ", ") %>>%
                    sprintf(fmt = "Ignoring the non-found options %s.")))
+  timePntsRange <- range(data[[timeVarName]])
+  if (!all(FPCA_opts$newdata >= timePntsRange[1] & FPCA_opts$newdata <= timePntsRange[2]))
+    stop("The value of newdata (FPCA options) must in the range of input time points.")
   rm(default_FPCA_opts, optNamesUsed)
 
   #### check parallel ####
@@ -181,7 +184,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   allTimePnts <- sort(unique(c(dataDT$timePnt, FPCA_opts$newdata)))
   # Initializing workTimePnts is based on the number of grid to be chosen in the range of
   # all time span.
-  workTimePnts <- seq(min(allTimePnts), max(allTimePnts), length.out = FPCA_opts$numGrid)
+  workTimePnts <- seq(timePntsRange[1], timePntsRange[2], length.out = FPCA_opts$numGrid)
 
   #### get mean functions ####
   # validate the list of user-specified mean functions
