@@ -347,7 +347,7 @@ Rcpp::NumericVector gcvLocLinear2d(arma::mat bwCand, const arma::mat& x, const a
       bwOpt = bwCand.row(min_gcv_idx).t();
     }
 
-    if (bwOpt(0) == r)
+    if (std::abs(bwOpt(0) - 0.5*r) < 1e-6)
     {
       // stop implementation if data is too sparse
       con = false;
@@ -372,7 +372,7 @@ Rcpp::NumericVector gcvLocLinear2d(arma::mat bwCand, const arma::mat& x, const a
       for (uword i = 0; i < bwCand.n_rows; ++i)
         bwCandTmp(i) = std::pow(q, bwCandTmp(i)) * minBW;
       bwCandTmp = sort(bwCandTmp);
-      mat bwCand = join_rows(bwCandTmp, bwCandTmp);
+      bwCand = join_rows(bwCandTmp, bwCandTmp);
 
       RMessage("New bwmu candidates: ");
       std::stringstream bwCand_str;

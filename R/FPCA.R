@@ -253,9 +253,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   }
 
   #### check mean functions ####
-  if (sapply(MFRes[2:3], function(dt) all(is.na(dt$value))) %>>% any)
-    stop("The bandwidth of mean function is not appropriately!\n",
-         "If it is chosen automatically, please provide user-defined mean functions or bandwidth.")
+  stopifnot(all(sapply(MFRes[2:3], function(dt) all(!is.na(dt$value)))))
 
   #### get demeaned values ####
   dataDT <- merge(dataDT, MFRes[[3]], by = dataDtKeys, suffixes = c("", ".mean")) %>>%
@@ -416,9 +414,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   }
 
   #### check cross-covariance functions ####
-  if (any(sapply(CFRes[[2]], is.na)))
-    stop("The bandwidth of cross-covariance functions is not appropriate!\n",
-         "If it is chosen automatically, please provide user-defined cross-covariance functions or bandwidth.")
+  stopifnot(all(sapply(CFRes[[2]], function(x) all(!is.na(x)))))
 
   #### estimate measurement error ####
   measErrVarDT <- getMeasErr(rawCov, CFRes[[1]], sparsity, FPCA_opts) %>>%

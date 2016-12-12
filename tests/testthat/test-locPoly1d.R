@@ -132,7 +132,11 @@ test_that("gcvLocPoly1d", {
 })
 
 context("6. test - gcvlocPoly1d validate inputs")
+testDt <- data.table(y = 1:6, t = c(0, 10, 11, 100, 2, 5), sampleID = rep(1:3, each = 2))
+bwList <- bwCandChooser(testDt, "sampleID", "t", 0, "gauss", 1)
 test_that("test - gcvlocPoly1d validate inputs", {
+  expect_error(gcvLocPoly1d(bwList, testDt$t, testDt$y, rep(1, 6), "gauss", 0, 1),
+               'You may want to change to Gaussian kernel!')
   expect_error(gcvLocPoly1d(bwCandList[[1]], regularExData$t, regularExData$y,
                             weightList[[1]], "guass", 0, 1), 'Unsupported kernel')
   expect_error(gcvLocPoly1d(-0.2, regularExData$t, regularExData$y,

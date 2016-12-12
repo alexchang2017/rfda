@@ -91,7 +91,6 @@ test_that("test - locLinear2d", {
 
 context("4. test - locLinear2d: validate inputs")
 m <- rcov_test[t1 != t2]
-
 test_that("test - locLinear2d: validate inputs", {
   expect_true(is.na(locLinear2d(c(0.3, 0.3), as.matrix(m[ , .(t1, t2)]), m$sse,
                                 m$weight, m$cnt, xout, xout, "epan")))
@@ -154,7 +153,7 @@ test_that("test - locLinear2d: validate inputs", {
                            m$weight, m$cnt, xout, xout, "guass"))
 })
 
-context("5. test - gcvLocLinear2d")
+context("5. test - gcvLocLinear2d check results")
 sparsities <- lapply(testDT_list, checkSparsity, id.var = "subId", timeVarName = "timePnt")
 gcvBws <- suppressMessages(mapply(function(rawCov, sparsity){
   bwCand <- bwCandChooser2(rawCov, sparsity, "gauss", 1)
@@ -164,17 +163,24 @@ gcvBws <- suppressMessages(mapply(function(rawCov, sparsity){
 }, rawCovList, sparsities))
 bwCand_test <- bwCandChooser2(rawCovList[[1]], 2, "epan", 1)
 rawCovNoDiag_test <- rawCovList[[1]][t1 != t2]
-test_that("test - gcvLocLinear2d", {
+test_that("test - gcvLocLinear2d check results", {
   expect_equal(gcvBws[ , 1], gcv_bw_case2, tolerance = 1e-6)
   expect_equal(gcvBws[ , 2], gcv_bw_case1, tolerance = 1e-6)
   expect_equal(gcvBws[ , 3], gcv_bw_case0, tolerance = 1e-6)
-  expect_equal(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse, weight, cnt, "gaussvar")),
-               c(0.5, 0.5), tolerance = 1e-6)
+  expect_equal(with(rawCovNoDiag_test, gcvLocLinear2d(matrix(c(0.3, 0.5, 0.3, 0.5), 2), cbind(t1, t2),
+                                                      sse, weight, cnt, "gaussvar")), c(0.3, 0.3), tolerance = 1e-6)
   expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse, weight, cnt, "epan")))
   expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse, weight, cnt, "quar")))
 })
 
-test_that("test - gcvLocLinear2d: validate inputs", {
+context("6. test - gcvLocLinear2d validate inputs")
+testDT <- data.table(variable = rep(1, 6), timePnt = c(0, 10, 11, 100, 2, 5),
+                     subId = rep(1:3, each = 2), value.demean = 1:6)
+testRawCov <- getRawCrCov(testDT)
+testBbwList <- bwCandChooser2(testRawCov, 0, "gauss", 1)
+test_that("test - gcvLocLinear2d validate inputs", {
+  expect_error(with(testRawCov, gcvLocLinear2d(testBbwList, cbind(t1, t2), sse, weight, cnt, "gauss")),
+               "You may want to change to Gaussian kernel!")
   expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(rbind(c(-1, 1), bwCand_test), cbind(t1, t2), sse,
                                                       weight, cnt, "gauss")))
   expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(rbind(c(0, 1), bwCand_test), cbind(t1, t2), sse,
@@ -227,7 +233,7 @@ test_that("test - gcvLocLinear2d: validate inputs", {
                                                       weight, cnt, "gauss", 2.5)))
 })
 
-context("6. test - adjGcvBw")
+context("7. test - adjGcvBw")
 test_that("test - adjGcvBw", {
   expect_equal(adjGcvBw(c(0.5, 0.5), 2, "gauss", 0), c(0.55, 0.55), tolerance = 1e-6)
   expect_equal(adjGcvBw(c(0.5, 0.5), 2, "epan", 0), c(0.55, 0.55), tolerance = 1e-6)
@@ -237,7 +243,7 @@ test_that("test - adjGcvBw", {
   expect_equal(adjGcvBw(c(0.9964559, 0.9964559), 0, "epan", 0), c(1.096101, 1.096101), tolerance = 1e-6)
 })
 
-context("7. test - bwCandChooser3")
+context("8. test - bwCandChooser3")
 testDataRegularMulti <- data.table(y = c(seq(0.1, 0.9, 0.1), c(0.9,1,1)), t = rep(1:3, 4),
                                    sampleID = c(rep(1:4, each=3)), key = "t") %>>%
   `[`(j = `:=`(y2 = y * sin(t), y3 = y * cos(t)))
@@ -285,7 +291,7 @@ test_that("test - bwCandChooser3", {
   expect_error(bwCandChooser3(testErrDt, 0, "epan", 9), "Data is too sparse")
 })
 
-context("8. test - locLinearRotate2d")
+context("9. test - locLinearRotate2d check results")
 x <- CJ(seq(0, 1, 0.1), seq(0, 1, 0.1)) %>>% `[`(V1 != V2) %>>% as.matrix
 idx <- x[,1] > x[,2]
 f <- function(x) x ** 2 *2 + 3 * x + 3
@@ -295,7 +301,7 @@ w2 <- rep(1:2, each = length(y) / 2)
 count <- rep(1, length(y))
 count2 <- rep(1:2, each = length(y) / 2)
 outMat <- cbind(seq(0, 1, 0.2), seq(0, 1, 0.2))
-test_that("test - locLinearRotate2d", {
+test_that("test - locLinearRotate2d check results", {
   expect_equal(rfda:::locLinearRotate2d(c(1, 1), x, y, w, count, outMat, "gauss"),
                c(-1.125232, 2.734192, 6.745392, 10.910800, 15.233159, 19.715540), tolerance = 1e-6)
   expect_equal(rfda:::locLinearRotate2d(c(2, 2), x, y, w, count, outMat, "gauss"),
@@ -324,6 +330,7 @@ test_that("test - locLinearRotate2d", {
                c(1.660000, 2.927927, 5.500262, 9.490163, 15.377616, 21.280000), tolerance = 1e-6)
 })
 
+context("10. test - locLinearRotate2d validate inputs")
 test_that("test - locLinearRotate2d: validate inputs", {
   expect_true(is.na(rfda:::locLinearRotate2d(c(0.05, 0.05), x, y, w, count, outMat, "epan")))
   expect_error(rfda:::locLinearRotate2d(c(3, -2), x, y, w, count, outMat, "gauss"))

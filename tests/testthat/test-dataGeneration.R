@@ -29,9 +29,9 @@ test_that("test - corrGen validate input", {
   expect_error(corrGen(x, "Matern", nu = Inf))
 })
 
-context("2. test - funcDataGen")
+context("2. test - funcDataGen check results")
 n <- 10
-test_that("test - funcDataGen", {
+test_that("test - funcDataGen check results", {
   expect_true(nrow(funcDataGen(n, x, function(x) sin(x),
                                function(x) rep(1, length(x)), "BesselJ")) == n * length(x))
   expect_true(nrow(funcDataGen(n, x, function(x) sin(x),
@@ -40,6 +40,7 @@ test_that("test - funcDataGen", {
                                function(x) rep(1, length(x)), "rq")) == n * length(x))
 })
 
+context("3. test - funcDataGen validate input")
 test_that("test - funcDataGen validate input", {
   expect_error(funcDataGen(0, x, function(x) sin(x),
                            function(x) rep(1, length(x)), "BesselJ"))
@@ -103,17 +104,18 @@ test_that("test - funcDataGen validate input", {
                            function(x) rep(1, length(x)), "Matern", nu = Inf))
 })
 
-context("3. test - sparsify")
+context("4. test - sparsify check results")
 DT <- funcDataGen(n, x, function(x) cos(x) + sin(x),
                   function(x) ((x - mean(x))**2)**(1/5)*2, "BesselJ")
-test_that("test - funcDataGen", {
+test_that("test - sparsify check results", {
   expect_true(nrow(sparsify(DT, "sampleID", 0.1)) > 0)
   expect_true(nrow(sparsify(DT, "sampleID", 0.5)) > 0)
   expect_true(nrow(sparsify(DT, "sampleID", 0.9)) > 0)
   expect_true(nrow(sparsify(data.frame(aa = DT$sampleID), "aa", 0.2)) > 0)
 })
 
-test_that("test - funcDataGen validate input", {
+context("5. test - sparsify validate input")
+test_that("test - sparsify validate input", {
   expect_error(sparsify(as.matrix(DT), "sampleID", 0.1))
   expect_error(sparsify(DT$sampleID, "sampleID", 0.1))
   expect_error(sparsify(DT, "sampleid", 0.1))
