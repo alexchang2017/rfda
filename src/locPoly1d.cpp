@@ -1,6 +1,5 @@
 #include "common.h"
 #include "interp.h"
-#include <sstream>
 // [[Rcpp::depends(RcppParallel)]]
 #include <RcppParallel.h>
 

@@ -1,4 +1,4 @@
-#include "unique_rows.h"
+#include "common.h"
 
 // compare the two vectors, return 1 if mat_row > pivot_row, -1 if mat_row < pivot_row and 0 else
 int compare_vec(const rowvec& mat_row, const rowvec& pivot_row){

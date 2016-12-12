@@ -22,6 +22,5 @@ getMeasErr <- function(rawCov, smoothCfBwDT, sparsity, FPCA_opts){
       return(NA)
     return(max(trapz(workTimePnts[idx], rotVarFunc[idx] - varFunc[idx]) / diff(timeRange), FPCA_opts$minMeasErr))
   }, split(rawCov[t1 != t2 & variable1 == variable2], by = "variable1"),
-  split(smoothCfBwDT[variable1 == variable2], by = "variable1")
-  ))
+  split(smoothCfBwDT[variable1 == variable2], by = "variable1")))
 }

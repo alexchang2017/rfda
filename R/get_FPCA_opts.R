@@ -5,7 +5,7 @@
 #'
 #' For convinient explianation, we denote the number of variables (functions) as \code{p},
 #' the number of curves of a variable (function) as \code{n}, the number of time points as \code{nt} and
-#' the number of observations is denoted by \code{N (=n*nt)}.
+#' the number of observations is denoted by \code{N (= n * nt)}.
 #' The options of FPCA:
 #' \itemize{
 #' \item \code{bwMean}: A data.frame or data.table with two columns naming \code{variable} and \code{value}.
@@ -43,7 +43,7 @@
 #'     \item \code{epan}: Epanechnikov kernel, \code{f(x) = 0.75*(1-x^2), -1 <= x <= 1}.
 #'        [Default for dense designs with n_i >= 20]
 #'     \item \code{gauss}: Gaussian kernel, \code{f(x) = exp(-x^2/2)/sqrt(2*pi), -4 <= x <= 4}.
-#'       [Default for sparse designs, regular designs with missings, dense designs for n_i < 20]
+#'       [Default for sparse designs, regular designs with missings, dense designs for \code{n_i < 20}]
 #'     \item \code{gaussvar}: A variant of Gaussian kernel,
 #'       \code{f(x) = exp(-x^2/2)/sqrt(2*pi)*(1.25-x^2/4), -4 <= x <= 4}.
 #'     \item \code{quar}: quartic kernel, \code{f(x) = (1-x^2)^2*15/16, -1 <= x <= 1}.
@@ -53,7 +53,7 @@
 #'     also for the case of sparse designs.
 #' \item \code{numBins}: The number of bins to implement data binning.
 #'   \itemize{
-#'     \item Any positive integer (>=10): Use \code{numBins} to implement data binning.
+#'     \item Any positive integer (\code{>=10}): Use \code{numBins} to implement data binning.
 #'     \item \code{-1}: Activate an automatic process to decide whether to implement data binning.
 #'     \item \code{0}: Not implement data binning. [Default]
 #'   }
@@ -62,35 +62,36 @@
 #'     \item \code{FALSE}: no measurement error given in the model.
 #'     \item \code{TRUE}: measurement error is given in the model. [Default]
 #'   }
-#' \item \code{numGrid}: Default is 51. An integer, number of support points in each direction of
+#' \item \code{numGrid}: Default is \code{51}. An integer, number of support points in each direction of
 #'   covariance surface when performing functional principal component analysis.
 #'   \code{numGrid} must be greater than the number of functional principal components (\code{numFPC}).
 #' \item \code{weight}: sample weight used in the local weighted least-square.
 #'   \itemize{
-#'     \item \code{FALSE}: weights of all samples are 1. [Default]
-#'     \item \code{TRUE}: weights of all samples are the inverse of number of observation for each subject, ie, 1/ni.
-#'       If \code{weight} is used, the criterion 'AIC', 'BIC' in \code{numFPC} will be calculated with \code{weight}.
+#'     \item \code{FALSE}: weights of all samples are \code{1}. [Default]
+#'     \item \code{TRUE}: weights of all samples are the inverse of number of observation for each subject,
+#'       ie, \code{1/ni}. If \code{weight} is used, the criterion \code{'AIC'}, \code{'BIC'} in \code{numFPC}
+#'       will be calculated with \code{weight}.
 #'   }
-#' \item \code{numFPC}: 'AIC', 'BIC', 'FVE' or 'AIC_R' can be selected for selecting by one of these criterion.
-#'   In addition, you can specify a positive integer as the number of functional principal components.
+#' \item \code{numFPC}: A string or any real positive integer.
+#'   \code{'AIC'}, \code{'BIC'}, \code{'FVE'} or \code{'AIC_R'} can be selected for selecting
+#'   by one of these criterion. A real positive integer is also avaiable.
 #'   \itemize{
 #'     \item \code{AIC}: To use AIC with pseudo-likelihood of measurements (marginal likelihood).
 #'     \item \code{BIC}: To use BIC with pseudo-likelihood of measurements (marginal likelihood).
 #'     \item \code{FVE}: The fraction of variance explained. Use scree plot approach to select number of
 #'       functional principal components. The threshold is set by \code{FVE_threshold}.
 #'       Please see \code{FVE_threshold} below. [Default]
-#'     \item \code{AIC_R}: It is set to be numGrid. (This option is default option for the functional regression.)
+#'     \item \code{AIC_R}: It is set to be \code{numGrid}. (This option is default for the functional regression.)
 #'     \item \code{Any positive integer}: A user-specified number of functional principal components.
 #'   }
-#'   Note: BIC and FVE produce the most parsimonious models.
+#'   Note: \code{'BIC'} and \code{'FVE'} produce the most parsimonious models.
 #' \item \code{FVE_threshold}: A positive number is between 0 and 1. It is the fraction of variance explained.
-#'   It is used with the option \code{numFPC} = 'FVE' to select the number of functional
+#'   This option is only used in the case \code{numFPC} = \code{'FVE'} to select the number of functional
 #'   principal components that explain at least \code{FVE_threshold} of total variation.
 #'   [Default is 0.85.]
-#' \item \code{maxNumFPC}: Default is min(20, n-1). An integer, the maximum number of functional principal components.
-#'   (This setting is for univariate functional data, multivariate functional data will use \code{maxNumFPC * numVar} in program.)
-#'   If using automatic methods to choose K, i.e., 'AIC' or 'BIC' defined by \code{numFPC}.
-#'   Note: when \code{numFPC} = 'FVE' or 'AIC_R', \code{maxNumFPC} is ignored.
+#' \item \code{maxNumFPC}: Default is \code{min(20, n-1)}. An integer, the maximum number of functional
+#'   principal components. This option is only used in the case  \code{numFPC} = \code{'AIC'} or \code{'BIC'}.
+#'   Otherwise, \code{maxNumFPC * numVar} will be used in the multivariate functional data.
 #' \item \code{outPercent}: Default is \code{0}. A positive number is between \code{0} and \code{0.5}.
 #'   This indicates that we will leave out \code{outPercent} data in the boundary.
 #'   When performing local linear smoothing for mean functions and cross-covariance surface,
@@ -100,50 +101,54 @@
 #' \item \code{measErrOut}: Default is \code{0.5}. A positive number is between \code{0} and \code{0.5}.
 #'   This indicates that we will leave out \code{measErrOut} data in the boundary for
 #'   estimating the measurement error variance.
-#' \item \code{measErr}: A truncation threshold for the measurement error variance.
+#' \item \code{methodFPCS}: A string, \code{'CE'}, \code{'IN'}, \code{'LS'} or \code{'WLS'}.
+#'   The method to estimate fpc scores.
 #'   \itemize{
-#'     \item \code{'cv'}: To use a fixed rule to split the training data and validation data to
-#'       find the optimal value of truncation threshold with cross-validation.
-#'       (The results can be reproduced.) [Default]
-#'     \item \code{'cv-random'}: To randomly split the training data and validation data to
-#'       find the optimal value of truncation threshold with cross-validation.
-#'       (The results can not be reproduced.)
-#'     \item \code{'no'}: The truncation threshold will not be used.
-#'     \item Any positive number: user-specified the measurement error variance.
-#'   }
-#' \item \code{methodFPCS}: A string, 'CE', 'IN', 'LS' or 'WLS'. The method to estimate fpc scores.
-#'   \itemize{
-#'     \item \code{CE}: The conditional expectation method is applied. [Default]
+#'     \item \code{CE}: The conditional expectation method is applied.
 #'     \item \code{IN}: The integration method is applied.
 #'     \item \code{LS}: The least-square method is applied.
-#'     \item \code{WLS}: The weighted least-square method is applied.
+#'     \item \code{WLS}: The weighted least-square method is applied. [Default]
 #'   }
-#    Note: 'CE' can be applied for sparse data or regular data, but 'IN' only in the case of regular data.
-#' \item \code{shrink}: Whether to apply shrinkage method to estimate the fpc scores.
-#'   (only for regular/irregular data.)
+#'   Note: \code{'CE'}, \code{'LS'} or \code{'WLS'} can be applied for sparse data, irregular or regular data,
+#'   but \code{'IN'} only be applied for regular data.
+#' \item \code{rho}: A truncation threshold for the measurement error variance.
+#'   This option is only used in the case \code{methodFPCS} = \code{'CE'}.
 #'   \itemize{
-#'     \item \code{FALSE}: shrinkage when method = 'CE' or error = 0 [Default]
-#'     \item \code{TRUE}: shrinkage when method = 'IN' and error = 1, otherwise, this will be re-set to 0.
+#'     \item \code{cv}: To use a fixed rule to split the training data and validation data to
+#'       find the optimal value of truncation threshold with cross-validation.
+#'       (The results can be reproduced.) [Default]
+#'     \item \code{cv-random}: To randomly split the training data and validation data to
+#'       find the optimal value of truncation threshold with cross-validation.
+#'       (The results can not be reproduced.)
+#'     \item \code{no}: The truncation threshold will not be used.
+#'     \item Any positive number: user-specified the measurement error variance.
 #'   }
-#' \item \code{methodNorm}: The method to normalize the data. This default varies for different data input.
-#'   The default for univariate functional data is 'no'. The default for multivariate functional data is 'quantile'.
+#' \item \code{shrink}: Whether to apply shrinkage method to estimate the FPC scores.
+#'   (only for regular data.)
 #'   \itemize{
-#'     \item \code{'no'}: The normalization on data is not applied. Default value for univariate functional data.
-#'     \item \code{'quantile'}: The normalization performed by substracting smoothed mean function and
+#'     \item \code{TRUE}: The shrinkage method only used in the case \code{methodFPCS} = \code{'IN'} and
+#'       \code{errTerm} = \code{TRUE}. Otherwise, this will be re-set to \code{FALSE}.
+#'     \item \code{FALSE}: Not perform shrinkage method on eastimation of the FPC scores. [Default]
+#'   }
+#' \item \code{methodNorm}: The method to normalize the data.
+#'   The default for univariate functional data is \code{'no'}.
+#'   The default for multivariate functional data is \code{'quantile'}.
+#'   \itemize{
+#'     \item \code{no}: The normalization on data is not applied. Default value for univariate functional data.
+#'     \item \code{quantile}: The normalization performed by substracting smoothed mean function and
 #'       deviding by \code{0.75*IQR} of all curves. Default value for multivariate functional data.
-#'     \item \code{'smoothCov'}: The normalization performed by substracting smoothed mean function and
+#'     \item \code{smoothCov}: The normalization performed by substracting smoothed mean function and
 #'       deviding by the variance of smoothed covariance surface. (Take the minimum positive value as threshold.).
-#'       Please refer Chiou, Chen and Yang. (2014) in \code{\link{rfda}}.
+#'       Please find the reference, Chiou, Chen and Yang. (2014), in \code{\link{rfda}}.
 #'   }
-#' \item \code{quantileProbs}: A positive numeric vector is between 0 and 1.
-#'   It is the probabilities for quantiles to approximate the variances.
-#'   It is used with the option \code{methodNorm} = 'quantile' to choose the quantiles.
-#'   [Default is \code{(0.25, 0.75)}.]
+#' \item \code{quantileProbs}: Default is \code{(0.25, 0.75)}.
+#'   A positive numeric vector is between \code{0} and \code{1}.
+#'   The probabilities of quantiles to approximate the variances.
+#'   This option is only used in the case \code{methodNorm} = \code{'quantile'}.
 #' \item \code{newdata}: A row vector of user-defined output time grids for all curves.
-#'   This corresponds to "allTimePnts" in the output argument. If newdata is \code{NULL},
-#'   then "allTimePnts" corresponds to the set of distinct time points from the pooled data.
-#'   newdata is supposed to be a vector in ascending order on the domain of the functions.
-#'   The default is \code{NULL}.
+#'   This corresponds to \code{allTimePnts} in the output argument. If newdata is \code{NULL},
+#'   then \code{allTimePnts} corresponds to the set of distinct time points from the pooled data.
+#'   \code{newdata} is supposed to be a vector on the domain of the functions. The default is \code{NULL}.
 #' \item \code{ncpus}: The number of threads used in computation.
 #'   \itemize{
 #'     \item \code{0}: To use all threads in computation. [Default]
@@ -171,15 +176,14 @@ get_FPCA_opts <- function(numVar, numCurves){
   return(list(
     bwMean = NULL, bwCov = NULL, bwNumGrid = 30L, bwKernel = "gauss", numBins = 0L,
     errTerm = TRUE, numGrid = 51L, weight = FALSE, numFPC = "FVE", FVE_threshold = 0.85,
-    maxNumFPC = min(20L, numCurves - 1L), outPercent = 0, minMeasErr = 1e-6, measErrOut = 0.5, measErr = "cv",
-    methodFPCS = "CE", shrink = FALSE, methodNorm = ifelse(numVar == 1L, "no", "quantile"),
+    maxNumFPC = min(20L, numCurves - 1L), outPercent = 0, minMeasErr = 1e-6, measErrOut = 0.5,
+    methodFPCS = "WLS", rho = "cv", shrink = FALSE, methodNorm = ifelse(numVar == 1L, "no", "quantile"),
     quantileProbs = c(0.25, 0.75), newdata = NULL, ncpus = 0L, userMeanFunc = NULL, userCovFunc = NULL
   ))
 }
 
 #' @importFrom utils combn
 chk_FPCA_opts <- function(optns){
-
   # check bwMean
   assert_that(is.null(optns$bwMean) || is.data.frame(optns$bwMean))
 
@@ -236,11 +240,14 @@ chk_FPCA_opts <- function(optns){
   assert_that(length(optns$measErrOut) == 1, is.finite(optns$measErrOut), !is.na(optns$measErrOut),
               is.numeric(optns$measErrOut), optns$measErrOut >= 0, optns$measErrOut <= 0.5)
 
+  # check methodFPCS
+  assert_that(is.character(optns$methodFPCS), optns$methodFPCS %in% c("CE", "IN", "LS", "WLS"))
+
   # check shrink
   assert_that(length(optns$shrink) == 1, is.logical(optns$shrink), !is.na(optns$shrink))
   if (optns$shrink && (!optns$errTerm || optns$methodFPCS != "IN")) {
-    warning(paste0("The shrinkage method only had effects when methodFPCS = \"IN\"",
-                   " and errTerm = TRUE! Reset to shrink = FALSE now!"))
+    warning("The shrinkage method only had effects when methodFPCS = 'IN' ",
+            "and errTerm = TRUE! Reset to shrink = FALSE now!")
     optns$shrink <- FALSE
   }
 
@@ -248,27 +255,34 @@ chk_FPCA_opts <- function(optns){
   assert_that(length(optns$outPercent) == 1, is.finite(optns$outPercent), !is.na(optns$outPercent),
               is.numeric(optns$outPercent), optns$outPercent >= 0, optns$outPercent <= 0.5)
 
-  # check measErr
-  assert_that(length(optns$measErr) == 1, is.numeric(optns$measErr) || is.character(optns$measErr))
-  if (is.numeric(optns$measErr)) {
-    assert_that(optns$measErr > 0, is.finite(optns$measErr))
+  # check rho
+  assert_that(length(optns$rho) == 1, is.numeric(optns$rho) || is.character(optns$rho))
+  if (is.numeric(optns$rho)) {
+    assert_that(is.finite(optns$rho), !is.na(optns$rho), optns$rho > 0)
   } else {
-    assert_that(is.character(optns$measErr), optns$measErr %in% c("cv", "cv-random", "no"))
+    assert_that(is.character(optns$rho), optns$rho %in% c("cv", "cv-random", "no"))
   }
 
   # check outPercent
   assert_that(length(optns$outPercent) == 1, is.finite(optns$outPercent), !is.na(optns$outPercent),
               is.numeric(optns$outPercent), optns$outPercent >= 0, optns$outPercent <= 0.5)
+
   # check methodNorm
   assert_that(length(optns$methodNorm) == 1, optns$methodNorm %in% c("no", "quantile", "smoothCov"))
+
   # check quantileProbs
   assert_that(length(optns$quantileProbs) == 2, all(is.finite(optns$quantileProbs)),
               all(!is.na(optns$quantileProbs)), is.numeric(optns$quantileProbs),
-              all(optns$quantileProbs >= 0), all(optns$quantileProbs <= 1))
+              all(optns$quantileProbs >= 0), all(optns$quantileProbs <= 1),
+              optns$quantileProbs[2] > optns$quantileProbs[1])
+
   # check newdata
-  assert_that(is.null(optns$newdata) || is.vector(optns$newdata))
+  if (!is.null(optns$newdata))
+    assert_that(is.vector(optns$newdata) && all(is.finite(optns$newdata)) &&
+                  is.numeric(optns$newdata) && all(!is.na(optns$outPercent)))
+
   # check ncpus
-  assert_that(length(optns$ncpus) == 1, optns$ncpus - floor(optns$ncpus) < 1e-6,
-              is.finite(optns$ncpus), !is.na(optns$ncpus))
+  assert_that(length(optns$ncpus) == 1, is.finite(optns$ncpus), !is.na(optns$ncpus),
+              optns$ncpus - floor(optns$ncpus) < 1e-6, optns$ncpus >= 0)
   return(optns)
 }

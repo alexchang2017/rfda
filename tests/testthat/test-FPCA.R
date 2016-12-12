@@ -35,6 +35,8 @@ test_that("FPCA", {
                "The number of curves cannot be less than 2!")
   expect_warning(FPCA(y ~ t, "sampleID", sparseExData), "Remove the observation with")
   expect_equal(suppressWarnings(FPCA(y ~ t, "sampleID", sparseExData)), 1)
+  expect_error(suppressWarnings(FPCA(y ~ t, "sampleID", sparseExData, list(methodFPCS = "IN"))),
+               "The case methodFPCS = 'IN'")
   expect_equal(suppressWarnings(FPCA(y ~ t, "sampleID", sparseExData,
                                      list(weight = TRUE, ncpus = 1, numBins = 10))), 1)
   expect_equal(FPCA(y ~ t, "sampleID", irregularExData), 1)
@@ -58,6 +60,9 @@ test_that("FPCA", {
   expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(numFPC = 5)), 1)
   expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(numFPC = "AIC")), 1)
   expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(numFPC = "BIC")), 1)
+  expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(methodFPCS = "CE")), 1)
+  expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(methodFPCS = "IN")), 1)
+  expect_equal(FPCA(y ~ t, "sampleID", regularExData, list(methodFPCS = "LS")), 1)
   expect_warning(FPCA(y ~ t, "sampleID", regularExData, list(numFPC = "AIC_R")), "so reset numFPC to")
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar), 1)
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(methodNorm = "smoothCov")), 1)
@@ -68,6 +73,9 @@ test_that("FPCA", {
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(numFPC = 5)), 1)
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(numFPC = "AIC")), 1)
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(numFPC = "BIC")), 1)
+  expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(methodFPCS = "CE")), 1)
+  expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(methodFPCS = "IN")), 1)
+  expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(methodFPCS = "LS")), 1)
   expect_warning(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(numFPC = "AIC_R")), "so reset numFPC to")
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar,
                     list(bwMean = data.table(variable = c("y2", "y"), value = c(0.676065, -2)),

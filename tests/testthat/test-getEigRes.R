@@ -1,0 +1,26 @@
+context("test - getEigRes")
+
+context("1. test - validate input")
+mat <- matrix(rnorm(36), 6, 6) %>>% ((. + t(.)) / 2)
+diag(mat) <- diag(mat) + 0.5
+splitVar <- rep(1, 6)
+workTimePnts <- 1:6
+meanFunc <- rnorm(6)
+allTimePnts <- seq(1, 6, 0.5)
+test_that("test - validate input", {
+  expect_error(rfda:::getEigRes(mat + diag(c(NA, rep(0.1, 5))), splitVar1, workTimePnts, meanFunc, allTimePnts))
+  expect_error(rfda:::getEigRes(mat + diag(c(NaN, rep(0.1, 5))), splitVar1, workTimePnts, meanFunc, allTimePnts))
+  expect_error(rfda:::getEigRes(mat + diag(c(Inf, rep(0.1, 5))), splitVar1, workTimePnts, meanFunc, allTimePnts))
+  expect_error(rfda:::getEigRes(mat, splitVar + c(NA, rep(0, 5)), workTimePnts, meanFunc, allTimePnts))
+  expect_error(rfda:::getEigRes(mat, splitVar + c(NaN, rep(0, 5)), workTimePnts, meanFunc, allTimePnts))
+  expect_error(rfda:::getEigRes(mat, splitVar + c(Inf, rep(0, 5)), workTimePnts, meanFunc, allTimePnts))
+  expect_error(rfda:::getEigRes(mat, splitVar, workTimePnts + c(NA, rep(0, 5)), meanFunc, allTimePnts))
+  expect_error(rfda:::getEigRes(mat, splitVar, workTimePnts + c(NaN, rep(0, 5)), meanFunc, allTimePnts))
+  expect_error(rfda:::getEigRes(mat, splitVar, workTimePnts + c(Inf, rep(0, 5)), meanFunc, allTimePnts))
+  expect_error(rfda:::getEigRes(mat, splitVar, workTimePnts, meanFunc + c(NA, rep(0, 5)), allTimePnts))
+  expect_error(rfda:::getEigRes(mat, splitVar, workTimePnts, meanFunc + c(NaN, rep(0, 5)), allTimePnts))
+  expect_error(rfda:::getEigRes(mat, splitVar, workTimePnts, meanFunc + c(Inf, rep(0, 5)), allTimePnts))
+  expect_error(rfda:::getEigRes(mat, splitVar, workTimePnts, meanFunc, allTimePnts + c(NA, rep(0, 5))))
+  expect_error(rfda:::getEigRes(mat, splitVar, workTimePnts, meanFunc, allTimePnts + c(NaN, rep(0, 5))))
+  expect_error(rfda:::getEigRes(mat, splitVar, workTimePnts, meanFunc, allTimePnts + c(Inf, rep(0, 5))))
+})

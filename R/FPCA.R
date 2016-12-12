@@ -68,10 +68,12 @@ FPCA <- function(formula, id.var, data, options = list()){
   # formula = as.formula("y + y2 ~ t")
   # formula = as.formula("y + y2 + y3 ~ t")
   # id.var = "sampleID"
-  # data("irregularExData", package = "rfda")
-  # data <- irregularExData %>>% data.table %>>% `[`( , `:=`(y2 = y*sin(t), y3 = y*cos(t)))
+  # # data("irregularExData", package = "rfda")
+  # # data <- irregularExData %>>% data.table %>>% `[`( , `:=`(y2 = y*sin(t), y3 = y*cos(t)))
   # # data("sparseExData", package = "rfda")
   # # data <- sparseExData %>>% data.table %>>% `[`( , `:=`(y2 = y*sin(t), y3 = y*cos(t)))
+  # data("regularExData", package = "rfda")
+  # data <- regularExData %>>% data.table %>>% `[`( , `:=`(y2 = y*sin(t), y3 = y*cos(t)))
   # options <- list()
 
   #### check inputs ####
@@ -108,6 +110,8 @@ FPCA <- function(formula, id.var, data, options = list()){
   # get the sparsity of data
   message("Checking and transforming data...")
   sparsity <- checkSparsity(data, id.var, timeVarName)
+  if (FPCA_opts$methodFPCS == "IN" && sparsity != 2)
+    stop("The case methodFPCS = 'IN' is only avaiable for regular data, please use other methodFPCS.")
 
   #### transform data ####
   # melt table to get a data.table to get a simple data.table and remove the NA, NaN and Inf.
@@ -159,7 +163,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   }
 
   #### get weight ####
-  dataDtKeys <- c("timePnt", "variable")
+  dataDtKeys <- c("variable", "timePnt")
   if (FPCA_opts$weight) {
     byVars <- switch(as.character(sparsity), "0" = c("variable", "subId"),
                      "1" = dataDtKeys, "2" = dataDtKeys)
@@ -247,8 +251,8 @@ FPCA <- function(formula, id.var, data, options = list()){
 
   #### check mean functions ####
   if (sapply(MFRes[2:3], function(dt) all(is.na(dt$value))) %>>% any)
-    stop(paste0("The bandwidth of mean function is not appropriately!\n",
-                "If it is chosen automatically, please provide your own mean functions."))
+    stop("The bandwidth of mean function is not appropriately!\n",
+         "If it is chosen automatically, please provide user-defined mean functions or bandwidth.")
 
   #### get demeaned values ####
   dataDT <- merge(dataDT, MFRes[[3]], by = dataDtKeys, suffixes = c("", ".mean")) %>>%
@@ -259,8 +263,8 @@ FPCA <- function(formula, id.var, data, options = list()){
   if (FPCA_opts$weight) {
     if (sparsity == 0) {
       rawCov <- rawCov[ , weight := NULL] %>>%
-        merge(dataDT[, .(weight = weight[which.max(subId)]), by = .(variable,timePnt)],
-              by.x = c("t1", "variable1"), by.y = dataDtKeys)
+        merge(dataDT[, .(weight = weight[which.max(subId)]), by = dataDtKeys],
+              by.x = c("variable1", "t1"), by.y = dataDtKeys)
     } else {
       rawCov[ , weight := 1/cnt]
     }
@@ -411,7 +415,7 @@ FPCA <- function(formula, id.var, data, options = list()){
   #### check cross-covariance functions ####
   if (any(sapply(CFRes[[2]], is.na)))
     stop("The bandwidth of cross-covariance functions is not appropriate!\n",
-         "       If it is chosen automatically, please provide your own cross-covariance functions.")
+         "If it is chosen automatically, please provide user-defined cross-covariance functions or bandwidth.")
 
   #### estimate measurement error ####
   measErrVarDT <- getMeasErr(rawCov, CFRes[[1]], sparsity, FPCA_opts) %>>%
@@ -449,7 +453,9 @@ FPCA <- function(formula, id.var, data, options = list()){
   #### get the cross-covariance functions ####
   message("Get the cross-covariance functions...")
   # initialize cross-covariance function matrix
-  CFMat <- matrix(0, FPCA_opts$numGrid * length(varName), FPCA_opts$numGrid * length(varName))
+  CFMatNames <- rep(1:length(varName), each = FPCA_opts$numGrid)
+  CFMat <- matrix(0, FPCA_opts$numGrid * length(varName), FPCA_opts$numGrid * length(varName),
+                  dimnames = list(CFMatNames, CFMatNames))
   # find the corresponding variables in the list of cross-covariance functions
   orderCFResDT <- tstrsplit(names(CFRes[[2]]), "-") %>>% as.data.table %>>%
     setnames(rawCovKeys) %>>% `[`(j = lapply(.SD, mapVarNames))
@@ -519,7 +525,7 @@ FPCA <- function(formula, id.var, data, options = list()){
     dataDT <- merge(dataDT, quantRes[[2]], by = dataDtKeys, suffixes = c("", ".var"),
                     all.x = TRUE) %>>% `[`(j = value := (value.demean / sqrt(value.var)))
     rm(quantRes)
-  } else {
+  } else if (FPCA_opts$methodNorm == "no") {
     message("Not perform the normalization...")
     dataDT[ , value.var := 1]
     message("Use original cross-covariance functions...")
@@ -530,61 +536,58 @@ FPCA <- function(formula, id.var, data, options = list()){
 
   #### find the eigen functions and the corresponding eigenvalues ####
   message("Get the eigen functions and the corresponding eigenvalues...")
-  # find the maximum of number of FPC
-  maxNumEig <- (FPCA_opts$numGrid - 2L) * length(varName)
-  # find the eigen functions and the corresponding eigenvalues
-  eigRes <- eigen(CFMat2, TRUE)
-
-  # find the location complex or nonpositive eigenvalues
-  idx <- setdiff(1L:maxNumEig, c(which(sapply(eigRes$values, is.complex)), which(eigRes$values <= 0)))
-  message("There are ", length(idx), " real positive eigenvalues.")
-  message("Note: If there is no real positive eigenvalues, this program will give error!")
-  stopifnot(length(idx) > 0)
-  if (length(idx) < maxNumEig)
-    message("There are ", maxNumEig - length(idx), " eigenvalues are removed because it is complex or nonpositive.")
-
-  # remove the complex or nonpositive eigenvalues and the corresponding eigen functions
-  eigVals <- eigRes$values[idx]
-  eigFuncsWork <- eigRes$vectors[ , idx]
-
-  message("Normalize the eigen functions and the corresponding eigenvalues...")
-  # split eigen functions
-  groupVecWork <- rep(1:length(varName), each = FPCA_opts$numGrid)
-  # normalize the working eigenfunctions
-  normValsWork <- lapply(seq_along(varName), function(i){
-    trapz(workTimePnts, eigFuncsWork[groupVecWork == i, ]**2)
-  }) %>>% do.call(what = rbind) %>>% colSums
-  eigFuncsWork <- sweep(eigFuncsWork, 2, sqrt(normValsWork), "/") %>>%
-    sweep(2, cov(., MFRes[[2]]$value) %>>% sign %>>% as.vector, "*")
-
-  # get eigen functions based on allTimePnts
-  eigFuncs <- lapply(seq_along(varName), function(i){
-    interp1(workTimePnts, eigFuncsWork[groupVecWork == i, ], allTimePnts, "spline")
-  }) %>>% do.call(what = rbind)
-  # normalize the eigenfunctions
-  groupVec <- rep(1:length(varName), each = length(allTimePnts))
-  normVals <- lapply(seq_along(varName), function(i){
-    trapz(allTimePnts, eigFuncs[groupVec == i, ]**2)
-  }) %>>% do.call(what = rbind) %>>% colSums
-  eigFuncs <- sweep(eigFuncs, 2, sqrt(normVals), "/")
-
-  # normalize eigenvalues
-  tpAvgDiff <- diff(range(allTimePnts)) / (length(allTimePnts) - 1)
-  eigVals <- eigVals * tpAvgDiff
-  # remove unused variables
-  rm(eigRes, idx, groupVecWork, normValsWork, groupVec, normVals, tpAvgDiff)
+  eigRes <- getEigRes(CFMat2, as.integer(rownames(CFMat2)), workTimePnts, MFRes[[2]]$value, allTimePnts)
 
   #### get fitted cross-covariance/cross-correlation functions ####
   message("Get the fitted cross-covariance functions...")
-  fittedCFMat2 <- eigFuncsWork %*% diag(eigVals) %*% t(eigFuncsWork)
+  fittedCFMat2 <- eigRes$eigFuncsWork %*% diag(eigRes$eigVals) %*% t(eigRes$eigFuncsWork)
   fittedCFMat <- sweep(fittedCFMat2, 1, sqrt(varDT$value), "*") %>>% sweep(2, sqrt(varDT$value), "*")
 
   #### calculate FPC scores ####
   message("Get the functional principal component scores...")
-  # getFpcScore(dataDT, , FPCA_opts)
+  if (FPCA_opts$methodFPCS == "CE") {
+    if (FPCA_opts$rho != "no") {
+      if (numCurves > 2048) {
+        # getRho
+      } else {
+        # getRho
+      }
+    }
+    # getFpcScoresCE
+  } else if (FPCA_opts$methodFPCS == "IN") {
+    valueCol <- ifelse(FPCA_opts$methodNorm == "no", "value.demean", "value")
+
+    eigFuncsSplit <- splitMat(eigRes$eigFuncs, 1, rep(1:length(varName), length(allTimePnts)))
+
+    # split(dataDT, by = "variable") %>>% llply(function(subdt){
+    #   split(subdt, by = "subId") %>>% llply(function(subdt2){
+    #     trapz(allTimePnts, sweep(eigFuncs, 1, subdt2[[valueCol]], "*"))
+    #   })
+    # })
+    # groupVec <- rep(1:length(varName), each = length(allTimePnts))
+
+
+    # mat yMat(yField(0).n_elem, yField.n_elem);
+    # for (uword i = 0; i < yField.n_elem; ++i)
+    #   yMat.col(i) = yField(i);
+    # yMat.each_col() -= muSub;
+    # mat yMatCopy = yMat;
+    # vec tVec = as<vec>(t[0]);
+    # for (uword i = 0; i < numFPC; ++i)
+    # {
+    #   yMatCopy.each_col() %= phiSub.col(i);
+    #   xi_est.row(i) = trapz_cpp(tVec, yMatCopy);
+    #   yMatCopy = yMat;
+    # }
+    # getFpcScoresIN
+  } else if (FPCA_opts$methodFPCS == "LS") {
+    # getFpcScoresLS
+  } else if (FPCA_opts$methodFPCS == "WLS") {
+    # getFpcScoresWLS
+  }
 
   #### calculate FVE ####
-  FVE <- eigVals %>>% (cumsum(.) / sum(.))
+  FVE <- eigRes$eigVals %>>% (cumsum(.) / sum(.))
   # find the number of FPC with FVE criterion
   numFPC_FVE <- Position(function(x) x > FPCA_opts$FVE_threshold, FVE)
   message("The number of FPC decided by FVE is ", numFPC_FVE, " with threshold ",
@@ -598,23 +601,23 @@ FPCA <- function(formula, id.var, data, options = list()){
   if (is.character(FPCA_opts$numFPC) && FPCA_opts$numFPC != "AIC_R") {
     # find the number of FPC with AIC or BIC
     if (FPCA_opts$numFPC %in% c("AIC", "BIC")) {
-      # resNumFPC_IC <- no_IC()
+      # resNumFPC_IC <- getNumFpcByIC()
       # assign(FPCA_opts$numFPC, resNumFPC_IC$criterion)
       # numFPC <- resNumFPC_IC$numFPC
     }
 
-    numFPC <- numFPC_FVE
+    # numFPC <- numFPC_FVE
     # reset numFPC if it is NA
-    if (is.na(numFPC)) {
-      FPCA_opts$numFPC <- "FVE"
-      numFPC <- numFPC_FVE
-    }
+    # if (is.na(numFPC)) {
+    #   FPCA_opts$numFPC <- "FVE"
+    #   numFPC <- numFPC_FVE
+    # }
   } else if (is.numeric(FPCA_opts$numFPC) || FPCA_opts$numFPC == "AIC_R") {
-    numFPC <- ifelse(FPCA_opts$numFPC == "AIC_R", maxNumEig, FPCA_opts$numFPC)
-    if (numFPC > length(eigVals))
-      warning("There are only ", length(eigVals), " avaiable eigenfunctions, it is less than ",
-              numFPC, ", so reset numFPC to ", length(eigVals), ".")
-    numFPC <- min(length(eigVals), numFPC)
+    numFPC <- ifelse(FPCA_opts$numFPC == "AIC_R", (FPCA_opts$numGrid - 2L) * length(varName), FPCA_opts$numFPC)
+    if (numFPC > length(eigRes$eigVals))
+      warning("There are only ", length(eigRes$eigVals), " avaiable eigenfunctions, it is less than ",
+              numFPC, ", so reset numFPC to ", length(eigRes$eigVals), ".")
+    numFPC <- min(length(eigRes$eigVals), numFPC)
   }
   return(1)
 }

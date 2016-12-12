@@ -1,6 +1,5 @@
 #include "common.h"
 #include <cmath>
-#include <sstream>
 
 // function to print message on R console
 void RMessage(const std::string& msg){
@@ -8,22 +7,10 @@ void RMessage(const std::string& msg){
   RMessage(msg);
 }
 
-// function to convert integer, double into string
-template <typename T>
-std::string to_string(T const& value) {
-  std::stringstream sstr;
-  sstr << value;
-  return sstr.str();
-}
-
 // function to check whether the input data with correct type
 void chk_mat(const mat& x, const std::string& varName, const std::string& type){
   if (!is_finite(x))
     Rcpp::stop(varName + " must be numerical.\n");
-  // if (type == "integer") {
-  //   if (all(all(abs(x - floor(x)) < 1e-6)))
-  //     Rcpp::stop(varName + " must be integer.\n");
-  // }
 }
 
 // function to compute factorial in C++ implementation

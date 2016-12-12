@@ -73,6 +73,21 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// getEigRes
+Rcpp::List getEigRes(const arma::mat& CFMat2, const arma::vec& variable, const arma::vec& workTimePnts, const arma::vec& meanFuncsWork, const arma::vec& allTimePnts);
+RcppExport SEXP rfda_getEigRes(SEXP CFMat2SEXP, SEXP variableSEXP, SEXP workTimePntsSEXP, SEXP meanFuncsWorkSEXP, SEXP allTimePntsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const arma::mat& >::type CFMat2(CFMat2SEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type variable(variableSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type workTimePnts(workTimePntsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type meanFuncsWork(meanFuncsWorkSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type allTimePnts(allTimePntsSEXP);
+    __result = Rcpp::wrap(getEigRes(CFMat2, variable, workTimePnts, meanFuncsWork, allTimePnts));
+    return __result;
+END_RCPP
+}
 // spline_cpp
 arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi);
 RcppExport SEXP rfda_spline_cpp(SEXP xSEXP, SEXP ySEXP, SEXP xiSEXP) {
@@ -219,6 +234,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double& >::type drv(drvSEXP);
     Rcpp::traits::input_parameter< const double& >::type degree(degreeSEXP);
     __result = Rcpp::wrap(locQuantPoly1d(bandwidth, probs, x, y, w, xout, kernel, drv, degree));
+    return __result;
+END_RCPP
+}
+// splitMat
+Rcpp::List splitMat(const arma::mat& m, const double& margin, const arma::vec& f);
+RcppExport SEXP rfda_splitMat(SEXP mSEXP, SEXP marginSEXP, SEXP fSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const arma::mat& >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const double& >::type margin(marginSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type f(fSEXP);
+    __result = Rcpp::wrap(splitMat(m, margin, f));
     return __result;
 END_RCPP
 }

@@ -69,6 +69,10 @@ funcDataGen <- function(n, timePnt, meanFunc, varFunc, corrType, measErrVar = 1,
     .Call('rfda_funcDataGen', PACKAGE = 'rfda', n, timePnt, meanFunc, varFunc, corrType, measErrVar, x0, nu)
 }
 
+getEigRes <- function(CFMat2, variable, workTimePnts, meanFuncsWork, allTimePnts) {
+    .Call('rfda_getEigRes', PACKAGE = 'rfda', CFMat2, variable, workTimePnts, meanFuncsWork, allTimePnts)
+}
+
 spline_cpp <- function(x, y, xi) {
     .Call('rfda_spline_cpp', PACKAGE = 'rfda', x, y, xi)
 }
@@ -276,6 +280,23 @@ gcvLocPoly1d <- function(bwCand, x, y, w, kernel, drv, degree) {
 #' @export
 locQuantPoly1d <- function(bandwidth, probs, x, y, w, xout, kernel, drv, degree) {
     .Call('rfda_locQuantPoly1d', PACKAGE = 'rfda', bandwidth, probs, x, y, w, xout, kernel, drv, degree)
+}
+
+#' trapz: trapezoidal rule to approximate the integral values
+#'
+#' Returns approximation of integral.
+#'
+#' @param m A numeric matrix to be divided into list of matrices.
+#' @param margin The margin of the matrix to split.
+#' @param f A integer vector to split the matrix.
+#' @return A list of matrices.
+#' @examples
+#' x <- matrix(rnorm(30), 6, 8)
+#' splitMat(x, 1, rep(1:3, each = 2))
+#' splitMat(x, 2, rep(1:4, each = 2))
+#' @export
+splitMat <- function(m, margin, f) {
+    .Call('rfda_splitMat', PACKAGE = 'rfda', m, margin, f)
 }
 
 #' unique rows

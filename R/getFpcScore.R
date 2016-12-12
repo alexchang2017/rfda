@@ -1,6 +1,23 @@
 #' Get the functional principal components scores
 #'
-#' @noRd
-# getFpcScore <- function(){
+#' @rdname getFpcScores
+# getFpcScoresCE <- function(){
+#
+# }
+
+
+#' @rdname getFpcScores
+# getFpcScoresIN <- function(){
+#
+# }
+
+
+#' @rdname getFpcScores
+# getFpcScoresLS <- function(){
+#
+# }
+
+#' @rdname getFpcScores
+# getFpcScoresWLS <- function(){
 #
 # }

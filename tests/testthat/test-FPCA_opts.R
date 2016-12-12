@@ -4,7 +4,7 @@ context("1. get_FPCA_opts")
 FPCA_opts_uni <- get_FPCA_opts(1, 100)
 FPCA_opts_mul <- get_FPCA_opts(2, 100)
 allOptNames <- c("bwMean", "bwCov", "bwNumGrid", "bwKernel", "numBins", "errTerm", "numGrid", "weight", "numFPC",
-                 "FVE_threshold", "maxNumFPC", "outPercent", "minMeasErr", "measErrOut", "measErr", "methodFPCS",
+                 "FVE_threshold", "maxNumFPC", "outPercent", "minMeasErr", "measErrOut", "methodFPCS", "rho",
                  "shrink", "methodNorm", "quantileProbs", "newdata", "ncpus", "userMeanFunc", "userCovFunc")
 test_that("test get_FPCA_opts", {
   expect_equal(names(FPCA_opts_uni), allOptNames)
@@ -20,8 +20,12 @@ test_that("test get_FPCA_opts", {
   expect_warning(testFPCAOpts(list(numFPC = 54)), "Reset it to be numGrid-2 now!")
   expect_warning(testFPCAOpts(list(numFPC = "AIC", maxNumFPC  = 54)), "Reset it to be numGrid-2 now!")
   expect_warning(testFPCAOpts(list(shrink = TRUE, errTerm  = FALSE)), "Reset to shrink = FALSE now!")
-  expect_error(testFPCAOpts(list(measErr = -0.5)))
+  expect_error(testFPCAOpts(list(rho = -0.5)))
   expect_error(testFPCAOpts(list(outPercent = 0.51)))
   expect_error(testFPCAOpts(list(measErrOut = 0.51)))
   expect_error(testFPCAOpts(list(minMeasErr = -1)))
+  expect_error(testFPCAOpts(list(quantileProbs = c(0.75, 0.25))))
+  expect_error(testFPCAOpts(list(newdata = c(NA, 0.25))))
+  expect_error(testFPCAOpts(list(newdata = c(NaN, 0.25))))
+  expect_error(testFPCAOpts(list(newdata = c(Inf, 0.25))))
 })
