@@ -62,6 +62,7 @@ checkSparsity <- function(data, id.var, timeVarName){
 #' @importFrom data.table CJ tstrsplit .N .SD
 #' @importFrom stats median qnorm cov cov2cor quantile
 #' @importFrom utils modifyList combn type.convert
+#' @exportClass fpcaRes
 #' @export
 FPCA <- function(formula, id.var, data, options = list()){
   # library(plyr); library(data.table); library(pipeR); library(assertthat); library(testthat)

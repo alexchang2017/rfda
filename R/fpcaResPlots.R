@@ -5,8 +5,6 @@
 #' @param ... Other arguments passed into \code{\link{levelplot}}.
 #' @return A \code{\link{levelplot}} object.
 #' @rdname designPlot
-#' @importFrom lattice levelplot
-#' @importFrom grDevices heat.colors
 #' @export designPlot
 designPlot <- function(x, ...) UseMethod("designPlot")
 
@@ -19,6 +17,8 @@ designPlot <- function(x, ...) UseMethod("designPlot")
 #' data("irregularExData", package = 'rfda')
 #' designPlot(irregularExData, "sampleID", "t")
 #' @rdname designPlot
+#' @importFrom lattice levelplot
+#' @importFrom grDevices heat.colors
 #' @method designPlot default
 #' @export
 designPlot.default <- function(x, id.var, time.var, diagonal = FALSE, col.regions = heat.colors(25), ...) {
@@ -51,9 +51,6 @@ designPlot.fpcaRes <- function(x, ...){
 #' @param ... Other arguments passed into \code{\link{barchart}}.
 #' @return A \code{\link{barchart}} object.
 #' @rdname screePlot
-#' @importFrom data.table data.table
-#' @importFrom lattice barchart panel.barchart panel.lines panel.abline
-#' @exportClass fpcaRes
 #' @export screePlot
 screePlot <- function(x, ...) UseMethod("screePlot")
 
@@ -75,22 +72,23 @@ screePlot <- function(x, ...) UseMethod("screePlot")
 #' screePlot(eigRes$values[idx], 4, ylim = c(0, 0.8),
 #'           col.line = "red", pch.line = 17, lty.line = 4)
 #' @rdname screePlot
+#' @importFrom data.table data.table
+#' @importFrom lattice barchart panel.barchart panel.lines panel.abline
 #' @method screePlot default
 #' @export
 screePlot.default <-  function(x, n, ylim = c(0, 1.02), yAxisLabels = seq(0, 1, by = 0.2),
                        col.bar = "gray", col.line = "blue", pch.line = 16, lty.line = 2, ...) {
   graphDT <- data.table(comp = paste0("Comp. ", 1L:n), FVE = x[1:n] / sum(x)) %>>% `[`(j = cumFVE := cumsum(FVE))
-  return(barchart(FVE ~ comp, graphDT, xlab = "", ylab = "Fraction of Variation Explained",
-                  ylim = ylim, col = col.bar,
-                  panel = function(...) {
-                    panel.barchart(...)
-                    panel.lines(1L:length(graphDT$comp), graphDT$cumFVE,
-                                col = col.line, type = "b", lty = lty.line, pch = pch.line)
+  return(barchart(FVE ~ comp, graphDT, xlab = "", ylab = "Fraction of Variation Explained", ylim = ylim, col = col.bar,
+                  key = list(corner = c(0.95, 0.55), lines = list(lty = lty.line, col = col.line), text = list("Cum. FVE")),
+                  scales = list(y = list(at = yAxisLabels,
+                                         labels = sprintf("%2.0f%%", 100 * yAxisLabels))),
+                  panel = function(x, y, ...) {
+                    panel.barchart(x, y, ...)
+                    panel.lines(1L:length(graphDT$comp), graphDT$cumFVE, col = col.line,
+                                type = "b", lty = lty.line, pch = pch.line)
                     panel.abline(h = seq(0, 1, by = 0.1), lty = 2, col = "gray")
-                  }, scales = list(y = list(at = yAxisLabels,
-                                            labels = sprintf("%2.0f%%", 100 * yAxisLabels))),
-                  key = list(corner = c(0.95, 0.55), lines = list(lty = lty.line, col = col.line),
-                             text = list("Cum. FVE")), ...))
+                  }, ...))
 }
 
 
