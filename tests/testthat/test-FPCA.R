@@ -75,6 +75,7 @@ test_that("test - FPCA check results (multi)", {
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(numFPC = "BIC")), 1)
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(methodFPCS = "CE")), 1)
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(methodFPCS = "IN")), 1)
+  expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(methodFPCS = "IN", shrink = TRUE)), 1)
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(methodFPCS = "LS")), 1)
   expect_warning(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar, list(numFPC = "AIC_R")), "so reset numFPC to")
   expect_equal(FPCA(y + y2 + y3 ~ t, "sampleID", regularExData_multiVar,

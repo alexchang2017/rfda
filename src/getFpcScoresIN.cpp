@@ -39,11 +39,13 @@ arma::mat getFpcScoresIN(const arma::vec& allTimePnts, const arma::vec& splitVar
 
   vec uniVars = sort(unique(splitVar));
   if (allTimePnts.n_elem * uniVars.n_elem != eigFuncs.n_rows)
-    Rcpp::stop("The number of rows of eigFuncs must equal to the length of allTimePnts multiply the number of unique variable!");
+    Rcpp::stop("The number of rows of eigFuncs must equal to the length of allTimePnts multiply the number of unique splitVar!");
   if (splitVar.n_elem != eigFuncs.n_rows || splitVar.n_elem != yMat.n_rows)
     Rcpp::stop("The length of splitVar must be equal to the number of rows of eigFuncs and yMat!");
   if (uniVars.n_elem != measErrVar.n_elem)
-    Rcpp::stop("Wrong length of measErrVar or value!");
+    Rcpp::stop("The length of measErrVar must be equal to the number of unique splitVar!");
+  if (any(measErrVar <= 0))
+    Rcpp::stop("The elements of measErrVar must be positive!");
   if (eigFuncs.n_cols != eigVals.n_elem)
     Rcpp::stop("The number of columns of eigFuncs must be equal to the length of eigVals!");
   if (std::abs(shrink - std::floor(shrink)) > 1e-6 || (shrink != 0.0 && shrink != 1.0))

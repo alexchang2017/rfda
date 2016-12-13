@@ -104,5 +104,5 @@ screePlot.default <-  function(x, n, ylim = c(0, 1.02), yAxisLabels = seq(0, 1, 
 #' @method screePlot fpcaRes
 #' @export
 screePlot.fpcaRes <- function(x, ...){
-  return(screePlot(x$FVE, x$numFPC, ...))
+  return(screePlot(x$eigVals, x$numFPC, ...))
 }
