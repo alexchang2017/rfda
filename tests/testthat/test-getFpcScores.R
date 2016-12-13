@@ -19,7 +19,7 @@ test_that("test - getFpcScoresIN validate input", {
   expect_error(getFpcScoresIN(allTimePnts, splitVar, rbind(yMat[1:5, ], NA), eigRes$vectors, 0, eigRes$values, 2.0))
   expect_error(getFpcScoresIN(allTimePnts, splitVar, rbind(yMat[1:5, ], NaN), eigRes$vectors, 0, eigRes$values, 2.0))
   expect_error(getFpcScoresIN(allTimePnts, splitVar, rbind(yMat[1:5, ], Inf), eigRes$vectors, 0, eigRes$values, 2.0))
-  expect_error(getFpcScoresIN(allTimePnts, splitVar, rbind(yMat[, 1), eigRes$vectors, 0, eigRes$values, 2.0))
+  expect_error(getFpcScoresIN(allTimePnts, splitVar, rbind(yMat, 1), eigRes$vectors, 0, eigRes$values, 2.0))
   expect_error(getFpcScoresIN(allTimePnts, splitVar, yMat, rbind(eigRes$vectors[1:5, ], NA), 0, eigRes$values, 2.0))
   expect_error(getFpcScoresIN(allTimePnts, splitVar, yMat, rbind(eigRes$vectors[1:5, ], NaN), 0, eigRes$values, 2.0))
   expect_error(getFpcScoresIN(allTimePnts, splitVar, yMat, rbind(eigRes$vectors[1:5, ], Inf), 0, eigRes$values, 2.0))

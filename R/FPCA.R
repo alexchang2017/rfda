@@ -545,7 +545,15 @@ FPCA <- function(formula, id.var, data, options = list()){
 
   #### calculate FPC scores ####
   message("Get the functional principal component scores...")
-  if (FPCA_opts$methodFPCS == "CE") {
+  if (FPCA_opts$methodFPCS == "IN") {
+    valueCol <- ifelse(FPCA_opts$methodNorm == "no", "value.demean", "value")
+    splitVar <- rep(1:length(varName), each = length(allTimePnts))
+    yMat <- dcast.data.table(dataDT, variable + timePnt ~ subId, sum, value.var = valueCol) %>>%
+      setkeyv(dataDtKeys) %>>% `[`(j = `:=`(eval(dataDtKeys), list(NULL, NULL))) %>>% as.matrix
+    fpcScoresRes <- list(fpcScores = getFpcScoresIN(allTimePnts, splitVar, yMat, eigRes$eigFuncs,
+                                                    FPCA_opts$shrink, eigRes$eigVals, measErrVarDT$value),
+                         fpcScoresVar = NULL)
+  } else {
     if (FPCA_opts$rho != "no") {
       if (numCurves > 2048) {
         # getRho
@@ -553,18 +561,13 @@ FPCA <- function(formula, id.var, data, options = list()){
         # getRho
       }
     }
-    # getFpcScoresCE
-  } else if (FPCA_opts$methodFPCS == "IN") {
-    valueCol <- ifelse(FPCA_opts$methodNorm == "no", "value.demean", "value")
-    splitVar <- rep(1:length(varName), each = length(allTimePnts))
-    yMat <- dcast.data.table(dataDT, variable + timePnt ~ subId, sum, value.var = valueCol) %>>%
-      setkeyv(dataDtKeys) %>>% `[`(j = `:=`(eval(dataDtKeys), list(NULL, NULL))) %>>% as.matrix
-    fpcScores <- getFpcScoresIN(allTimePnts, splitVar, yMat, eigRes$eigFuncs, FPCA_opts$shrink,
-                                eigRes$eigVals, measErrVarDT$value)
-  } else if (FPCA_opts$methodFPCS == "LS") {
-    # getFpcScoresLS
-  } else if (FPCA_opts$methodFPCS == "WLS") {
-    # getFpcScoresWLS
+    if (FPCA_opts$methodFPCS == "CE") {
+      # getFpcScoresCE
+    } else if (FPCA_opts$methodFPCS == "LS") {
+      # getFpcScoresLS
+    } else if (FPCA_opts$methodFPCS == "WLS") {
+      # getFpcScoresWLS
+    }
   }
 
   #### calculate FVE ####
