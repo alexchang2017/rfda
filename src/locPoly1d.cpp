@@ -21,10 +21,8 @@ struct Worker_locPoly1d_gauss: public RcppParallel::Worker {
     bandwidth(bandwidth), xw(xw), yw(yw), ww(ww), xout(xout), kernel(kernel),
     drv(drv), degree(degree), est(est) {}
 
-  void operator()(std::size_t begin, std::size_t end)
-  {
-    for (uword i = begin; i < end; ++i)
-    {
+  void operator()(std::size_t begin, std::size_t end) {
+    for (uword i = begin; i < end; ++i) {
       // compute demean data
       vec x_minus_range = xw - xout(i);
       // compute weights
@@ -62,24 +60,20 @@ struct Worker_locPoly1d_nongauss: public RcppParallel::Worker {
     bandwidth(bandwidth), xw(xw), yw(yw), ww(ww), xout(xout), kernel(kernel),
     drv(drv), degree(degree), est(est), flag(flag) {}
 
-  void operator()(std::size_t begin, std::size_t end)
-  {
-    for (uword i = begin; i < end; ++i)
-    {
+  void operator()(std::size_t begin, std::size_t end) {
+    for (uword i = begin; i < end; ++i) {
       // find the data between xout[i] - bandwidth and xout[i] + bandwidth
       uvec in_windows = linspace<uvec>(0, xw.n_elem-1, xw.n_elem);
       in_windows = in_windows.elem(find(all(join_rows(xw <= xout(i) + bandwidth,
                                                       xw >= xout(i) - bandwidth), 1)));
-      if (in_windows.n_elem > 0)
-      {
+      if (in_windows.n_elem > 0) {
         // collect the data in the windwos
         vec lx = xw.elem(in_windows);
         vec ly = yw.elem(in_windows);
         vec lw = ww.elem(in_windows);
         // find the unique x in the windows and check that the degree of free is sufficient
         vec uni_lx = unique(lx);
-        if (uni_lx.n_elem >= degree + 1)
-        {
+        if (uni_lx.n_elem >= degree + 1) {
           // compute demean data
           vec x_minus_range = lx - xout(i);
           // compute weights
@@ -98,13 +92,11 @@ struct Worker_locPoly1d_nongauss: public RcppParallel::Worker {
           vec p = pinv(dx.t() * (repmat(w, 1, degree+1) % dx)) * dx.t() * (w % ly);
           // get the estimation
           est(i) = p((uword) drv) * factorial_f(drv) * std::pow(-1.0, drv);
-        } else
-        {
+        } else {
           // return flag = 1 if there is no data in the windows
           flag(i) = 1;
         }
-      } else
-      {
+      } else {
         // return flag = 1 if there is no data in the windows
         flag(i) = 1;
       }
@@ -148,20 +140,17 @@ arma::vec locPoly1d_cpp(const double& bandwidth, const arma::vec& x, const arma:
   // allocate output data
   uvec flag = zeros<uvec>(xout.n_elem);
   // compute parallely the estimates given bandwidth
-  if (kernel == "gauss" || kernel == "gaussvar")
-  {
+  if (kernel == "gauss" || kernel == "gaussvar") {
     Worker_locPoly1d_gauss locPoly1d_worker(bandwidth, xw, yw, ww, xout, kernel, drv, degree, est);
     RcppParallel::parallelFor(0, xout.n_elem, locPoly1d_worker);
-  } else
-  {
+  } else {
     Worker_locPoly1d_nongauss locPoly1d_worker(bandwidth, xw, yw, ww, xout, kernel, drv, degree, est, flag);
     RcppParallel::parallelFor(0, xout.n_elem, locPoly1d_worker);
   }
   // return NaN if there is a interval with no data
   vec errOut(1);
   errOut(0) = datum::nan;
-  if (any(flag == 1))
-  {
+  if (any(flag == 1)) {
     RMessage("Too many gaps, please increase bandwidth.");
     return errOut;
   }
@@ -231,17 +220,15 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
     xout2 = linspace<vec>(min(xout), max(xout), 101);
   vec est = zeros<vec>(xout2.n_elem), new_est = zeros<vec>(x.n_elem), diff = zeros<vec>(x.n_elem);
   uvec nonfiniteLoc;
-  while (con)
-  {
+  while (con) {
     // fill gcv score with big number
     gcv.fill(datum::inf);
-    for (uword k = 0; k < bwCand.n_elem; ++k)
-    {
+    for (uword k = 0; k < bwCand.n_elem; ++k) {
       // get smoothed values
       est = locPoly1d_cpp(bwCand(k), x, y, w, xout2, kernel, drv, degree);
-      if (is_finite(est)){
+      if (is_finite(est)) {
         // map the smoothed values onto x
-        if (xout2.n_elem == xout.n_elem){
+        if (xout2.n_elem == xout.n_elem) {
           new_est.zeros();
           for (uword k = 0; k < xout.n_elem; ++k)
             new_est.elem(find(x == xout(k))).fill(est(k));
@@ -252,13 +239,11 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
         new_est.fill(datum::nan);
       }
 
-      if (is_finite(new_est))
-      {
+      if (is_finite(new_est)) {
         // compute gcv scores
         diff = y - new_est;
         gcv(k) = dot(diff, diff) / gcv_param(k);
-        if (k > 0 && gcv(k) > gcv(k-1))
-        {
+        if (k > 0 && gcv(k) > gcv(k-1)) {
           con = false;
           break;
         }
@@ -266,40 +251,33 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
     }
 
     nonfiniteLoc = find_nonfinite(gcv);
-    if (nonfiniteLoc.n_elem == bwCand.n_elem)
-    {
+    if (nonfiniteLoc.n_elem == bwCand.n_elem) {
       // if bw are all too small, then re-compute or
       // stop implementation if it has the same situation in second round
-      if (!secondRun && bwCand(bwCand.n_elem - 1) < r)
-      {
+      if (!secondRun && bwCand(bwCand.n_elem - 1) < r) {
         bwOpt = bwCand(bwCand.n_elem - 1);
         sparse = true;
       } else
       {
         Rcpp::stop("The data is too sparse, no suitable bandwidth can be found! Try Gaussian kernel instead!\n");
       }
-    } else
-    {
+    } else {
       // select the optimal bandwidth with minimum gcv scores
       uword min_gcv_idx = as_scalar(find(gcv == min(gcv), 1, "first"));
       bwOpt = bwCand(min_gcv_idx);
     }
 
-    if (bwOpt == r)
-    {
+    if (bwOpt == r) {
       // stop implementation if data is too sparse
       con = false;
       Rcpp::stop("The data is too sparse, optimal bandwidth includes all the data! You may want to change to Gaussian kernel!\n");
-    } else if (bwOpt == bwCand(bwCand.n_elem - 1) && !secondRun)
-    {
+    } else if (bwOpt == bwCand(bwCand.n_elem - 1) && !secondRun) {
       // re-compute with new bandwidth candidates
       double minBW;
-      if (sparse || nonfiniteLoc.n_elem == bwCand.n_elem-1)
-      {
+      if (sparse || nonfiniteLoc.n_elem == bwCand.n_elem-1) {
         RMessage("The data is too sparse, retry with larger bandwidths!");
         minBW = bwCand(bwCand.n_elem - 1) * 1.01;
-      } else
-      {
+      } else {
         RMessage("Bandwidth candidates are too small, retry with larger choices now!");
         minBW = bwCand(bwCand.n_elem - 2);
       }
@@ -315,8 +293,7 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
       std::stringstream bwCand_str;
       bwCand.print(bwCand_str);
       RMessage(bwCand_str.str());
-    } else if (bwOpt < bwCand(bwCand.n_elem - 1) || secondRun)
-    {
+    } else if (bwOpt < bwCand(bwCand.n_elem - 1) || secondRun) {
       con = false;
     }
     secondRun = true;

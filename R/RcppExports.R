@@ -73,6 +73,10 @@ getEigRes <- function(CFMat2, variable, workTimePnts, meanFuncsWork, allTimePnts
     .Call('rfda_getEigRes', PACKAGE = 'rfda', CFMat2, variable, workTimePnts, meanFuncsWork, allTimePnts)
 }
 
+getFpcScoresIN <- function(allTimePnts, splitVar, yMat, eigFuncs, shrink, eigVals, measErrVar) {
+    .Call('rfda_getFpcScoresIN', PACKAGE = 'rfda', allTimePnts, splitVar, yMat, eigFuncs, shrink, eigVals, measErrVar)
+}
+
 spline_cpp <- function(x, y, xi) {
     .Call('rfda_spline_cpp', PACKAGE = 'rfda', x, y, xi)
 }

@@ -31,8 +31,7 @@ arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi
 
   bool complete = false;
   rowvec dfs, dfe;
-  if (a.n_rows == n+2)
-  {
+  if (a.n_rows == n+2) {
     complete = true;
     dfs = a.row(0);
     dfe = a.row(a.n_rows-1);

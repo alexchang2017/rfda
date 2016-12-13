@@ -45,7 +45,7 @@ Rcpp::NumericVector corrGen(const arma::vec& x, const std::string& corrType,
 
   // initialize data
   Rcpp::NumericVector outVec(x.n_elem);
-  if (corrType == "BesselJ"){
+  if (corrType == "BesselJ") {
     outVec = RbesselJ(Rcpp::wrap(abs(x) / x0), 0.0);
   } else if (corrType == "Matern") {
     double c = Rcpp::as<double>(Rgamma(nu)) * std::pow(2.0, nu-1.0);

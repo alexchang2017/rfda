@@ -7,8 +7,6 @@
 using namespace arma;
 
 void RMessage(const std::string& msg);
-template <typename T>
-std::string to_string(T const& value);
 void chk_mat(const mat& x, const std::string& varName, const std::string& type);
 arma::mat unique_rows(arma::mat x);
 double factorial_f(double k);

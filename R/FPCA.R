@@ -57,7 +57,8 @@ checkSparsity <- function(data, id.var, timeVarName){
 #' @importFrom plyr is.formula llply mapvalues
 #' @importFrom RcppParallel setThreadOptions
 #' @importFrom data.table data.table is.data.table as.data.table
-#' @importFrom data.table melt.data.table setnames setDT setkey setkeyv
+#' @importFrom data.table melt.data.table dcast.data.table
+#' @importFrom data.table setnames setDT setkey setkeyv
 #' @importFrom data.table CJ tstrsplit .N .SD
 #' @importFrom stats median qnorm cov cov2cor quantile
 #' @importFrom utils modifyList combn type.convert
@@ -68,11 +69,11 @@ FPCA <- function(formula, id.var, data, options = list()){
   # formula = as.formula("y + y2 ~ t")
   # formula = as.formula("y + y2 + y3 ~ t")
   # id.var = "sampleID"
-  # # data("irregularExData", package = "rfda")
-  # # data <- irregularExData %>>% data.table %>>% `[`( , `:=`(y2 = y*sin(t), y3 = y*cos(t)))
-  # # data("sparseExData", package = "rfda")
-  # # data <- sparseExData %>>% data.table %>>% `[`( , `:=`(y2 = y*sin(t), y3 = y*cos(t)))
+  # data("irregularExData", package = "rfda")
+  # data("sparseExData", package = "rfda")
   # data("regularExData", package = "rfda")
+  # # data <- irregularExData %>>% data.table %>>% `[`( , `:=`(y2 = y*sin(t), y3 = y*cos(t)))
+  # # data <- sparseExData %>>% data.table %>>% `[`( , `:=`(y2 = y*sin(t), y3 = y*cos(t)))
   # data <- regularExData %>>% data.table %>>% `[`( , `:=`(y2 = y*sin(t), y3 = y*cos(t)))
   # options <- list()
 
@@ -555,30 +556,11 @@ FPCA <- function(formula, id.var, data, options = list()){
     # getFpcScoresCE
   } else if (FPCA_opts$methodFPCS == "IN") {
     valueCol <- ifelse(FPCA_opts$methodNorm == "no", "value.demean", "value")
-
-    eigFuncsSplit <- splitMat(eigRes$eigFuncs, 1, rep(1:length(varName), length(allTimePnts)))
-
-    # split(dataDT, by = "variable") %>>% llply(function(subdt){
-    #   split(subdt, by = "subId") %>>% llply(function(subdt2){
-    #     trapz(allTimePnts, sweep(eigFuncs, 1, subdt2[[valueCol]], "*"))
-    #   })
-    # })
-    # groupVec <- rep(1:length(varName), each = length(allTimePnts))
-
-
-    # mat yMat(yField(0).n_elem, yField.n_elem);
-    # for (uword i = 0; i < yField.n_elem; ++i)
-    #   yMat.col(i) = yField(i);
-    # yMat.each_col() -= muSub;
-    # mat yMatCopy = yMat;
-    # vec tVec = as<vec>(t[0]);
-    # for (uword i = 0; i < numFPC; ++i)
-    # {
-    #   yMatCopy.each_col() %= phiSub.col(i);
-    #   xi_est.row(i) = trapz_cpp(tVec, yMatCopy);
-    #   yMatCopy = yMat;
-    # }
-    # getFpcScoresIN
+    splitVar <- rep(1:length(varName), each = length(allTimePnts))
+    yMat <- dcast.data.table(dataDT, variable + timePnt ~ subId, sum, value.var = valueCol) %>>%
+      setkeyv(dataDtKeys) %>>% `[`(j = `:=`(eval(dataDtKeys), list(NULL, NULL))) %>>% as.matrix
+    fpcScores <- getFpcScoresIN(allTimePnts, splitVar, yMat, eigRes$eigFuncs, FPCA_opts$shrink,
+                                eigRes$eigVals, measErrVarDT$value)
   } else if (FPCA_opts$methodFPCS == "LS") {
     # getFpcScoresLS
   } else if (FPCA_opts$methodFPCS == "WLS") {

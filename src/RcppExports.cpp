@@ -88,6 +88,23 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// getFpcScoresIN
+arma::mat getFpcScoresIN(const arma::vec& allTimePnts, const arma::vec& splitVar, const arma::mat& yMat, const arma::mat& eigFuncs, const double& shrink, const arma::rowvec& eigVals, const arma::vec& measErrVar);
+RcppExport SEXP rfda_getFpcScoresIN(SEXP allTimePntsSEXP, SEXP splitVarSEXP, SEXP yMatSEXP, SEXP eigFuncsSEXP, SEXP shrinkSEXP, SEXP eigValsSEXP, SEXP measErrVarSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const arma::vec& >::type allTimePnts(allTimePntsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type splitVar(splitVarSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type yMat(yMatSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type eigFuncs(eigFuncsSEXP);
+    Rcpp::traits::input_parameter< const double& >::type shrink(shrinkSEXP);
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type eigVals(eigValsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type measErrVar(measErrVarSEXP);
+    __result = Rcpp::wrap(getFpcScoresIN(allTimePnts, splitVar, yMat, eigFuncs, shrink, eigVals, measErrVar));
+    return __result;
+END_RCPP
+}
 // spline_cpp
 arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi);
 RcppExport SEXP rfda_spline_cpp(SEXP xSEXP, SEXP ySEXP, SEXP xiSEXP) {

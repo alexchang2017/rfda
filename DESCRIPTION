@@ -31,12 +31,12 @@ Imports:
     Rcpp (>= 0.12.0),
     RcppParallel,
     pipeR (>= 0.6),
-    data.table (>= 1.9.6)
+    data.table (>= 1.9.6),
+    lattice
 LinkingTo: Rcpp,
     RcppArmadillo,
     RcppParallel
 Suggests:
-    lattice,
     ggplot2 (>= 2.0.0),
     jsonlite,
     testthat
@@ -56,5 +56,6 @@ Collate:
     'getMeasErr.R'
     'getFpcScore.R'
     'getNumFpcByIC.R'
+    'fpcaResPlots.R'
     'FPCA.R'
 RoxygenNote: 5.0.1.9000

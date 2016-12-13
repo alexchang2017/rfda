@@ -19,16 +19,13 @@ struct Worker_locLinear2d_gauss: public RcppParallel::Worker {
     bandwidth(bandwidth), xw(xw), yw(yw), ww(ww), countw(countw), out1(out1), out2(out2),
     kernel(kernel), est(est) {}
 
-  void operator()(std::size_t begin, std::size_t end)
-  {
-    for (uword i = begin; i < end; ++i)
-    {
+  void operator()(std::size_t begin, std::size_t end) {
+    for (uword i = begin; i < end; ++i) {
       // create model matrix
       mat dx = join_rows(ones<vec>(xw.n_rows), xw);
       // compute demean column
       dx.col(2) -= out2(i);
-      for (uword j = 0; j < out1.n_elem; ++j)
-      {
+      for (uword j = 0; j < out1.n_elem; ++j) {
         // compute demean column
         dx.col(1) -= out1(j);
         // compute weights
@@ -66,28 +63,23 @@ struct Worker_locLinear2d_nongauss: public RcppParallel::Worker {
     bandwidth(bandwidth), xw(xw), yw(yw), ww(ww), countw(countw), out1(out1), out2(out2),
     kernel(kernel), est(est), flag(flag) {}
 
-  void operator()(std::size_t begin, std::size_t end)
-  {
-    for (uword i = begin; i < end; ++i)
-    {
+  void operator()(std::size_t begin, std::size_t end) {
+    for (uword i = begin; i < end; ++i) {
       // find the data between out2[i] - bandwidth and out2[i] + bandwidth
       uvec in_windows_1 = linspace<uvec>(0, xw.n_rows-1, xw.n_rows);
       in_windows_1 = in_windows_1.elem(find(all(join_rows(xw.col(1) >= out2(i) - bandwidth(1) - 1e-6,
                                                           xw.col(1) <= out2(i) + bandwidth(1) + 1e-6), 1)));
-      if (in_windows_1.n_elem > 0)
-      {
+      if (in_windows_1.n_elem > 0) {
         // create model matrix
         mat dx = join_rows(ones<vec>(in_windows_1.n_elem), xw.rows(in_windows_1));
         // compute demean column
         dx.col(2) -= out2(i);
-        for (uword j = 0; j < out1.n_elem; ++j)
-        {
+        for (uword j = 0; j < out1.n_elem; ++j) {
           // find the data between out1[i] - bandwidth and out1[i] + bandwidth
           uvec range2 = find(all(join_rows(dx.col(1) >= out1(j) - bandwidth(0) - 1e-6,
                                            dx.col(1) <= out1(j) + bandwidth(0) + 1e-6), 1));
           uvec in_windows_2 = in_windows_1.elem(range2);
-          if (in_windows_2.n_elem > 0)
-          {
+          if (in_windows_2.n_elem > 0) {
             // collect the data in the windwos
             mat lx = dx.rows(range2);
             // compute demean column
@@ -98,8 +90,7 @@ struct Worker_locLinear2d_nongauss: public RcppParallel::Worker {
             vec lc = countw(in_windows_2);
             // find the unique x in the windows and check that the degree of free is sufficient
             mat uni_lx = unique_rows(lx);
-            if (uni_lx.n_rows >= 3)
-            {
+            if (uni_lx.n_rows >= 3) {
               // compute weights
               vec w = lw % (1-square(lx.col(1)/bandwidth(0))) % (1-square(lx.col(2)/bandwidth(1))) * (9.0/16.0);
               if (kernel == "quar")
@@ -116,19 +107,16 @@ struct Worker_locLinear2d_nongauss: public RcppParallel::Worker {
               vec p = pinv(lxw.t() * lx) * lx.t() * (w % ly);
               // get the estimation
               est(i, j) = p(0);
-            } else
-            {
+            } else {
               // return flag = 1 if there is no data in the windows
               flag(i, j) = 1;
             }
-          } else
-          {
+          } else {
             // return flag = 1 if there is no data in the windows
             flag(i, j) = 1;
           }
         }
-      } else
-      {
+      } else {
         // return flag = 1 if there is no data in the windows
         flag.row(i).ones();
       }
@@ -203,20 +191,17 @@ arma::mat locLinear2d(const arma::vec& bandwidth, const arma::mat& x, const arma
   mat est = zeros<mat>(out2.n_elem, out1.n_elem);
   umat flag = zeros<umat>(out2.n_elem, out1.n_elem);
   // compute parallely the estimates given bandwidth
-  if (kernel == "gauss" || kernel == "gaussvar")
-  {
+  if (kernel == "gauss" || kernel == "gaussvar") {
     Worker_locLinear2d_gauss locLinear2d(bandwidth, xw, yw, ww, countw, out1, out2, kernel, est);
     RcppParallel::parallelFor(0, out2.n_elem, locLinear2d);
-  } else
-  {
+  } else {
     Worker_locLinear2d_nongauss locLinear2d(bandwidth, xw, yw, ww, countw, out1, out2, kernel, est, flag);
     RcppParallel::parallelFor(0, out2.n_elem, locLinear2d);
   }
   // return NaN if there is a interval with no data
   mat errOut(1, 1);
   errOut(0, 0) = datum::nan;
-  if (any(any(flag == 1)))
-  {
+  if (any(any(flag == 1))) {
     RMessage("No enough points in local window, please increase bandwidth.");
     return errOut;
   }
@@ -283,8 +268,7 @@ Rcpp::NumericVector gcvLocLinear2d(arma::mat bwCand, const arma::mat& x, const a
 
   // find the index convert 2d matrix to 1d vector for calculating gcv scores
   uvec mapIndx = zeros<uvec>(x.n_rows), idx1 = zeros<uvec>(x.n_rows), idx2 = zeros<uvec>(x.n_rows);
-  for (uword k = 0; k < xout.n_elem; ++k)
-  {
+  for (uword k = 0; k < xout.n_elem; ++k) {
     idx1.elem(find(x(span::all, 0) == xout(k))).fill(k);
     idx2.elem(find(x(span::all, 1) == xout(k))).fill(k);
   }
@@ -307,18 +291,15 @@ Rcpp::NumericVector gcvLocLinear2d(arma::mat bwCand, const arma::mat& x, const a
   while (con) {
     // fill gcv score with big number
     gcv.fill(datum::inf);
-    for (uword k = 0; k < bwCand.n_rows; ++k)
-    {
+    for (uword k = 0; k < bwCand.n_rows; ++k) {
       bwTmp = bwCand.row(k).t();
       est = locLinear2d(bwTmp, x, y, w, count, xout2, xout2, kernel);
-      if (is_finite(est))
-      {
+      if (is_finite(est)) {
         // map the smoothed values onto x
         new_est = interp2(xout2, xout2, est, xout, xout, interp2_method);
         diff = y / count - new_est(mapIndx);
         gcv(k) = dot(diff, diff) / gcv_param(k);
-        if (k > 0 && gcv(k) > gcv(k-1))
-        {
+        if (k > 0 && gcv(k) > gcv(k-1)) {
           con = false;
           break;
         }
@@ -328,40 +309,32 @@ Rcpp::NumericVector gcvLocLinear2d(arma::mat bwCand, const arma::mat& x, const a
     }
 
     nonfiniteLoc = find_nonfinite(gcv);
-    if (nonfiniteLoc.n_elem == bwCand.n_rows)
-    {
+    if (nonfiniteLoc.n_elem == bwCand.n_rows) {
       // if bw are all too small, then re-compute or
       // stop implementation if it has the same situation in second round
-      if (!secondRun && bwCand(bwCand.n_rows - 1, 0) < r)
-      {
+      if (!secondRun && bwCand(bwCand.n_rows - 1, 0) < r) {
         bwOpt = bwCand.row(bwCand.n_rows - 1).t();
         sparse = true;
-      } else
-      {
+      } else {
         Rcpp::stop("The data is too sparse, no suitable bandwidth can be found! Try Gaussian kernel instead!\n");
       }
-    } else
-    {
+    } else {
       // select the optimal bandwidth with minimum gcv scores
       uword min_gcv_idx = as_scalar(find(gcv == min(gcv), 1, "first"));
       bwOpt = bwCand.row(min_gcv_idx).t();
     }
 
-    if (std::abs(bwOpt(0) - 0.5*r) < 1e-6)
-    {
+    if (std::abs(bwOpt(0) - 0.5*r) < 1e-6) {
       // stop implementation if data is too sparse
       con = false;
       Rcpp::stop("The data is too sparse, optimal bandwidth includes all the data! You may want to change to Gaussian kernel!\n");
-    } else if (bwOpt(0) == bwCand(bwCand.n_rows - 1, 0) && !secondRun)
-    {
+    } else if (bwOpt(0) == bwCand(bwCand.n_rows - 1, 0) && !secondRun) {
       // re-compute with new bandwidth candidates
       double minBW;
-      if (sparse || nonfiniteLoc.n_elem == bwCand.n_rows - 1)
-      {
+      if (sparse || nonfiniteLoc.n_elem == bwCand.n_rows - 1) {
         RMessage("The data is too sparse, retry with larger bandwidths!");
         minBW = bwCand(bwCand.n_rows - 1, 0) * 1.01;
-      } else
-      {
+      } else {
         RMessage("Bandwidth candidates are too small, retry with larger choices now!");
         minBW = bwCand(bwCand.n_rows - 2, 0);
       }
@@ -378,8 +351,7 @@ Rcpp::NumericVector gcvLocLinear2d(arma::mat bwCand, const arma::mat& x, const a
       std::stringstream bwCand_str;
       bwCand.print(bwCand_str);
       RMessage(bwCand_str.str());
-    } else if (bwOpt(0) < bwCand(bwCand.n_rows - 1, 0) || secondRun)
-    {
+    } else if (bwOpt(0) < bwCand(bwCand.n_rows - 1, 0) || secondRun) {
       con = false;
     }
     secondRun = true;

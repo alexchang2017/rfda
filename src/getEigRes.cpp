@@ -41,7 +41,7 @@ Rcpp::List getEigRes(const arma::mat& CFMat2, const arma::vec& variable, const a
 
   // normalize the eigenfunctions
   rowvec normValsWork = zeros<rowvec>(eigFuncsWork.n_cols);
-  for (uword i = 0; i < uniVars.n_elem; i++)
+  for (uword i = 0; i < uniVars.n_elem; ++i)
     normValsWork += trapz_cpp(workTimePnts, square(eigFuncsWork.rows(find(variable == uniVars(i)))));
   eigFuncsWork.each_row() /= sqrt(normValsWork);
   eigFuncsWork.each_row() %= sign(cov(meanFuncsWork, eigFuncsWork));
@@ -50,7 +50,7 @@ Rcpp::List getEigRes(const arma::mat& CFMat2, const arma::vec& variable, const a
   std::string interp1_method = "spline";
   mat eigFuncs = zeros<mat>(allTimePnts.n_elem * uniVars.n_elem, eigFuncsWork.n_cols);
   rowvec normVals = zeros<rowvec>(eigFuncsWork.n_cols);
-  for (uword i = 0; i < uniVars.n_elem; i++) {
+  for (uword i = 0; i < uniVars.n_elem; ++i) {
     eigFuncs.rows(i * allTimePnts.n_elem , (i + 1) * allTimePnts.n_elem - 1) =
       interp1_cpp(workTimePnts, eigFuncsWork.rows(find(variable == uniVars(i))), allTimePnts, interp1_method);
     normVals += trapz_cpp(allTimePnts, square(eigFuncs.rows(i * allTimePnts.n_elem , (i + 1) * allTimePnts.n_elem - 1)));

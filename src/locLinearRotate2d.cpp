@@ -17,10 +17,8 @@ struct Worker_locLinearRotate2d_gauss: public RcppParallel::Worker {
                                  const mat& outMat, const std::string& kernel, vec& est):
     bandwidth(bandwidth), xw(xw), yw(yw), ww(ww), countw(countw), outMat(outMat), kernel(kernel), est(est) {}
 
-  void operator()(std::size_t begin, std::size_t end)
-  {
-    for (uword i = begin; i < end; ++i)
-    {
+  void operator()(std::size_t begin, std::size_t end) {
+    for (uword i = begin; i < end; ++i) {
       // create model matrix
       mat dx = join_rows(ones<vec>(xw.n_rows), xw);
       // compute demean columns
@@ -57,17 +55,14 @@ struct Worker_locLinearRotate2d_nongauss: public RcppParallel::Worker {
     bandwidth(bandwidth), xw(xw), yw(yw), ww(ww), countw(countw), outMat(outMat),
     kernel(kernel), est(est), flag(flag) {}
 
-  void operator()(std::size_t begin, std::size_t end)
-  {
-    for (uword i = begin; i < end; ++i)
-    {
+  void operator()(std::size_t begin, std::size_t end) {
+    for (uword i = begin; i < end; ++i) {
       // find the data between out2[i] - bandwidth and out2[i] + bandwidth
       uvec in_windows = linspace<uvec>(0, xw.n_rows-1, xw.n_rows);
       in_windows = in_windows.elem(find(all(join_rows(
         join_rows(xw.col(0) >= outMat(i, 0) - bandwidth(1) - 1e-6, xw.col(0) <= outMat(i, 0) + bandwidth(1) + 1e-6),
         join_rows(xw.col(1) >= outMat(i, 1) - bandwidth(1) - 1e-6, xw.col(1) <= outMat(i, 1) + bandwidth(1) + 1e-6)), 1)));
-      if (in_windows.n_elem >= 2)
-      {
+      if (in_windows.n_elem >= 2) {
         // create model matrix
         mat lx = join_rows(ones<vec>(in_windows.n_elem), xw.rows(in_windows));
         // compute demean columns
@@ -94,11 +89,9 @@ struct Worker_locLinearRotate2d_nongauss: public RcppParallel::Worker {
         vec p = pinv(lxw.t() * lx) * lx.t() * (w % ly / lc);
         // get the estimation
         est(i) = p(0);
-      } else if (in_windows.n_elem == 1)
-      {
+      } else if (in_windows.n_elem == 1) {
         est(i) = as_scalar(yw(in_windows));
-      } else
-      {
+      } else {
         // return flag = 1 if there is no data in the windows
         flag(i) = 1;
       }
@@ -140,20 +133,17 @@ arma::vec locLinearRotate2d_cpp(const arma::vec& bandwidth, const arma::mat& x, 
   vec est = zeros<vec>(outMat2.n_rows);
   uvec flag = zeros<uvec>(outMat2.n_rows);
   // compute parallely the estimates given bandwidth
-  if (kernel == "gauss" || kernel == "gaussvar")
-  {
+  if (kernel == "gauss" || kernel == "gaussvar") {
     Worker_locLinearRotate2d_gauss locLinearRotate2d(bandwidth, xw, yw, ww, countw, outMat2, kernel, est);
     RcppParallel::parallelFor(0, outMat2.n_rows, locLinearRotate2d);
-  } else
-  {
+  } else {
     Worker_locLinearRotate2d_nongauss locLinearRotate2d(bandwidth, xw, yw, ww, countw, outMat2, kernel, est, flag);
     RcppParallel::parallelFor(0, outMat2.n_rows, locLinearRotate2d);
   }
   // return NaN if there is a interval with no data
   vec errOut(1);
   errOut(0) = datum::nan;
-  if (any(flag == 1))
-  {
+  if (any(flag == 1)) {
     RMessage("No enough points in local window, please increase bandwidth.");
     return errOut;
   }

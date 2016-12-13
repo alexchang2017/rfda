@@ -19,16 +19,13 @@ struct Worker_quantData: public RcppParallel::Worker {
                    const vec& xout, vec& new_x, mat& new_y, vec& new_w):
     bandwidth(bandwidth), probs(probs), x(x), y(y), w(w), xout(xout), new_x(new_x), new_y(new_y), new_w(new_w) {}
 
-  void operator()(std::size_t begin, std::size_t end)
-  {
-    for (uword i = begin; i < end; ++i)
-    {
+  void operator()(std::size_t begin, std::size_t end) {
+    for (uword i = begin; i < end; ++i) {
       // find the data between xout[i] - bandwidth and xout[i] + bandwidth
       uvec in_windows = linspace<uvec>(0, x.n_elem-1, x.n_elem);
       in_windows = in_windows.elem(find(all(join_rows(x <= xout(i) + bandwidth,
                                                       x >= xout(i) - bandwidth), 1)));
-      if (in_windows.n_elem > 0)
-      {
+      if (in_windows.n_elem > 0) {
         // find the median of x in the windows
         new_x(i) = median(x.elem(in_windows));
         // find the median of w in the windows
@@ -36,8 +33,7 @@ struct Worker_quantData: public RcppParallel::Worker {
         // find the quantiles of y in the windows
         mat ly = y.rows(in_windows);
         new_y.row(i) = quantileCpp(ly, probs).t();
-      } else
-      {
+      } else {
         // return nan if there is no data in the windows
         new_x(i) = datum::nan;
         new_w(i) = datum::nan;
@@ -114,7 +110,7 @@ arma::mat locQuantPoly1d(const double& bandwidth, const arma::vec& probs, const 
   RcppParallel::parallelFor(0, xout.n_elem, quantData);
   // remove the infinite values
   uvec idxNonfinte = find_nonfinite(new_w);
-  if (idxNonfinte.n_elem > 0){
+  if (idxNonfinte.n_elem > 0) {
     if ((double) idxNonfinte.n_elem / (double) new_w.n_elem > 0.25)
       Rcpp::stop("The bandwidth is too small, please pick another one!");
     new_w.elem(idxNonfinte).zeros();
@@ -124,10 +120,9 @@ arma::mat locQuantPoly1d(const double& bandwidth, const arma::vec& probs, const 
 
   // smooth the quantiles with local kernel polynominal smoother
   mat est = zeros<mat>(xout.n_elem, probs.n_elem);
-  for (uword i = 0; i < probs.n_elem; i++){
+  for (uword i = 0; i < probs.n_elem; ++i) {
     vec tmp_y = new_y.col(i);
     est.col(i) = locPoly1d_cpp(bandwidth, new_x, tmp_y, new_w, xout, kernel, drv, degree);
   }
-
   return est;
 }

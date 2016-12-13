@@ -34,19 +34,15 @@ double factorial_f(double k){
 // function to compute kernel density with 4 kinds of kernel
 arma::vec kernelDensity(const arma::vec& x, const std::string& kernel){
   vec kx(x.n_elem);
-  if (kernel == "epan")
-  {
+  if (kernel == "epan") {
     kx = (1 - square(x)) * 0.75;
     kx.elem(find(abs(x) >= 1)).zeros();
-  } else if (kernel == "gaussvar")
-  {
+  } else if (kernel == "gaussvar") {
     kx = exp(-0.5*square(x)) / sqrt(2 * datum::pi) % (1.25 - 0.25 * square(x));
-  } else if (kernel == "quar")
-  {
+  } else if (kernel == "quar") {
     kx = square(1 - square(x)) * (15.0 / 16.0);
     kx.elem(find(abs(x) >= 1)).zeros();
-  }  else if (kernel == "gauss")
-  {
+  }  else if (kernel == "gauss") {
     kx = exp(-0.5*square(x)) / sqrt(2 * datum::pi);
   }
   return kx;

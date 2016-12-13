@@ -75,8 +75,7 @@ arma::mat unique_rows(arma::mat x){
     // find the unique indecies
     uvec uniIdx = join_cols(ones<uvec>(1), any(x.rows(0, x.n_rows-2) != x.rows(1, x.n_rows-1), 1));
     return x.rows(find(uniIdx));
-  } else
-  {
+  } else {
     return x;
   }
 }
