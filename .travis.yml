@@ -31,19 +31,7 @@ addons:
      - g++-4.9
 
 r_github_packages:
-  - renkun-ken/pipeR
-  - kevinushey/rex
   - jimhester/covr
-
-r_binary_packages:
-  - devtools
-  - Rcpp
-  - assertthat
-  - reshape2
-  - data.table
-  - RcppArmadillo
-  - RcppParallel
-  - testthat
 
 after_success:
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then Rscript -e 'covr::codecov()'; fi
