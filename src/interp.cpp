@@ -1,4 +1,4 @@
-#include "common.h"
+#include "interp.h"
 #include <algorithm>
 
 arma::umat lookup(const arma::vec& edges, const arma::mat& x) {
