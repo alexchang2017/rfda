@@ -1,19 +1,25 @@
 #include "common.h"
+#include <algorithm>
 
-// a function to extract data of vector to a matrix with a index matrix
-arma::mat take_elem_from_umat(const arma::vec& x, const arma::umat& idx){
-  mat out = zeros<mat>(size(idx));
-  for (uword i = 0; i < idx.n_cols; ++i)
-    out.col(i) = x.elem(idx.col(i));
-  return out;
+arma::umat lookup(const arma::vec& edges, const arma::mat& x) {
+  if (!edges.is_sorted())
+    Rcpp::stop("edges is not strictly monotonic increasing.");
+
+  umat idx(size(x));
+  const double* pos;
+  for (uword i = 0; i < x.n_elem; ++i) {
+    pos = std::upper_bound(edges.begin(), edges.end(), x(i));
+    idx(i) = std::distance(edges.begin(), pos);
+  }
+  return idx;
 }
 
 // spline function in C++ implementation
 // [[Rcpp::export]]
 arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi){
-  chk_mat(x, "x", "double");
-  chk_mat(y, "y", "double");
-  chk_mat(xi, "xi", "double");
+  chk_mat(x, "x");
+  chk_mat(y, "y");
+  chk_mat(xi, "xi");
 
   uword n = x.n_elem;
   if (n < 2)
@@ -154,10 +160,10 @@ arma::mat spline_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi
 // interp1 function in C++ implementation
 // [[Rcpp::export]]
 arma::mat interp1_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& xi,
-                  const std::string& method){
-  chk_mat(x, "x", "double");
-  chk_mat(y, "y", "double");
-  chk_mat(xi, "xi", "double");
+                      const std::string& method){
+  chk_mat(x, "x");
+  chk_mat(y, "y");
+  chk_mat(xi, "xi");
 
   uword n = x.n_elem;
   mat a = y;
@@ -254,11 +260,11 @@ arma::mat interp1_cpp(const arma::vec& x, const arma::mat& y, const arma::vec& x
 // [[Rcpp::export]]
 arma::mat interp2(const arma::vec& x, const arma::vec& y, const arma::mat& v,
                   const arma::vec& xi, arma::vec& yi, const std::string& method){
-  chk_mat(x, "x", "double");
-  chk_mat(y, "y", "double");
-  chk_mat(v, "v", "double");
-  chk_mat(xi, "xi", "double");
-  chk_mat(yi, "yi", "double");
+  chk_mat(x, "x");
+  chk_mat(y, "y");
+  chk_mat(v, "v");
+  chk_mat(xi, "xi");
+  chk_mat(yi, "yi");
   if (x.n_elem != v.n_cols)
     Rcpp::stop("The number of columns of v must be equal to the length of x.");
   if (y.n_elem != v.n_rows)
@@ -300,33 +306,30 @@ arma::mat interp2(const arma::vec& x, const arma::vec& y, const arma::mat& v,
       vu.row(k) = mean(v_tmp.rows(find(y == yu(k))));
   }
 
-  umat xidx = zeros<umat>(yi.n_elem, xi.n_elem),
-    yidx = zeros<umat>(yi.n_elem, xi.n_elem);
-  for (uword i = 1; i < xu.n_elem-1; ++i)
-    xidx.cols(find(xu(i) <= xi)).fill(i);
-  for (uword i = 1; i < yu.n_elem-1; ++i)
-    yidx.rows(find(yu(i) <= yi)).fill(i);
+  mat vi(xi.n_elem, yi.n_elem);
+  if (method == "linear") {
+    uvec xidx_tmp = lookup(xu, xi), yidx_tmp = lookup(yu, yi);
+    xidx_tmp(find(xidx_tmp == xu.n_elem)).fill(xu.n_elem - 1);
+    yidx_tmp(find(yidx_tmp == yu.n_elem)).fill(yu.n_elem - 1);
+    xidx_tmp--;
+    yidx_tmp--;
 
-  mat vi;
-  if (method.compare("linear") == 0) {
+    umat xidx = repmat(xidx_tmp.t(), yi.n_elem, 1),
+      yidx = repmat(yidx_tmp, 1, xi.n_elem);
+
     uword nvr = vu.n_rows, nvc = vu.n_cols;
     mat a = vu.submat(0, 0, nvr-2, nvc-2),
       b = vu.submat(0, 1, nvr-2, nvc-1) - a,
       c = vu.submat(1, 0, nvr-1, nvc-2) - a,
       d = vu.submat(1, 1, nvr-1, nvc-1) - a - b - c;
-    vec dx = diff(xu), dy = diff(yu);
-    mat xsc = -take_elem_from_umat(xu, xidx),
-      ysc = -take_elem_from_umat(yu, yidx);
-    xsc.each_row() += xi.t();
-    ysc.each_col() += yi;
-    xsc /= take_elem_from_umat(dx, xidx);
-    ysc /= take_elem_from_umat(dy, yidx);
 
+    vec dx = diff(xu), dy = diff(yu);
+    vec xsc = (vectorise(repmat(xi.t(), yi.n_elem, 1)) - xu.elem(vectorise(xidx))) / dx.elem(vectorise(xidx)),
+      ysc = (repmat(yi, xi.n_elem, 1) - yu.elem(vectorise(yidx))) / dy.elem(vectorise(yidx));
     uvec idx = vectorise(yidx) + a.n_rows*vectorise(xidx);
-    vec vi_tmp = a(idx) + b(idx) % vectorise(xsc) + c(idx) % vectorise(ysc) +
-      d(idx) % vectorise(xsc) % vectorise(ysc);
-    vi = reshape(vi_tmp, yidx.n_rows, yidx.n_cols);
-  } else if (method.compare("spline") == 0) {
+    vi = reshape(a(idx) + b(idx) % xsc + c(idx) % ysc + d(idx) % xsc % ysc,
+                 yi.n_elem, xi.n_elem);
+  } else if (method == "spline") {
     vi = spline_cpp(yu, vu, yi);
     vi = spline_cpp(xu, vi.t(), xi).t();
   }

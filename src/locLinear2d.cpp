@@ -35,9 +35,12 @@ struct Worker_locLinear2d_gauss: public RcppParallel::Worker {
           w %= (1.25 - 0.25 * square(dx.col(1) / bandwidth(0))) %
             (1.5 - 0.5 * square(dx.col(2) / bandwidth(1)));
 
-        mat dxw = dx;
-        dxw.each_col() %= (w % countw);
-        vec p = pinv(dxw.t() * dx) * dx.t() * (w % yw);
+        mat R = chol((dx.each_col() % w).t() * dx);
+        vec p = solve(R, solve(R.t(), dx.t() * (w % (yw / countw))));
+        // please see Worker_locPoly1d_gauss
+        // mat dxw = dx;
+        // dxw.each_col() %= (w % countw);
+        // vec p = pinv(dxw.t() * dx) * dx.t() * (w % yw);
         est(i, j) = p(0);
         dx.col(1) += out1(j);
       }
@@ -67,8 +70,7 @@ struct Worker_locLinear2d_nongauss: public RcppParallel::Worker {
     for (uword i = begin; i < end; ++i) {
       // find the data between out2[i] - bandwidth and out2[i] + bandwidth
       uvec in_windows_1 = linspace<uvec>(0, xw.n_rows-1, xw.n_rows);
-      in_windows_1 = in_windows_1.elem(find(all(join_rows(xw.col(1) >= out2(i) - bandwidth(1) - 1e-6,
-                                                          xw.col(1) <= out2(i) + bandwidth(1) + 1e-6), 1)));
+      in_windows_1 = in_windows_1.elem(find(abs(xw.col(1) - out2(i)) <= bandwidth(1) + 1.0e-6));
       if (in_windows_1.n_elem > 0) {
         // create model matrix
         mat dx = join_rows(ones<vec>(in_windows_1.n_elem), xw.rows(in_windows_1));
@@ -76,8 +78,7 @@ struct Worker_locLinear2d_nongauss: public RcppParallel::Worker {
         dx.col(2) -= out2(i);
         for (uword j = 0; j < out1.n_elem; ++j) {
           // find the data between out1[i] - bandwidth and out1[i] + bandwidth
-          uvec range2 = find(all(join_rows(dx.col(1) >= out1(j) - bandwidth(0) - 1e-6,
-                                           dx.col(1) <= out1(j) + bandwidth(0) + 1e-6), 1));
+          uvec range2 = find(abs(dx.col(1) - out1(j)) <= bandwidth(0) + 1.0e-6);
           uvec in_windows_2 = in_windows_1.elem(range2);
           if (in_windows_2.n_elem > 0) {
             // collect the data in the windwos
@@ -102,9 +103,12 @@ struct Worker_locLinear2d_nongauss: public RcppParallel::Worker {
                       square(1 - square(x_minus_range[,2] / bandwidth[2])) * (225.0 / 256.0)
               */
               // fit a WLS
-              mat lxw = lx;
-              lxw.each_col() %= (w % lc);
-              vec p = pinv(lxw.t() * lx) * lx.t() * (w % ly);
+              mat R = chol((lx.each_col() % w).t() * lx);
+              vec p = solve(R, solve(R.t(), lx.t() * (w % (ly / lc))));
+              // please see Worker_locPoly1d_gauss
+              // mat lxw = lx;
+              // lxw.each_col() %= (w % lc);
+              // vec p = pinv(lxw.t() * lx) * lx.t() * (w % ly);
               // get the estimation
               est(i, j) = p(0);
             } else {
@@ -164,12 +168,12 @@ arma::mat locLinear2d(const arma::vec& bandwidth, const arma::mat& x, const arma
                       const arma::vec& count, const arma::vec& out1, const arma::vec& out2,
                       const std::string& kernel){
   // check data
-  chk_mat(x, "x", "double");
-  chk_mat(y, "y", "double");
-  chk_mat(w, "w", "double");
-  chk_mat(out1, "out1", "double");
-  chk_mat(out2, "out2", "double");
-  chk_mat(count, "count", "double");
+  chk_mat(x, "x");
+  chk_mat(y, "y");
+  chk_mat(w, "w");
+  chk_mat(out1, "out1");
+  chk_mat(out2, "out2");
+  chk_mat(count, "count");
   if (x.n_rows != y.n_elem || x.n_rows != w.n_elem || x.n_rows != count.n_elem)
     Rcpp::stop("The number of rows of x must be equal to the lengths of y, w and count.\n");
   if (x.n_cols != 2)
@@ -249,11 +253,11 @@ Rcpp::NumericVector gcvLocLinear2d(arma::mat bwCand, const arma::mat& x, const a
                                    const arma::vec& w, const arma::vec& count, const std::string& kernel,
                                    const double bwNumGrid = 30.0){
   // check data
-  chk_mat(bwCand, "bwCand", "double");
-  chk_mat(x, "x", "double");
-  chk_mat(y, "y", "double");
-  chk_mat(w, "w", "double");
-  chk_mat(count, "count", "double");
+  chk_mat(bwCand, "bwCand");
+  chk_mat(x, "x");
+  chk_mat(y, "y");
+  chk_mat(w, "w");
+  chk_mat(count, "count");
   if (any(any(bwCand <= 0)))
     Rcpp::stop("The elements in bwCand must be greater 0.\n");
   if (x.n_rows != y.n_elem || x.n_rows != w.n_elem || x.n_rows != count.n_elem)

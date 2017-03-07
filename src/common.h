@@ -7,7 +7,7 @@
 using namespace arma;
 
 void RMessage(const std::string& msg);
-void chk_mat(const mat& x, const std::string& varName, const std::string& type);
+void chk_mat(const mat& x, const std::string& varName);
 arma::mat unique_rows(arma::mat x);
 double factorial_f(double k);
 arma::vec kernelDensity(const arma::vec& xin, const std::string& kernel);

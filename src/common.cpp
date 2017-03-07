@@ -8,7 +8,7 @@ void RMessage(const std::string& msg){
 }
 
 // function to check whether the input data with correct type
-void chk_mat(const mat& x, const std::string& varName, const std::string& type){
+void chk_mat(const mat& x, const std::string& varName){
   if (!is_finite(x))
     Rcpp::stop(varName + " must be numerical.\n");
 }
@@ -52,8 +52,8 @@ arma::vec kernelDensity(const arma::vec& x, const std::string& kernel){
 // [[Rcpp::export]]
 arma::vec quantileCpp(const arma::vec& x, const arma::vec& probs){
   // check data
-  chk_mat(x, "x", "double");
-  chk_mat(probs, "probs", "double");
+  chk_mat(x, "x");
+  chk_mat(probs, "probs");
   if (any(probs < 0) || any(probs > 1))
     Rcpp::stop("There is values in probs outside [0, 1].");
 
@@ -74,8 +74,8 @@ arma::vec quantileCpp(const arma::vec& x, const arma::vec& probs){
 // [[Rcpp::export]]
 arma::mat trapz_cpp(const arma::vec& x, const arma::mat& y){
   // check data
-  chk_mat(x, "x", "double");
-  chk_mat(y, "y", "double");
+  chk_mat(x, "x");
+  chk_mat(y, "y");
   if (y.n_rows != x.n_elem)
     Rcpp::stop("The number of rows or length of y must be equal to the length of x.");
   if (x.n_elem <= 1)

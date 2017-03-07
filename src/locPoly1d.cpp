@@ -24,7 +24,7 @@ struct Worker_locPoly1d_gauss: public RcppParallel::Worker {
   void operator()(std::size_t begin, std::size_t end) {
     for (uword i = begin; i < end; ++i) {
       // compute demean data
-      vec x_minus_range = xw - xout(i);
+      vec x_minus_range = xout(i) - xw;
       // compute weights
       vec w = ww % exp(-0.5*square(x_minus_range / bandwidth)) / sqrt(2 * datum::pi);
       if (kernel == "gaussvar")
@@ -32,9 +32,25 @@ struct Worker_locPoly1d_gauss: public RcppParallel::Worker {
       // get model matrix
       mat dx = ones<mat>(xw.n_elem, degree+1);
       for (uword j = 0; j < degree; ++j)
-        dx.col(j+1) = pow(-x_minus_range, j + 1);
+        dx.col(j+1) = pow(x_minus_range, j + 1);
       // fit a WLS
+      /* Cholesky Decomposition (Or LDLt Decomposition) */
+      mat dxw = (dx.each_col() % w).t();
+      mat R = chol(dxw * dx);
+      vec p = solve(R, solve(R.t(), dxw * yw, solve_opts::fast), solve_opts::fast);
+      // mat R = chol((dx.each_col() % w).t() * dx);
+      // vec p = solve(R, solve(R.t(), dx.t() * (w % yw)));
+
+      /* QR Decomposition (fail if there are some negative values in w)
+      mat Q, R;
+      qr_econ(Q, R, dx.each_col() % sqrt(w));
+      vec p = solve(R.head_rows(dx.n_cols), Q.head_cols(dx.n_cols).t() * (yw % sqrt(w)));
+      */
+
+      /* Pseudoinverse solution (too slow)
       vec p = pinv(dx.t() * (repmat(w, 1, degree+1) % dx)) * dx.t() * (w % yw);
+      */
+
       // get the estimation
       est(i) = p((uword) drv) * factorial_f(drv) * std::pow(-1.0, drv);
     }
@@ -63,21 +79,17 @@ struct Worker_locPoly1d_nongauss: public RcppParallel::Worker {
   void operator()(std::size_t begin, std::size_t end) {
     for (uword i = begin; i < end; ++i) {
       // find the data between xout[i] - bandwidth and xout[i] + bandwidth
-      uvec in_windows = linspace<uvec>(0, xw.n_elem-1, xw.n_elem);
-      in_windows = in_windows.elem(find(all(join_rows(xw <= xout(i) + bandwidth,
-                                                      xw >= xout(i) - bandwidth), 1)));
+      uvec in_windows = find(abs(xw - xout(i)) <= bandwidth);
       if (in_windows.n_elem > 0) {
         // collect the data in the windwos
         vec lx = xw.elem(in_windows);
-        vec ly = yw.elem(in_windows);
-        vec lw = ww.elem(in_windows);
         // find the unique x in the windows and check that the degree of free is sufficient
         vec uni_lx = unique(lx);
         if (uni_lx.n_elem >= degree + 1) {
           // compute demean data
-          vec x_minus_range = lx - xout(i);
+          vec x_minus_range = xout(i) - lx;
           // compute weights
-          vec w = lw % (1 - square(x_minus_range / bandwidth)) * 0.75;
+          vec w = ww.elem(in_windows) % (1 - square(x_minus_range / bandwidth)) * 0.75;
           if (kernel == "quar")
             w %= (1 - square(x_minus_range / bandwidth)) * (5.0 / 4.0);
           /*
@@ -87,9 +99,15 @@ struct Worker_locPoly1d_nongauss: public RcppParallel::Worker {
           // get model matrix
           mat dx = ones<mat>(lx.n_elem, degree+1);
           for (uword j = 0; j < degree; ++j)
-            dx.col(j+1) = pow(-x_minus_range, j + 1);
+            dx.col(j+1) = pow(x_minus_range, j + 1);
           // fit a WLS
-          vec p = pinv(dx.t() * (repmat(w, 1, degree+1) % dx)) * dx.t() * (w % ly);
+          mat dxw = (dx.each_col() % w).t();
+          mat R = chol(dxw * dx);
+          vec p = solve(R, solve(R.t(), dxw * yw.elem(in_windows), solve_opts::fast), solve_opts::fast);
+          // mat R = chol((dx.each_col() % w).t() * dx);
+          // vec p = solve(R, solve(R.t(), dx.t() * (w % ly)));
+          // please see Worker_locPoly1d_gauss
+          // vec p = pinv(dx.t() * (repmat(w, 1, degree+1) % dx)) * dx.t() * (w % ly);
           // get the estimation
           est(i) = p((uword) drv) * factorial_f(drv) * std::pow(-1.0, drv);
         } else {
@@ -109,10 +127,10 @@ arma::vec locPoly1d_cpp(const double& bandwidth, const arma::vec& x, const arma:
                         const arma::vec& w, const arma::vec& xout, const std::string& kernel,
                         const double& drv, const double& degree){
   // check data
-  chk_mat(x, "x", "double");
-  chk_mat(y, "y", "double");
-  chk_mat(w, "w", "double");
-  chk_mat(xout, "xout", "double");
+  chk_mat(x, "x");
+  chk_mat(y, "y");
+  chk_mat(w, "w");
+  chk_mat(xout, "xout");
   if (x.n_elem != y.n_elem || x.n_elem != w.n_elem)
     Rcpp::stop("The lengths of x, y and w must be equal.\n");
   if (!xout.is_sorted())
@@ -181,10 +199,10 @@ double gcvLocPoly1d(arma::vec bwCand, const arma::vec& x, const arma::vec& y,
                     const arma::vec& w, const std::string& kernel,
                     const double& drv, const double& degree){
   // check data
-  chk_mat(bwCand, "bwCand", "double");
-  chk_mat(x, "x", "double");
-  chk_mat(y, "y", "double");
-  chk_mat(w, "w", "double");
+  chk_mat(bwCand, "bwCand");
+  chk_mat(x, "x");
+  chk_mat(y, "y");
+  chk_mat(w, "w");
   if (any(bwCand <= 0))
     Rcpp::stop("The elements in bwCand must be greater 0.\n");
   if (x.n_elem != y.n_elem || x.n_elem != w.n_elem)

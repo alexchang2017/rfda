@@ -8,34 +8,36 @@ Author: Ching-Chuan Chen [aut, cre]
 Maintainer: Ching-Chuan Chen <zw12356@gmail.com>
 URL: https://github.com/Chingchuan-chen/rfda
 BugReports: https://github.com/Chingchuan-chen/rfda/issues
-Description: 
-    This package provides the tools to perform the functional data analysis.
-    The core of this package is functional principal componet analysis (FPCA) based on
-    the principal analysis by conditional estimation (PACE) algorithm mainly developed by
-    H.G. Muller. The multivariate part with normalization are done primarily by J.M. Chiou, Y.F Yang,
-    and Y.T. Chen (See References). In addition, this package provides the another normalization
-    approach (with quantiles) in multivariate FPCA.
-    This package is mostly based on the MatLab package, PACE, released at http://www.stat.ucdavis.edu/PACE/.
-    Besides, some ideas are borrowed from the R package, fdapace. This package, rfda, provides R approach for FPCA
-    based on PACE 2.17 and use the C++ linear algebra library, Armadillo, and the C++ multi-threaded
-    implementation with RcppArmadillo and RcppParallel.
-    Note: Since the BLAS used by RcppArmadillo is based on what BLAS R links to,
-    so this package will be more efficient if a powerful BLAS used by R.
+Description: This package provides the tools to perform the functional
+    data analysis. The core of this package is functional principal componet
+    analysis (FPCA) based on the principal analysis by conditional estimation
+    (PACE) algorithm mainly developed by H.G. Muller. The multivariate part with
+    normalization are done primarily by J.M. Chiou, Y.F Yang, and Y.T. Chen (See
+    References). In addition, this package provides the another normalization
+    approach (with quantiles) in multivariate FPCA. This package is mostly based
+    on the MatLab package, PACE, released at http://www.stat.ucdavis.edu/PACE/.
+    Besides, some ideas are borrowed from the R package, fdapace. This package,
+    rfda, provides R approach for FPCA based on PACE 2.17 and use the C++ linear
+    algebra library, Armadillo, and the C++ multi-threaded implementation with
+    RcppArmadillo and RcppParallel. Note: Since the BLAS used by RcppArmadillo
+    is based on what BLAS R links to, so this package will be more efficient if a
+    powerful BLAS used by R.
 Depends:
     R (>= 3.2.0)
 Imports:
     assertthat,
     stats,
     utils,
+    lattice,
+    data.table (>= 1.9.8),
     plyr (>= 1.8.1),
     Rcpp (>= 0.12.0),
     RcppParallel,
-    pipeR (>= 0.6),
-    data.table (>= 1.9.6),
-    lattice
+    pipeR (>= 0.6)
 LinkingTo: Rcpp,
     RcppArmadillo,
-    RcppParallel
+    RcppParallel,
+    RcppEigen
 Suggests:
     ggplot2 (>= 2.0.0),
     jsonlite,
@@ -58,4 +60,4 @@ Collate:
     'getNumFpcByIC.R'
     'fpcaResPlots.R'
     'FPCA.R'
-RoxygenNote: 5.0.1.9000
+RoxygenNote: 5.0.1

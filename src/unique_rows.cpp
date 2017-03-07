@@ -67,7 +67,7 @@ void sortrows(mat& M, const int& left, const int& right){
 //' @export
 // [[Rcpp::export]]
 arma::mat unique_rows(arma::mat x){
-  chk_mat(x, "x", "double");
+  chk_mat(x, "x");
 
   if (x.n_rows > 1) {
     // sort rows

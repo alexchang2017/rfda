@@ -47,7 +47,7 @@
 #' @docType package
 #' @name rfda
 #' @useDynLib rfda
-#' @import assertthat
+#' @importFrom assertthat assert_that
 #' @importFrom Rcpp cppFunction sourceCpp
 #' @importFrom pipeR %>>%
 #' @importFrom data.table :=
@@ -56,6 +56,6 @@
 utils::globalVariables(c(".", "%>>%", ":=", "~<-"))
 # variables used in data.table
 utils::globalVariables(c("cnt", "idx_agg", "subId", "t1", "t2", "timePnt", "value", "value.mean",
-                         "value.var1", "value.var2", "variable", "variable1", "variable2", "weight",
+                         "value.var1", "value.var2", "variable", "variable1", "variable2", "weight", "rho",
                          "value1", "value2", "value.demean", "value.var", "rn", "tmp", "FVE", "cumFVE"))
 # variables used in data.table

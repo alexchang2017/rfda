@@ -22,9 +22,7 @@ struct Worker_quantData: public RcppParallel::Worker {
   void operator()(std::size_t begin, std::size_t end) {
     for (uword i = begin; i < end; ++i) {
       // find the data between xout[i] - bandwidth and xout[i] + bandwidth
-      uvec in_windows = linspace<uvec>(0, x.n_elem-1, x.n_elem);
-      in_windows = in_windows.elem(find(all(join_rows(x <= xout(i) + bandwidth,
-                                                      x >= xout(i) - bandwidth), 1)));
+      uvec in_windows = find(abs(x - xout(i)) <= bandwidth);
       if (in_windows.n_elem > 0) {
         // find the median of x in the windows
         new_x(i) = median(x.elem(in_windows));
@@ -84,13 +82,13 @@ arma::mat locQuantPoly1d(const double& bandwidth, const arma::vec& probs, const 
                          const arma::vec& y, const arma::vec& w, const arma::vec& xout,
                          const std::string& kernel, const double& drv, const double& degree){
   // check data
-  chk_mat(probs, "probs", "double");
-  chk_mat(x, "x", "double");
-  chk_mat(y, "y", "double");
-  chk_mat(w, "w", "double");
+  chk_mat(probs, "probs");
+  chk_mat(x, "x");
+  chk_mat(y, "y");
+  chk_mat(w, "w");
+  chk_mat(xout, "xout");
   if (x.n_elem != y.n_elem || x.n_elem != w.n_elem)
     Rcpp::stop("The lengths of x, y and w must be equal.\n");
-  chk_mat(xout, "xout", "double");
   if (!xout.is_sorted())
     Rcpp::stop("xout must be sorted.\n");
   if (!is_finite(bandwidth) || bandwidth <= 0.0)

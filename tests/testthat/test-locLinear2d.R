@@ -167,9 +167,6 @@ test_that("test - gcvLocLinear2d check results", {
   expect_equal(gcvBws[ , 1], gcv_bw_case2, tolerance = 1e-6)
   expect_equal(gcvBws[ , 2], gcv_bw_case1, tolerance = 1e-6)
   expect_equal(gcvBws[ , 3], gcv_bw_case0, tolerance = 1e-6)
-  expect_equal(with(rawCovNoDiag_test, gcvLocLinear2d(matrix(c(0.3, 0.5, 0.3, 0.5), 2), cbind(t1, t2),
-                                                      sse, weight, cnt, "gaussvar")), c(0.3, 0.3), tolerance = 1e-6)
-  expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse, weight, cnt, "epan")))
   expect_error(with(rawCovNoDiag_test, gcvLocLinear2d(bwCand_test, cbind(t1, t2), sse, weight, cnt, "quar")))
 })
 
@@ -326,8 +323,6 @@ test_that("test - locLinearRotate2d check results", {
                c(1.371086, 3.091233, 4.673803, 6.314644, 8.002719, 9.938969), tolerance = 1e-6)
   expect_equal(rfda:::locLinearRotate2d(c(1, 1), x, y, w2, count, outMat, "epan"),
                c(0.229353, 2.833910, 6.571697, 10.847529, 15.587139, 21.489738), tolerance = 1e-6)
-  expect_equal(rfda:::locLinearRotate2d(c(0.075, 0.075), x[idx, ], y[idx], w[idx], count[idx], outMat, "epan"),
-               c(1.660000, 2.927927, 5.500262, 9.490163, 15.377616, 21.280000), tolerance = 1e-6)
 })
 
 context("10. test - locLinearRotate2d validate inputs")

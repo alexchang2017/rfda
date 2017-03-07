@@ -108,6 +108,9 @@ The options of FPCA:
 \item \code{maxNumFPC}: Default is \code{min(20, n-1)}. An integer, the maximum number of functional
   principal components. This option is only used in the case  \code{numFPC} = \code{'AIC'} or \code{'BIC'}.
   Otherwise, \code{maxNumFPC * numVar} will be used in the multivariate functional data.
+  Note: The number of fpc would use \code{min(x, k-1)},
+    where \code{x} is the number of fpc selected by AIC, BIC, FVE or AIC_R or user-defined,
+    \code{k} is the number of the real potitive eigen values.
 \item \code{outPercent}: Default is \code{0}. A positive number is between \code{0} and \code{0.5}.
   This indicates that we will leave out \code{outPercent} data in the boundary.
   When performing local linear smoothing for mean functions and cross-covariance surface,
@@ -138,6 +141,7 @@ The options of FPCA:
       (The results can not be reproduced.)
     \item \code{no}: The truncation threshold will not be used.
     \item Any positive number: user-specified the measurement error variance.
+      The length of rho must be equal to the number of variables.
   }
 \item \code{shrink}: Whether to apply shrinkage method to estimate the FPC scores.
   (only for regular data.)
@@ -161,10 +165,6 @@ The options of FPCA:
   A positive numeric vector is between \code{0} and \code{1}.
   The probabilities of quantiles to approximate the variances.
   This option is only used in the case \code{methodNorm} = \code{'quantile'}.
-\item \code{newdata}: A row vector of user-defined output time grids for all curves.
-  This corresponds to \code{allTimePnts} in the output argument. If newdata is \code{NULL},
-  then \code{allTimePnts} corresponds to the set of distinct time points from the pooled data.
-  \code{newdata} is supposed to be a vector on the domain of the functions. The default is \code{NULL}.
 \item \code{ncpus}: The number of threads used in computation.
   \itemize{
     \item \code{0}: To use all threads in computation. [Default]

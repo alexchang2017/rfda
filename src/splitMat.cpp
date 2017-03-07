@@ -15,8 +15,8 @@
 //' @export
 // [[Rcpp::export]]
 Rcpp::List splitMat(const arma::mat& m, const double& margin, const arma::vec& f) {
-  chk_mat(m, "m", "double");
-  chk_mat(f, "f", "double");
+  chk_mat(m, "m");
+  chk_mat(f, "f");
   if (std::abs(margin - std::floor(margin)) > 1e-6 || (margin != 1.0 && margin != 2.0))
     Rcpp::stop("margin must be 1 or 2.");
   if (margin == 1.0 && m.n_rows != f.n_elem) {

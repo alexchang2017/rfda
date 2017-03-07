@@ -30,9 +30,12 @@ struct Worker_locLinearRotate2d_gauss: public RcppParallel::Worker {
         w %= (1.25 - 0.25 * square(dx.col(1) / bandwidth(0))) %
           (1.5 - 0.5 * square(dx.col(2) / bandwidth(1)));
       dx.col(1) = square(dx.col(1));
-      mat dxw = dx;
-      dxw.each_col() %= w;
-      vec p = pinv(dxw.t() * dx) * dx.t() * (w % yw / countw);
+      mat R = chol((dx.each_col() % w).t() * dx);
+      vec p = solve(R, solve(R.t(), dx.t() * (w % (yw / countw))));
+      // please see Worker_locPoly1d_gauss
+      // mat dxw = dx;
+      // dxw.each_col() %= w;
+      // vec p = pinv(dxw.t() * dx) * dx.t() * (w % yw / countw);
       est(i) = p(0);
     }
   }
@@ -84,9 +87,12 @@ struct Worker_locLinearRotate2d_nongauss: public RcppParallel::Worker {
         */
         // fit a WLS
         lx.col(1) = square(lx.col(1));
-        mat lxw = lx;
-        lxw.each_col() %= w;
-        vec p = pinv(lxw.t() * lx) * lx.t() * (w % ly / lc);
+        mat R = chol((lx.each_col() % w).t() * lx);
+        vec p = solve(R, solve(R.t(), lx.t() * (w % (ly / lc))));
+        // please see Worker_locPoly1d_gauss
+        // mat lxw = lx;
+        // lxw.each_col() %= w;
+        // vec p = pinv(lxw.t() * lx) * lx.t() * (w % ly / lc);
         // get the estimation
         est(i) = p(0);
       } else if (in_windows.n_elem == 1) {
@@ -103,11 +109,11 @@ struct Worker_locLinearRotate2d_nongauss: public RcppParallel::Worker {
 arma::vec locLinearRotate2d_cpp(const arma::vec& bandwidth, const arma::mat& x, const arma::vec& y, const arma::vec& w,
                                 const arma::vec& count, const arma::mat outMat, const std::string& kernel){
   // check data
-  chk_mat(x, "x", "double");
-  chk_mat(y, "y", "double");
-  chk_mat(w, "w", "double");
-  chk_mat(outMat, "outMat", "double");
-  chk_mat(count, "count", "double");
+  chk_mat(x, "x");
+  chk_mat(y, "y");
+  chk_mat(w, "w");
+  chk_mat(outMat, "outMat");
+  chk_mat(count, "count");
   if (x.n_rows != y.n_elem || x.n_rows != w.n_elem || x.n_rows != count.n_elem)
     Rcpp::stop("The number of rows of x must be equal to the lengths of y, w and count.\n");
   if (x.n_cols != 2)

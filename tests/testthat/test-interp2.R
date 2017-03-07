@@ -20,7 +20,6 @@ test_that("interp2 - find the 2D interpolation - case 1", {
   expect_equal(interp2(x, y, A, xi, yi, 'spline'), V_1_s)
   expect_equal(interp2(x2, y, A2, xi, yi, 'linear'), V_1_l)
   expect_equal(interp2(x2, y, A2, xi, yi, 'spline'), V_1_s)
-
 })
 
 context("2. test interp2 - unsorted data")

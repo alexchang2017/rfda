@@ -30,12 +30,12 @@ struct WorkerFpcScoresIN: public RcppParallel::Worker {
 arma::mat getFpcScoresIN(const arma::vec& allTimePnts, const arma::vec& splitVar, const arma::mat& yMat,
                          const arma::mat& eigFuncs, const double& shrink, const arma::rowvec& eigVals,
                          const arma::vec& measErrVar){
-  chk_mat(allTimePnts, "allTimePnts", "double");
-  chk_mat(splitVar, "splitVar", "double");
-  chk_mat(yMat, "yMat", "double");
-  chk_mat(eigFuncs, "eigFuncs", "double");
-  chk_mat(eigVals, "eigVals", "double");
-  chk_mat(measErrVar, "measErrVar", "double");
+  chk_mat(allTimePnts, "allTimePnts");
+  chk_mat(splitVar, "splitVar");
+  chk_mat(yMat, "yMat");
+  chk_mat(eigFuncs, "eigFuncs");
+  chk_mat(eigVals, "eigVals");
+  chk_mat(measErrVar, "measErrVar");
 
   vec uniVars = sort(unique(splitVar));
   if (allTimePnts.n_elem * uniVars.n_elem != eigFuncs.n_rows)
@@ -65,6 +65,6 @@ arma::mat getFpcScoresIN(const arma::vec& allTimePnts, const arma::vec& splitVar
   mat fpcScores = zeros<mat>(yMat.n_cols, eigFuncs.n_cols);
   WorkerFpcScoresIN FpcScoresIN_worker(allTimePnts, idxMat, yMat, eigFuncs, shrinkFactor, fpcScores);
   RcppParallel::parallelFor(0, yMat.n_cols, FpcScoresIN_worker);
-  return(fpcScores);
+  return fpcScores;
 }
 

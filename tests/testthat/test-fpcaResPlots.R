@@ -11,10 +11,10 @@ testFpcaRes <- list(data = irregularExData, id.var = "sampleID", time.var = "t",
                     eigVals = eigRes$values, numFPC = 4)
 class(testFpcaRes) <- "fpcaRes"
 test_that("test - fpcaResPlots", {
-  expect_equal(class(designPlot(irregularExData, "sampleID", "t")), "trellis")
-  expect_equal(class(designPlot(testFpcaRes)), "trellis")
-  expect_equal(class(screePlot(eigRes$values[idx], sum(idx))), "trellis")
-  expect_equal(class(screePlot(eigRes$values[idx], 4, ylim = c(0, 0.8),
-                               col.line = "red", pch.line = 17, lty.line = 4)), "trellis")
-  expect_equal(class(screePlot(testFpcaRes)), "trellis")
+  expect_is(designPlot(irregularExData, "sampleID", "t"), "trellis")
+  expect_is(designPlot(testFpcaRes), "trellis")
+  expect_is(screePlot(eigRes$values[idx], sum(idx)), "trellis")
+  expect_is(screePlot(eigRes$values[idx], 4, ylim = c(0, 0.8),
+                      col.line = "red", pch.line = 17, lty.line = 4), "trellis")
+  expect_is(screePlot(testFpcaRes), "trellis")
 })

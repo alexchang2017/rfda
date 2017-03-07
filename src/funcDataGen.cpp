@@ -30,7 +30,7 @@
 Rcpp::NumericVector corrGen(const arma::vec& x, const std::string& corrType,
                             const double x0 = 1.0, const double nu = 2.5){
   // data checking
-  chk_mat(x, "x", "double");
+  chk_mat(x, "x");
   if (!is_finite(x0) || x0 <= 0)
     Rcpp::stop("x0 must be a positive number.\n");
   if (!is_finite(nu) || nu <= 0)
@@ -90,7 +90,7 @@ Rcpp::DataFrame funcDataGen(const double& n, const arma::vec& timePnt, const Rcp
                             const Rcpp::Function varFunc, const std::string corrType,
                             const double measErrVar = 1, const double x0 = 1.0, const double nu = 2.5){
   // data checking
-  chk_mat(timePnt, "timePnt", "double");
+  chk_mat(timePnt, "timePnt");
   if (!is_finite(n) || n <= 0 || std::abs(n - std::floor(n)) > 1e-6)
     Rcpp::stop("n must be a positive integer.\n");
   if (corrType != "BesselJ" && corrType != "Matern" && corrType != "rq")
@@ -105,13 +105,13 @@ Rcpp::DataFrame funcDataGen(const double& n, const arma::vec& timePnt, const Rcp
   uword nt = timePnt.n_elem;
   // find the mean function
   rowvec meanVec = Rcpp::as<rowvec>(meanFunc(Rcpp::wrap(timePnt)));
-  chk_mat(meanVec, "meanVec", "double");
+  chk_mat(meanVec, "meanVec");
   if (meanVec.n_elem != nt)
     Rcpp::stop("The length of output of meanVec is not equal to the length of timePnt.");
 
   // find the variance function
   rowvec varVec = Rcpp::as<rowvec>(varFunc(Rcpp::wrap(timePnt)));
-  chk_mat(varVec, "varVec", "double");
+  chk_mat(varVec, "varVec");
   if (any(varVec < 0))
     Rcpp::stop("The variance function at timePnt must be greater than 0.");
   if (varVec.n_elem != nt)

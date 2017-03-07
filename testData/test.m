@@ -116,8 +116,6 @@ sprintf('%.6f, ', est)
 sprintf('%.6f, ', est)
 [~, est] = rotate_mlwls([1, 1], 'epan', x', y, w2, outMat, 1);
 sprintf('%.6f, ', est)
-[~, est] = rotate_mlwls([0.075, 0.075], 'epan', x(idx, :)', y(idx), w(idx), outMat, 1);
-sprintf('%.6f, ', est)
 
 %% regular
 load('exData\regularExData.mat')

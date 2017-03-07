@@ -5,11 +5,11 @@
 // [[Rcpp::export]]
 Rcpp::List getEigRes(const arma::mat& CFMat2, const arma::vec& variable, const arma::vec& workTimePnts,
                      const arma::vec& meanFuncsWork, const arma::vec& allTimePnts){
-  chk_mat(CFMat2, "CFMat2", "double");
-  chk_mat(variable, "variable", "double");
-  chk_mat(workTimePnts, "workTimePnts", "double");
-  chk_mat(meanFuncsWork, "meanFuncsWork", "double");
-  chk_mat(allTimePnts, "allTimePnts", "double");
+  chk_mat(CFMat2, "CFMat2");
+  chk_mat(variable, "variable");
+  chk_mat(workTimePnts, "workTimePnts");
+  chk_mat(meanFuncsWork, "meanFuncsWork");
+  chk_mat(allTimePnts, "allTimePnts");
 
   vec uniVars = sort(unique(variable));
   if (!CFMat2.is_square())
